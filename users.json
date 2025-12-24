@@ -1,0 +1,19 @@
+{
+  "users": [
+    {
+      "id": "user_001",
+      "email": "user1@example.com",
+      "password": "1"
+    },
+    {
+      "id": "user_002",
+      "email": "user2@example.com",
+      "password": "2"
+    },
+    {
+      "id": "user_003",
+      "email": "jn@arvadigitaldemo.onmicrosoft.com",
+      "password": "a"
+    }
+  ]
+}
