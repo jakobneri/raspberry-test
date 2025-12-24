@@ -2,32 +2,341 @@
 <html lang="de">
   <head>
     <meta charset="UTF-8" />
-    <title>Cockpit</title>
+    <title>Raspberry Pi Cockpit</title>
     <style>
-      body {
-        font-family: sans-serif;
-        background: #f5f5f5;
+      * {
         margin: 0;
+        padding: 0;
+        box-sizing: border-box;
       }
-      .card {
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+          sans-serif;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        min-height: 100vh;
+        padding: 20px;
+      }
+      .container {
+        max-width: 1200px;
+        margin: 0 auto;
+      }
+      .header {
         background: white;
-        max-width: 800px;
-        margin: 2rem auto;
-        padding: 2rem;
-        border-radius: 8px;
-        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        padding: 20px;
+        border-radius: 12px;
+        margin-bottom: 20px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
       }
-      a {
+      .header h1 {
+        color: #333;
+        font-size: 24px;
+      }
+      .header a {
         color: #667eea;
+        text-decoration: none;
+        padding: 8px 16px;
+        border: 2px solid #667eea;
+        border-radius: 6px;
+        transition: all 0.3s;
+      }
+      .header a:hover {
+        background: #667eea;
+        color: white;
+      }
+      .metrics-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 20px;
+        margin-bottom: 20px;
+      }
+      .metric-card {
+        background: white;
+        padding: 20px;
+        border-radius: 12px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      }
+      .metric-header {
+        display: flex;
+        align-items: center;
+        margin-bottom: 15px;
+      }
+      .metric-icon {
+        font-size: 28px;
+        margin-right: 12px;
+      }
+      .metric-title {
+        font-size: 16px;
+        color: #666;
+        font-weight: 600;
+      }
+      .metric-value {
+        font-size: 32px;
+        font-weight: bold;
+        color: #333;
+        margin-bottom: 8px;
+      }
+      .metric-detail {
+        font-size: 14px;
+        color: #888;
+        margin: 4px 0;
+      }
+      .progress-bar {
+        width: 100%;
+        height: 8px;
+        background: #e0e0e0;
+        border-radius: 4px;
+        overflow: hidden;
+        margin-top: 10px;
+      }
+      .progress-fill {
+        height: 100%;
+        background: linear-gradient(90deg, #667eea, #764ba2);
+        transition: width 0.3s ease;
+        border-radius: 4px;
+      }
+      .warning {
+        background: linear-gradient(90deg, #f093fb, #f5576c);
+      }
+      .timestamp {
+        text-align: center;
+        color: white;
+        margin-top: 20px;
+        font-size: 14px;
+      }
+      .loading {
+        text-align: center;
+        color: white;
+        padding: 40px;
+        font-size: 18px;
+      }
+      .error {
+        background: #f5576c;
+        color: white;
+        padding: 15px;
+        border-radius: 8px;
+        text-align: center;
+        margin-bottom: 20px;
       }
     </style>
   </head>
   <body>
-    <div class="card">
-      <h2>Willkommen im Cockpit!</h2>
-      <p>Du bist erfolgreich angemeldet.</p>
-      <hr />
-      <p><a href="/">Zurück zum Login</a></p>
+    <div class="container">
+      <div class="header">
+        <h1>🥧 Raspberry Pi Performance Monitor</h1>
+        <a href="/">Abmelden</a>
+      </div>
+
+      <div id="error-message" style="display: none" class="error"></div>
+      <div id="loading" class="loading">Lade Metriken...</div>
+
+      <div id="metrics" style="display: none">
+        <div class="metrics-grid">
+          <!-- CPU Card -->
+          <div class="metric-card">
+            <div class="metric-header">
+              <div class="metric-icon">🖥️</div>
+              <div class="metric-title">CPU Auslastung</div>
+            </div>
+            <div class="metric-value" id="cpu-usage">--</div>
+            <div class="metric-detail">
+              Kerne: <span id="cpu-cores">--</span>
+            </div>
+            <div class="metric-detail">
+              Takt: <span id="cpu-speed">--</span> GHz
+            </div>
+            <div class="metric-detail">
+              Temperatur: <span id="cpu-temp">--</span>°C
+            </div>
+            <div class="progress-bar">
+              <div
+                class="progress-fill"
+                id="cpu-progress"
+                style="width: 0%"
+              ></div>
+            </div>
+          </div>
+
+          <!-- Memory Card -->
+          <div class="metric-card">
+            <div class="metric-header">
+              <div class="metric-icon">💾</div>
+              <div class="metric-title">RAM Speicher</div>
+            </div>
+            <div class="metric-value" id="mem-usage">--</div>
+            <div class="metric-detail">
+              Verwendet: <span id="mem-used">--</span> GB
+            </div>
+            <div class="metric-detail">
+              Frei: <span id="mem-free">--</span> GB
+            </div>
+            <div class="metric-detail">
+              Gesamt: <span id="mem-total">--</span> GB
+            </div>
+            <div class="progress-bar">
+              <div
+                class="progress-fill"
+                id="mem-progress"
+                style="width: 0%"
+              ></div>
+            </div>
+          </div>
+
+          <!-- Disk Card -->
+          <div class="metric-card">
+            <div class="metric-header">
+              <div class="metric-icon">💿</div>
+              <div class="metric-title">Festplatte</div>
+            </div>
+            <div class="metric-value" id="disk-usage">--</div>
+            <div class="metric-detail">
+              Verwendet: <span id="disk-used">--</span> GB
+            </div>
+            <div class="metric-detail">
+              Verfügbar: <span id="disk-available">--</span> GB
+            </div>
+            <div class="metric-detail">
+              I/O: R:<span id="disk-rio">--</span> W:<span id="disk-wio"
+                >--</span
+              >
+            </div>
+            <div class="progress-bar">
+              <div
+                class="progress-fill"
+                id="disk-progress"
+                style="width: 0%"
+              ></div>
+            </div>
+          </div>
+
+          <!-- Network Card -->
+          <div class="metric-card">
+            <div class="metric-header">
+              <div class="metric-icon">🌐</div>
+              <div class="metric-title">Netzwerk</div>
+            </div>
+            <div class="metric-value" id="net-down">-- KB/s</div>
+            <div class="metric-detail">
+              Download: <span id="net-rx">--</span> KB/s
+            </div>
+            <div class="metric-detail">
+              Upload: <span id="net-tx">--</span> KB/s
+            </div>
+            <div class="metric-detail">
+              Interface: <span id="net-interface">--</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="timestamp">
+          Letzte Aktualisierung: <span id="last-update">--</span>
+        </div>
+      </div>
     </div>
+
+    <script>
+      let updateInterval;
+
+      async function fetchMetrics() {
+        try {
+          const response = await fetch("/api/metrics");
+
+          if (!response.ok) {
+            if (response.status === 401) {
+              window.location.href = "/";
+              return;
+            }
+            throw new Error("Fehler beim Laden der Metriken");
+          }
+
+          const data = await response.json();
+          updateUI(data);
+
+          document.getElementById("loading").style.display = "none";
+          document.getElementById("metrics").style.display = "block";
+          document.getElementById("error-message").style.display = "none";
+        } catch (error) {
+          console.error("Error:", error);
+          document.getElementById("error-message").textContent =
+            "Fehler beim Laden der Metriken: " + error.message;
+          document.getElementById("error-message").style.display = "block";
+        }
+      }
+
+      function updateUI(data) {
+        // CPU
+        document.getElementById("cpu-usage").textContent =
+          data.cpu.usage.toFixed(1) + "%";
+        document.getElementById("cpu-cores").textContent = data.cpu.cores;
+        document.getElementById("cpu-speed").textContent = data.cpu.speed;
+        document.getElementById("cpu-temp").textContent =
+          data.cpu.temperature.toFixed(1);
+        updateProgressBar("cpu-progress", data.cpu.usage);
+
+        // Memory
+        document.getElementById("mem-usage").textContent =
+          data.memory.usagePercent.toFixed(1) + "%";
+        document.getElementById("mem-used").textContent =
+          data.memory.used.toFixed(2);
+        document.getElementById("mem-free").textContent =
+          data.memory.free.toFixed(2);
+        document.getElementById("mem-total").textContent =
+          data.memory.total.toFixed(2);
+        updateProgressBar("mem-progress", data.memory.usagePercent);
+
+        // Disk
+        document.getElementById("disk-usage").textContent =
+          data.disk.usagePercent.toFixed(1) + "%";
+        document.getElementById("disk-used").textContent =
+          data.disk.used.toFixed(2);
+        document.getElementById("disk-available").textContent =
+          data.disk.available.toFixed(2);
+        document.getElementById("disk-rio").textContent = data.disk.rIO;
+        document.getElementById("disk-wio").textContent = data.disk.wIO;
+        updateProgressBar("disk-progress", data.disk.usagePercent);
+
+        // Network
+        document.getElementById("net-down").textContent =
+          data.network.rx.toFixed(2) + " KB/s";
+        document.getElementById("net-rx").textContent =
+          data.network.rx.toFixed(2);
+        document.getElementById("net-tx").textContent =
+          data.network.tx.toFixed(2);
+        document.getElementById("net-interface").textContent =
+          data.network.interface;
+
+        // Timestamp
+        const date = new Date(data.timestamp);
+        document.getElementById("last-update").textContent =
+          date.toLocaleTimeString("de-DE");
+      }
+
+      function updateProgressBar(id, percent) {
+        const bar = document.getElementById(id);
+        bar.style.width = percent + "%";
+
+        // Add warning class if usage is high
+        if (percent > 80) {
+          bar.classList.add("warning");
+        } else {
+          bar.classList.remove("warning");
+        }
+      }
+
+      // Initial fetch
+      fetchMetrics();
+
+      // Update every 2 seconds
+      updateInterval = setInterval(fetchMetrics, 2000);
+
+      // Cleanup on page unload
+      window.addEventListener("beforeunload", () => {
+        if (updateInterval) {
+          clearInterval(updateInterval);
+        }
+      });
+    </script>
   </body>
 </html>
