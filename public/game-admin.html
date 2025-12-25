@@ -71,10 +71,11 @@
             <span
               style="
                 font-size: 12px;
-                color: #888;
-                background: #f0f0f0;
+                color: var(--text-secondary);
+                background: var(--bg-color);
                 padding: 4px 8px;
                 border-radius: 4px;
+                border: 1px solid var(--border-color);
               "
               >Aktuell: <span id="current-difficulty">Normal</span></span
             >
@@ -174,7 +175,10 @@
             </thead>
             <tbody id="scoreboard-body">
               <tr>
-                <td colspan="4" style="text-align: center; color: #999">
+                <td
+                  colspan="4"
+                  style="text-align: center; color: var(--text-secondary)"
+                >
                   Lade Scoreboard...
                 </td>
               </tr>
@@ -208,7 +212,7 @@
 
         if (scores.length === 0) {
           tbody.innerHTML =
-            '<tr><td colspan="4" style="text-align: center; color: #999;">Noch keine Scores</td></tr>';
+            '<tr><td colspan="4" style="text-align: center; color: var(--text-secondary);">Noch keine Scores</td></tr>';
           return;
         }
 

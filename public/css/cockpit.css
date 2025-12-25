@@ -243,7 +243,7 @@ body {
 }
 
 .scoreboard-section h2 {
-  color: #333;
+  color: var(--text-primary);
   margin-bottom: 15px;
   display: flex;
   align-items: center;
@@ -308,12 +308,19 @@ body {
 
 .btn-admin {
   padding: 12px 24px;
-  border: none;
+  border: 1px solid var(--border-color);
   border-radius: 6px;
   cursor: pointer;
   font-size: 16px;
   font-weight: 600;
   transition: all 0.3s;
+  background: var(--card-bg);
+  color: var(--text-primary);
+}
+
+.btn-admin:hover {
+  background: var(--nav-hover);
+  border-color: var(--accent-color);
 }
 
 .btn-restart {
@@ -335,17 +342,18 @@ body {
 }
 
 .system-info {
-  background: #f9f9f9;
+  background: var(--bg-color);
   padding: 15px;
   border-radius: 8px;
   margin-top: 10px;
+  border: 1px solid var(--border-color);
 }
 
 .info-row {
   display: flex;
   justify-content: space-between;
   padding: 8px 0;
-  border-bottom: 1px solid #eee;
+  border-bottom: 1px solid var(--border-color);
 }
 
 .info-row:last-child {
@@ -354,11 +362,11 @@ body {
 
 .info-label {
   font-weight: 600;
-  color: #666;
+  color: var(--text-secondary);
 }
 
 .info-value {
-  color: #333;
+  color: var(--text-primary);
 }
 
 .chart-container {
@@ -595,8 +603,8 @@ body {
 }
 
 .wifi-network {
-  background: #fff;
-  border: 1px solid #ddd;
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
   border-radius: 6px;
   padding: 15px;
   margin: 10px 0;
@@ -607,7 +615,7 @@ body {
 }
 
 .wifi-network:hover {
-  border-color: #667eea;
+  border-color: var(--accent-color);
   box-shadow: 0 2px 8px rgba(102, 126, 234, 0.1);
 }
 
@@ -617,17 +625,17 @@ body {
 
 .wifi-ssid {
   font-weight: 600;
-  color: #333;
+  color: var(--text-primary);
   margin-bottom: 5px;
 }
 
 .wifi-details {
   font-size: 12px;
-  color: #888;
+  color: var(--text-secondary);
 }
 
 .wifi-connect-btn {
-  background: #667eea;
+  background: var(--accent-color);
   color: white;
   border: none;
   padding: 8px 16px;
@@ -637,27 +645,30 @@ body {
 }
 
 .wifi-connect-btn:hover {
-  background: #5568d3;
+  background: var(--accent-hover);
 }
 
 .wifi-connect-btn.connected {
-  background: #28a745;
+  background: var(--success-color);
 }
 
 .wifi-connect-form {
   margin-top: 10px;
   padding: 10px;
-  background: #f8f9ff;
+  background: var(--bg-color);
   border-radius: 6px;
+  border: 1px solid var(--border-color);
 }
 
 .wifi-connect-form input {
   width: 100%;
   padding: 8px;
   margin: 5px 0;
-  border: 1px solid #ddd;
+  border: 1px solid var(--input-border);
   border-radius: 4px;
   font-size: 14px;
+  background: var(--input-bg);
+  color: var(--text-primary);
 }
 
 .wifi-connect-form button {

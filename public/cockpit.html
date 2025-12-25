@@ -211,20 +211,22 @@
                     display: flex;
                     align-items: center;
                     justify-content: space-between;
-                    border-bottom: 1px solid #f0f0f0;
+                    border-bottom: 1px solid var(--border-color);
                     padding-bottom: 8px;
                   "
                 >
                   <span
                     style="
-                      color: #888;
+                      color: var(--text-secondary);
                       display: flex;
                       align-items: center;
                       gap: 8px;
                     "
                     ><span style="font-size: 1.2em">🖥️</span> Host</span
                   >
-                  <span id="sys-host" style="font-weight: 600; color: #333"
+                  <span
+                    id="sys-host"
+                    style="font-weight: 600; color: var(--text-primary)"
                     >--</span
                   >
                 </div>
@@ -235,20 +237,22 @@
                     display: flex;
                     align-items: center;
                     justify-content: space-between;
-                    border-bottom: 1px solid #f0f0f0;
+                    border-bottom: 1px solid var(--border-color);
                     padding-bottom: 8px;
                   "
                 >
                   <span
                     style="
-                      color: #888;
+                      color: var(--text-secondary);
                       display: flex;
                       align-items: center;
                       gap: 8px;
                     "
                     ><span style="font-size: 1.2em">🐧</span> OS</span
                   >
-                  <span id="sys-os" style="font-weight: 600; color: #333"
+                  <span
+                    id="sys-os"
+                    style="font-weight: 600; color: var(--text-primary)"
                     >--</span
                   >
                 </div>
@@ -259,20 +263,22 @@
                     display: flex;
                     align-items: center;
                     justify-content: space-between;
-                    border-bottom: 1px solid #f0f0f0;
+                    border-bottom: 1px solid var(--border-color);
                     padding-bottom: 8px;
                   "
                 >
                   <span
                     style="
-                      color: #888;
+                      color: var(--text-secondary);
                       display: flex;
                       align-items: center;
                       gap: 8px;
                     "
                     ><span style="font-size: 1.2em">⚙️</span> Kernel</span
                   >
-                  <span id="sys-kernel" style="font-weight: 600; color: #333"
+                  <span
+                    id="sys-kernel"
+                    style="font-weight: 600; color: var(--text-primary)"
                     >--</span
                   >
                 </div>
@@ -288,14 +294,16 @@
                 >
                   <span
                     style="
-                      color: #888;
+                      color: var(--text-secondary);
                       display: flex;
                       align-items: center;
                       gap: 8px;
                     "
                     ><span style="font-size: 1.2em">📦</span> Distro</span
                   >
-                  <span id="sys-distro" style="font-weight: 600; color: #333"
+                  <span
+                    id="sys-distro"
+                    style="font-weight: 600; color: var(--text-primary)"
                     >--</span
                   >
                 </div>
@@ -429,6 +437,8 @@
                     border: 2px solid #667eea;
                     font-size: 14px;
                     cursor: pointer;
+                    background: var(--card-bg);
+                    color: var(--text-primary);
                   "
                 >
                   <option value="10">Every 10 seconds</option>
@@ -439,7 +449,7 @@
                 </select>
                 <div
                   id="speedtest-warning"
-                  style="font-size: 12px; color: #888; flex: 1"
+                  style="font-size: 12px; color: var(--text-secondary); flex: 1"
                 >
                   Auto-running speed tests
                 </div>
@@ -525,9 +535,11 @@
                 style="
                   margin: 15px 0;
                   padding: 10px;
-                  background: #f8f9ff;
+                  background: var(--card-bg);
                   border-radius: 6px;
                   font-size: 14px;
+                  border: 1px solid var(--border-color);
+                  color: var(--text-primary);
                 "
               ></div>
               <div id="wifi-list"></div>
@@ -581,7 +593,9 @@
                 line-height: 1.6;
               "
             >
-              <div style="text-align: center; color: #888">Loading logs...</div>
+              <div style="text-align: center; color: var(--text-secondary)">
+                Loading logs...
+              </div>
             </div>
           </div>
         </div>
@@ -1054,7 +1068,7 @@
             <div style="background: #e0e0e0; height: 8px; border-radius: 4px; overflow: hidden; margin-bottom: 10px;">
               <div id="speedtest-progress" style="height: 100%; background: linear-gradient(90deg, #667eea, #764ba2); width: 0%; transition: width 0.3s;"></div>
             </div>
-            <p style="font-size: 12px; color: #888;">This may take up to 60 seconds</p>
+            <p style="font-size: 12px; color: var(--text-secondary);">This may take up to 60 seconds</p>
           </div>
         `;
 
@@ -1086,29 +1100,29 @@
               if (data.success) {
                 let html = `
                 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; text-align: center;">
-                  <div style="background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
-                    <div style="font-size: 12px; color: #888; margin-bottom: 5px;">PING</div>
+                  <div style="background: var(--card-bg); padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); border: 1px solid var(--border-color);">
+                    <div style="font-size: 12px; color: var(--text-secondary); margin-bottom: 5px;">PING</div>
                     <div style="font-size: 36px; font-weight: bold; color: #667eea;">${data.ping}</div>
-                    <div style="font-size: 14px; color: #888;">ms</div>
+                    <div style="font-size: 14px; color: var(--text-secondary);">ms</div>
                   </div>
               `;
 
                 if (data.download !== null) {
                   html += `
-                  <div style="background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
-                    <div style="font-size: 12px; color: #888; margin-bottom: 5px;">DOWNLOAD</div>
+                  <div style="background: var(--card-bg); padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); border: 1px solid var(--border-color);">
+                    <div style="font-size: 12px; color: var(--text-secondary); margin-bottom: 5px;">DOWNLOAD</div>
                     <div style="font-size: 36px; font-weight: bold; color: #28a745;">${data.download}</div>
-                    <div style="font-size: 14px; color: #888;">${data.unit}</div>
+                    <div style="font-size: 14px; color: var(--text-secondary);">${data.unit}</div>
                   </div>
                 `;
                 }
 
                 if (data.upload !== null) {
                   html += `
-                  <div style="background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
-                    <div style="font-size: 12px; color: #888; margin-bottom: 5px;">UPLOAD</div>
+                  <div style="background: var(--card-bg); padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); border: 1px solid var(--border-color);">
+                    <div style="font-size: 12px; color: var(--text-secondary); margin-bottom: 5px;">UPLOAD</div>
                     <div style="font-size: 36px; font-weight: bold; color: #f5576c;">${data.upload}</div>
-                    <div style="font-size: 14px; color: #888;">${data.unit}</div>
+                    <div style="font-size: 14px; color: var(--text-secondary);">${data.unit}</div>
                   </div>
                 `;
                 }
@@ -1116,10 +1130,10 @@
                 html += `</div>`;
 
                 if (data.message) {
-                  html += `<p style="margin-top: 15px; font-size: 12px; color: #888; text-align: center;">${data.message}</p>`;
+                  html += `<p style="margin-top: 15px; font-size: 12px; color: var(--text-secondary); text-align: center;">${data.message}</p>`;
                 }
 
-                html += `<p style="margin-top: 10px; font-size: 11px; color: #aaa; text-align: center;">Tested at: ${new Date(
+                html += `<p style="margin-top: 10px; font-size: 11px; color: var(--text-secondary); text-align: center;">Tested at: ${new Date(
                   data.timestamp
                 ).toLocaleString()}</p>`;
 

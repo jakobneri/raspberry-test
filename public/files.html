@@ -59,7 +59,7 @@
               id="user-status"
               style="
                 margin-right: 10px;
-                color: #333;
+                color: var(--text-primary);
                 font-size: 14px;
                 font-weight: 600;
               "
@@ -77,12 +77,22 @@
                 <p style="margin-top: 10px; font-weight: 600; color: #667eea">
                   Klicken Sie hier, um eine Datei auszuwählen
                 </p>
-                <p style="margin-top: 5px; font-size: 14px; color: #999">
+                <p
+                  style="
+                    margin-top: 5px;
+                    font-size: 14px;
+                    color: var(--text-secondary);
+                  "
+                >
                   oder ziehen Sie eine Datei hierher
                 </p>
                 <p
                   id="upload-as-info"
-                  style="margin-top: 10px; font-size: 12px; color: #666"
+                  style="
+                    margin-top: 10px;
+                    font-size: 12px;
+                    color: var(--text-secondary);
+                  "
                 ></p>
               </div>
               <input type="file" id="file-input" />
