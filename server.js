@@ -266,36 +266,21 @@ var server = http.createServer(async (req, res) => {
     }
   }
   if (method === "GET" && url === "/game") {
-    const cookieToken = (req.headers.cookie || "").match(/jwt=([^;]+)/)?.[1];
-    if (!cookieToken) {
-      res.writeHead(302, { Location: "/" }).end();
-      return;
-    }
-    try {
-      await verifyToken(cookieToken, userArray);
-      const body = readFileSync2("public/game.html", "utf8");
-      res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
-      res.end(body);
-      return;
-    } catch {
-      res.writeHead(302, { Location: "/" }).end();
-      return;
-    }
+    // Public route - no authentication required
+    const body = readFileSync2("public/game.html", "utf8");
+    res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
+    res.end(body);
+    return;
   }
   if (method === "POST" && url === "/api/scores") {
-    const cookieToken = (req.headers.cookie || "").match(/jwt=([^;]+)/)?.[1];
-    if (!cookieToken) {
-      res.writeHead(401).end("Unauthorized");
-      return;
-    }
+    // Public route - anyone can submit scores
     try {
-      const payload = await verifyToken(cookieToken, userArray);
       const body = await getReqBody(req);
       const data = JSON.parse(body || "{}");
 
       scores.push({
         score: data.score || 0,
-        userId: payload[propUserId],
+        userId: "anonymous",
         timestamp: new Date().toISOString(),
       });
 
@@ -307,11 +292,17 @@ var server = http.createServer(async (req, res) => {
       res.end(JSON.stringify({ success: true }));
       return;
     } catch (error) {
-      res.writeHead(401).end("Unauthorized");
+      res.writeHead(500).end("Error saving score");
       return;
     }
   }
   if (method === "GET" && url === "/api/scores") {
+    // Public route - anyone can view scores
+    res.writeHead(200, { "Content-Type": "application/json" });
+    res.end(JSON.stringify(scores.slice(0, 10)));
+    return;
+  }
+  if (method === "POST" && url === "/api/admin/restart") {
     const cookieToken = (req.headers.cookie || "").match(/jwt=([^;]+)/)?.[1];
     if (!cookieToken) {
       res.writeHead(401).end("Unauthorized");
@@ -320,7 +311,83 @@ var server = http.createServer(async (req, res) => {
     try {
       await verifyToken(cookieToken, userArray);
       res.writeHead(200, { "Content-Type": "application/json" });
-      res.end(JSON.stringify(scores.slice(0, 10)));
+      res.end(
+        JSON.stringify({ success: true, message: "Server restarting..." })
+      );
+
+      setTimeout(() => {
+        process.exit(0);
+      }, 500);
+      return;
+    } catch (error) {
+      res.writeHead(401).end("Unauthorized");
+      return;
+    }
+  }
+  if (method === "POST" && url === "/api/admin/shutdown") {
+    const cookieToken = (req.headers.cookie || "").match(/jwt=([^;]+)/)?.[1];
+    if (!cookieToken) {
+      res.writeHead(401).end("Unauthorized");
+      return;
+    }
+    try {
+      await verifyToken(cookieToken, userArray);
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(
+        JSON.stringify({ success: true, message: "Server shutting down..." })
+      );
+
+      setTimeout(() => {
+        process.exit(0);
+      }, 500);
+      return;
+    } catch (error) {
+      res.writeHead(401).end("Unauthorized");
+      return;
+    }
+  }
+  if (method === "GET" && url === "/api/system-info") {
+    const cookieToken = (req.headers.cookie || "").match(/jwt=([^;]+)/)?.[1];
+    if (!cookieToken) {
+      res.writeHead(401).end("Unauthorized");
+      return;
+    }
+    try {
+      await verifyToken(cookieToken, userArray);
+      const [osInfo, systemInfo, timeInfo, processInfo] = await Promise.all([
+        si.osInfo(),
+        si.system(),
+        si.time(),
+        si.processes(),
+      ]);
+
+      const info = {
+        os: {
+          platform: osInfo.platform,
+          distro: osInfo.distro,
+          release: osInfo.release,
+          hostname: osInfo.hostname,
+          uptime: Math.floor(timeInfo.uptime / 60),
+        },
+        system: {
+          manufacturer: systemInfo.manufacturer,
+          model: systemInfo.model,
+          version: systemInfo.version,
+        },
+        process: {
+          running: processInfo.running,
+          sleeping: processInfo.sleeping,
+          blocked: processInfo.blocked,
+        },
+        server: {
+          nodeVersion: process.version,
+          pid: process.pid,
+          uptime: Math.floor(process.uptime() / 60),
+        },
+      };
+
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(JSON.stringify(info));
       return;
     } catch (error) {
       res.writeHead(401).end("Unauthorized");
@@ -330,4 +397,4 @@ var server = http.createServer(async (req, res) => {
   res.writeHead(404).end("Not found");
 });
 server.listen(PORT);
-console.log(`Server: http://localhost:${PORT}`);
+console.log(`Server: http://pi.local:${PORT}`);

@@ -166,6 +166,71 @@
         font-weight: bold;
         color: #667eea;
       }
+      .admin-section {
+        background: white;
+        padding: 20px;
+        border-radius: 12px;
+        margin-top: 20px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      }
+      .admin-section h2 {
+        color: #333;
+        margin-bottom: 15px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      .admin-buttons {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+        margin-bottom: 20px;
+      }
+      .btn-admin {
+        padding: 12px 24px;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 16px;
+        font-weight: 600;
+        transition: all 0.3s;
+      }
+      .btn-restart {
+        background: #f093fb;
+        color: white;
+      }
+      .btn-restart:hover {
+        background: #e67ff0;
+      }
+      .btn-shutdown {
+        background: #f5576c;
+        color: white;
+      }
+      .btn-shutdown:hover {
+        background: #e64555;
+      }
+      .system-info {
+        background: #f9f9f9;
+        padding: 15px;
+        border-radius: 8px;
+        margin-top: 10px;
+      }
+      .info-row {
+        display: flex;
+        justify-content: space-between;
+        padding: 8px 0;
+        border-bottom: 1px solid #eee;
+      }
+      .info-row:last-child {
+        border-bottom: none;
+      }
+      .info-label {
+        font-weight: 600;
+        color: #666;
+      }
+      .info-value {
+        color: #333;
+      }
     </style>
   </head>
   <body>
@@ -303,6 +368,25 @@
             </tbody>
           </table>
         </div>
+
+        <!-- Admin Section -->
+        <div class="admin-section">
+          <h2>⚙️ Administration</h2>
+          <div class="admin-buttons">
+            <button class="btn-admin btn-restart" onclick="restartServer()">
+              🔄 Server Neustarten
+            </button>
+            <button class="btn-admin btn-shutdown" onclick="shutdownServer()">
+              ⛔ Server Beenden
+            </button>
+          </div>
+          <div class="system-info" id="system-info">
+            <div class="info-row">
+              <span class="info-label">Lade System-Info...</span>
+              <span class="info-value"></span>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -435,9 +519,117 @@
           .join("");
       }
 
+      async function fetchSystemInfo() {
+        try {
+          const response = await fetch("/api/system-info");
+          if (response.ok) {
+            const info = await response.json();
+            updateSystemInfo(info);
+          }
+        } catch (error) {
+          console.error("Error loading system info:", error);
+        }
+      }
+
+      function updateSystemInfo(info) {
+        const container = document.getElementById("system-info");
+        container.innerHTML = `
+          <div class="info-row">
+            <span class="info-label">🖥️ System</span>
+            <span class="info-value">${info.system.manufacturer} ${
+          info.system.model
+        }</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">💻 OS</span>
+            <span class="info-value">${info.os.distro} ${info.os.release}</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">🏷️ Hostname</span>
+            <span class="info-value">${info.os.hostname}</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">⏱️ System Uptime</span>
+            <span class="info-value">${formatUptime(info.os.uptime)}</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">🚀 Server Uptime</span>
+            <span class="info-value">${formatUptime(info.server.uptime)}</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">📦 Node Version</span>
+            <span class="info-value">${info.server.nodeVersion}</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">🆔 Process ID</span>
+            <span class="info-value">${info.server.pid}</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">⚡ Processes</span>
+            <span class="info-value">Running: ${
+              info.process.running
+            } | Sleeping: ${info.process.sleeping}</span>
+          </div>
+        `;
+      }
+
+      function formatUptime(minutes) {
+        const hours = Math.floor(minutes / 60);
+        const mins = minutes % 60;
+        const days = Math.floor(hours / 24);
+        const hrs = hours % 24;
+
+        if (days > 0) {
+          return `${days}d ${hrs}h ${mins}m`;
+        } else if (hours > 0) {
+          return `${hours}h ${mins}m`;
+        } else {
+          return `${minutes}m`;
+        }
+      }
+
+      async function restartServer() {
+        if (!confirm("Möchten Sie den Server wirklich neu starten?")) {
+          return;
+        }
+
+        try {
+          const response = await fetch("/api/admin/restart", {
+            method: "POST",
+          });
+          if (response.ok) {
+            alert("Server wird neu gestartet...");
+            setTimeout(() => {
+              window.location.reload();
+            }, 3000);
+          }
+        } catch (error) {
+          console.error("Error restarting server:", error);
+          alert("Fehler beim Neustart");
+        }
+      }
+
+      async function shutdownServer() {
+        if (!confirm("Möchten Sie den Server wirklich beenden?")) {
+          return;
+        }
+
+        try {
+          const response = await fetch("/api/admin/shutdown", {
+            method: "POST",
+          });
+          if (response.ok) {
+            alert("Server wird beendet...");
+          }
+        } catch (error) {
+          console.error("Error shutting down server:", error);
+        }
+      }
+
       // Initial fetch
       fetchMetrics();
       fetchScoreboard();
+      fetchSystemInfo();
 
       // Update every 2 seconds
       updateInterval = setInterval(fetchMetrics, 2000);
