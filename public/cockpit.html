@@ -965,6 +965,14 @@
         function displayNetworkDetails(data) {
           const detailsDiv = document.getElementById("network-details");
 
+          const ethStatus = data.ethernet.connected
+            ? '<span style="color: #28a745;">✅ Connected</span>'
+            : '<span style="color: var(--text-secondary);">⚫ Disconnected</span>';
+
+          const wifiStatus = data.wifi.connected
+            ? '<span style="color: #28a745;">✅ Connected</span>'
+            : '<span style="color: var(--text-secondary);">⚫ Disconnected</span>';
+
           let html = `
           <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
             <!-- Ethernet Section -->
@@ -974,11 +982,7 @@
               </h4>
               <div style="font-size: 14px; line-height: 2; color: var(--text-primary);">
                 <div>
-                  <strong>Status:</strong> ${
-                    data.ethernet.connected
-                      ? '<span style="color: #28a745;">✅ Connected</span>'
-                      : '<span style="color: var(--text-secondary);">⚫ Disconnected</span>'
-                  }
+                  <strong>Status:</strong> ${ethStatus}
                 </div>
                 ${
                   data.ethernet.connected
@@ -1005,13 +1009,7 @@
               </h4>
               <div style="font-size: 14px; line-height: 2; color: var(--text-primary);">
                 <div>
-                  <strong>Status:</strong> ${
-                    data.wifi.connected
-                      ? '<span style="color: #28a745;">✅ Connected</span>'
-                      : '<span style="color: var(--text-secondary)
-                      ? '<span style="color: #28a745;">✅ Connected</span>'
-                      : '<span style="color: #888;">⚫ Disconnected</span>'
-                  }
+                  <strong>Status:</strong> ${wifiStatus}
                 </div>
                 ${
                   data.wifi.connected
