@@ -1,4 +1,4 @@
-import usersJson from "../../users.json";
+import usersJson from "../../config/users.json";
 
 export type User = {
   id: string;

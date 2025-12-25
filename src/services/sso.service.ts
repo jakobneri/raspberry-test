@@ -9,7 +9,7 @@ interface EnvConfig {
   CLOUD_INSTANCE: string;
 }
 
-const envPath = resolve("./env.json");
+const envPath = resolve("./config/env.json");
 const envConfig: EnvConfig = JSON.parse(readFileSync(envPath, "utf-8"));
 
 const msalConfig: Configuration = {

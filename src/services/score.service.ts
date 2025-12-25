@@ -6,7 +6,7 @@ export interface Score {
   timestamp: string;
 }
 
-const SCORES_FILE = "scores.json";
+const SCORES_FILE = "config/scores.json";
 let scores: Score[] = [];
 
 // Load scores on module initialization

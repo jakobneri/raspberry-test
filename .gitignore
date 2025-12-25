@@ -1,8 +1,8 @@
 # Environment configuration
-env.json
+config/env.json
 
 # Game scores
-scores.json
+config/scores.json
 
 # Shared files (user uploads)
 shared-files/*
