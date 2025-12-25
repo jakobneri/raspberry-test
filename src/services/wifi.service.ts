@@ -69,13 +69,31 @@ export const connectWifi = async (
   password?: string
 ): Promise<{ success: boolean; message: string }> => {
   try {
-    // Use sudo and explicitly set key-mgmt for WPA networks
-    const connectCmd = password
-      ? `sudo nmcli dev wifi connect "${ssid}" password "${password}" wpa-psk`
-      : `sudo nmcli device wifi connect "${ssid}"`;
+    if (!password) {
+      // Open network - simple connection
+      console.log(`[WiFi] Connecting to open network: ${ssid}`);
+      await execAsync(`sudo nmcli device wifi connect "${ssid}"`);
+      console.log(`[WiFi] Successfully connected to: ${ssid}`);
+      return { success: true, message: "Connected successfully" };
+    }
 
-    console.log(`[WiFi] Attempting to connect to: ${ssid}`);
-    await execAsync(connectCmd);
+    // For WPA networks, create a full connection profile
+    const timestamp = Date.now();
+    const connectionName = `${ssid}-${timestamp}`;
+
+    console.log(`[WiFi] Creating WPA connection profile for: ${ssid}`);
+
+    // Add connection with full WPA-PSK parameters
+    await execAsync(
+      `sudo nmcli connection add type wifi con-name "${connectionName}" ` +
+        `ifname wlan0 ssid "${ssid}" ` +
+        `wifi-sec.key-mgmt wpa-psk ` +
+        `wifi-sec.psk "${password}"`
+    );
+
+    // Activate the connection
+    console.log(`[WiFi] Activating connection: ${connectionName}`);
+    await execAsync(`sudo nmcli connection up "${connectionName}"`);
 
     console.log(`[WiFi] Successfully connected to: ${ssid}`);
     return { success: true, message: "Connected successfully" };
@@ -87,9 +105,7 @@ export const connectWifi = async (
 
     return {
       success: false,
-      message: errorMsg.includes("Insufficient privileges")
-        ? "Permission denied. Server needs sudo privileges for WiFi operations."
-        : errorMsg,
+      message: errorMsg,
     };
   }
 };
