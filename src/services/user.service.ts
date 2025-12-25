@@ -1,4 +1,4 @@
-import usersJson from "../../config/users.json" assert { type: "json" };
+import usersJson from "../../config/users.json" with { type: "json" };
 
 export type User = {
   id: string;

@@ -1,5 +1,5 @@
 import { SignJWT, jwtVerify, type JWTPayload } from "jose";
-import envConfig from "../../config/env.json" assert { type: "json" };
+import envConfig from "../../config/env.json" with { type: "json" };
 import type { User } from "./user.service.js";
 
 // userid claim key

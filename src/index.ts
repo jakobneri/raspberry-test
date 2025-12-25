@@ -15,6 +15,7 @@ import * as filesService from "./services/files.service.js";
 import * as adminService from "./services/admin.service.js";
 import * as wifiService from "./services/wifi.service.js";
 import * as speedTestService from "./services/speedtest.service.js";
+import * as logService from "./services/log.service.js";
 
 const PORT = 3000;
 
@@ -187,6 +188,22 @@ const server = http.createServer(async (req, res) => {
       const metrics = await metricsService.getMetrics();
       res.writeHead(200, { "Content-Type": "application/json" });
       res.end(JSON.stringify(metrics));
+      return;
+    }
+
+    // Get logs
+    if (method === "GET" && url === "/api/logs") {
+      const logs = logService.getLogs();
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ logs }));
+      return;
+    }
+
+    // Clear logs
+    if (method === "POST" && url === "/api/logs/clear") {
+      logService.clearLogs();
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ success: true }));
       return;
     }
 
