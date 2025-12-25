@@ -16,6 +16,31 @@ echo -e "${BLUE}║  🥧 Raspberry Pi Server Manager 🥧   ║${NC}"
 echo -e "${BLUE}╔════════════════════════════════════════╗${NC}"
 echo ""
 
+# Function to check and install speedtest-cli
+check_speedtest() {
+    if ! command -v speedtest-cli &> /dev/null; then
+        echo -e "${YELLOW}📡 speedtest-cli not found, installing...${NC}"
+        if command -v pip3 &> /dev/null; then
+            pip3 install speedtest-cli
+        elif command -v pip &> /dev/null; then
+            pip install speedtest-cli
+        else
+            echo -e "${RED}✗ pip not found, cannot install speedtest-cli${NC}"
+            echo -e "${YELLOW}  Install manually: sudo apt install python3-pip && pip3 install speedtest-cli${NC}"
+            return 1
+        fi
+        
+        if [ $? -eq 0 ]; then
+            echo -e "${GREEN}✓ speedtest-cli installed successfully!${NC}"
+        else
+            echo -e "${RED}✗ Failed to install speedtest-cli${NC}"
+            return 1
+        fi
+        echo ""
+    fi
+    return 0
+}
+
 # Function to pull from git
 pull_updates() {
     echo -e "${YELLOW}📥 Pulling latest changes from repository...${NC}"
@@ -58,6 +83,10 @@ pull_updates() {
             return 1
         fi
         echo ""
+        
+        # Check and install speedtest-cli if needed
+        check_speedtest
+        
         return 0
     else
         echo -e "${RED}✗ Failed to pull changes${NC}"
