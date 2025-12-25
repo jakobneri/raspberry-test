@@ -709,6 +709,171 @@ var server = http.createServer(async (req, res) => {
       return;
     }
   }
+  if (method === "GET" && url === "/api/network/details") {
+    const cookieToken = (req.headers.cookie || "").match(/jwt=([^;]+)/)?.[1];
+    if (!cookieToken) {
+      res.writeHead(401).end("Unauthorized");
+      return;
+    }
+    try {
+      await verifyToken(cookieToken, userArray);
+      updateSessionActivity(cookieToken);
+
+      const [
+        networkInterfaces,
+        networkStats,
+        wifiNetworks,
+        networkConnections,
+      ] = await Promise.all([
+        si.networkInterfaces(),
+        si.networkStats(),
+        si.wifiNetworks(),
+        si.networkConnections(),
+      ]);
+
+      const activeInterface = networkInterfaces.find((iface) => iface.default);
+      const wifiInfo = wifiNetworks[0];
+
+      const detailedInfo = {
+        connectionType: wifiInfo ? "WiFi" : "Ethernet",
+        connected: activeInterface ? true : false,
+        interface: activeInterface?.iface || "N/A",
+        ipAddress: activeInterface?.ip4 || "N/A",
+        ipv6Address: activeInterface?.ip6 || "N/A",
+        macAddress: activeInterface?.mac || "N/A",
+        gateway: activeInterface?.gateway || "N/A",
+        speed: activeInterface?.speed || null,
+        duplex: activeInterface?.duplex || "N/A",
+        mtu: activeInterface?.mtu || "N/A",
+        dhcp: activeInterface?.dhcp || false,
+        dnsSuffix: activeInterface?.dnsSuffix || "N/A",
+        stats:
+          networkStats.length > 0
+            ? {
+                rxBytes: networkStats[0].rx_bytes || 0,
+                txBytes: networkStats[0].tx_bytes || 0,
+                rxSec: Math.round((networkStats[0].rx_sec / 1024) * 100) / 100,
+                txSec: Math.round((networkStats[0].tx_sec / 1024) * 100) / 100,
+                rxErrors: networkStats[0].rx_errors || 0,
+                txErrors: networkStats[0].tx_errors || 0,
+                rxDropped: networkStats[0].rx_dropped || 0,
+                txDropped: networkStats[0].tx_dropped || 0,
+              }
+            : null,
+        wifi: wifiInfo
+          ? {
+              ssid: wifiInfo.ssid || "N/A",
+              bssid: wifiInfo.bssid || "N/A",
+              channel: wifiInfo.channel || "N/A",
+              frequency: wifiInfo.frequency || "N/A",
+              signalLevel: wifiInfo.signalLevel || 0,
+              txRate: wifiInfo.txRate || "N/A",
+              security: wifiInfo.security || [],
+              type: wifiInfo.type || "N/A",
+            }
+          : null,
+        connections: {
+          established: networkConnections.filter(
+            (c) => c.state === "ESTABLISHED"
+          ).length,
+          listening: networkConnections.filter((c) => c.state === "LISTEN")
+            .length,
+          total: networkConnections.length,
+        },
+      };
+
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(JSON.stringify(detailedInfo));
+      return;
+    } catch (error) {
+      console.error("[Network Details Error]", error);
+      res.writeHead(500).end("Error getting network details");
+      return;
+    }
+  }
+  if (method === "POST" && url === "/api/network/speedtest") {
+    const cookieToken = (req.headers.cookie || "").match(/jwt=([^;]+)/)?.[1];
+    if (!cookieToken) {
+      res.writeHead(401).end("Unauthorized");
+      return;
+    }
+    try {
+      await verifyToken(cookieToken, userArray);
+      updateSessionActivity(cookieToken);
+
+      // Try to run speedtest-cli
+      try {
+        const { stdout } = await execAsync("speedtest-cli --simple", {
+          timeout: 60000,
+        });
+        const lines = stdout.trim().split("\n");
+        const ping = parseFloat(lines[0].split(": ")[1]) || 0;
+        const download = parseFloat(lines[1].split(": ")[1]) || 0;
+        const upload = parseFloat(lines[2].split(": ")[1]) || 0;
+
+        res.writeHead(200, { "Content-Type": "application/json" });
+        res.end(
+          JSON.stringify({
+            success: true,
+            ping: Math.round(ping * 100) / 100,
+            download: Math.round(download * 100) / 100,
+            upload: Math.round(upload * 100) / 100,
+            unit: "Mbit/s",
+            timestamp: new Date().toISOString(),
+          })
+        );
+        return;
+      } catch (speedtestError) {
+        // Fallback: measure latency to common servers
+        try {
+          const pingCmd =
+            process.platform === "win32"
+              ? "ping -n 4 8.8.8.8"
+              : "ping -c 4 8.8.8.8";
+          const { stdout: pingOutput } = await execAsync(pingCmd);
+
+          // Extract average ping time
+          let avgPing = 0;
+          if (process.platform === "win32") {
+            const match = pingOutput.match(/Average = (\d+)ms/);
+            avgPing = match ? parseFloat(match[1]) : 0;
+          } else {
+            const match = pingOutput.match(/avg\/[^=]+=\s*([\d.]+)/);
+            avgPing = match ? parseFloat(match[1]) : 0;
+          }
+
+          res.writeHead(200, { "Content-Type": "application/json" });
+          res.end(
+            JSON.stringify({
+              success: true,
+              ping: Math.round(avgPing * 100) / 100,
+              download: null,
+              upload: null,
+              unit: "ms / Mbit/s",
+              message:
+                "Install speedtest-cli for full speed test. Only ping available.",
+              timestamp: new Date().toISOString(),
+            })
+          );
+          return;
+        } catch (pingError) {
+          res.writeHead(200, { "Content-Type": "application/json" });
+          res.end(
+            JSON.stringify({
+              success: false,
+              message:
+                "Speedtest not available. Install speedtest-cli: pip install speedtest-cli",
+            })
+          );
+          return;
+        }
+      }
+    } catch (error) {
+      console.error("[Speedtest Error]", error);
+      res.writeHead(500).end("Error running speedtest");
+      return;
+    }
+  }
   if (method === "GET" && url === "/api/wifi/status") {
     const cookieToken = (req.headers.cookie || "").match(/jwt=([^;]+)/)?.[1];
     if (!cookieToken) {

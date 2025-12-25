@@ -504,17 +504,13 @@
           </div>
 
           <!-- Network Card -->
-          <div
-            class="metric-card"
-            style="cursor: pointer"
-            onclick="openWifiModal()"
-          >
-            <div class="metric-header">
+          <div class="metric-card" style="cursor: pointer">
+            <div class="metric-header" onclick="openNetworkModal()">
               <div class="metric-icon">🌐</div>
-              <div class="metric-title">
+              <div class="metric-title" style="cursor: pointer">
                 Netzwerk
-                <span style="font-size: 12px; color: #999"
-                  >📡 Klicken für WiFi</span
+                <span style="font-size: 12px; color: #667eea"
+                  >📡 Klick für Details</span
                 >
               </div>
             </div>
@@ -591,28 +587,93 @@
       </div>
     </div>
 
-    <!-- WiFi Modal -->
+    <!-- Network Modal -->
     <div id="wifi-modal" class="modal">
-      <div class="modal-content">
+      <div class="modal-content" style="max-width: 900px">
         <div class="modal-header">
-          <h2>📡 WiFi Management</h2>
+          <h2>🌐 Network Management</h2>
           <span class="close" onclick="closeWifiModal()">&times;</span>
         </div>
         <div style="padding: 20px">
-          <button class="btn-admin" onclick="scanWifi()" id="scan-btn">
-            🔄 Scan Networks
-          </button>
-          <div
-            id="wifi-status"
-            style="
-              margin: 15px 0;
-              padding: 10px;
-              background: #f8f9ff;
-              border-radius: 6px;
-              font-size: 14px;
-            "
-          ></div>
-          <div id="wifi-list"></div>
+          <!-- Network Details Section -->
+          <div style="margin-bottom: 25px">
+            <h3 style="color: #667eea; margin-bottom: 15px">
+              📊 Network Details
+            </h3>
+            <div
+              id="network-details"
+              style="
+                background: #f8f9ff;
+                padding: 15px;
+                border-radius: 8px;
+                font-size: 14px;
+                line-height: 1.8;
+              "
+            >
+              <p style="text-align: center; color: #999">
+                Loading network information...
+              </p>
+            </div>
+          </div>
+
+          <!-- Speedtest Section -->
+          <div style="margin-bottom: 25px">
+            <h3 style="color: #667eea; margin-bottom: 15px">🚀 Speed Test</h3>
+            <div
+              style="
+                display: flex;
+                gap: 10px;
+                align-items: center;
+                margin-bottom: 10px;
+              "
+            >
+              <button
+                class="btn-admin"
+                onclick="runSpeedtest()"
+                id="speedtest-btn"
+                style="flex: 0 0 auto"
+              >
+                ▶️ Run Speed Test
+              </button>
+              <div id="speedtest-warning" style="font-size: 12px; color: #888">
+                Speedtest can take up to 60 seconds
+              </div>
+            </div>
+            <div
+              id="speedtest-results"
+              style="
+                background: #f8f9ff;
+                padding: 15px;
+                border-radius: 8px;
+                font-size: 14px;
+              "
+            >
+              <p style="text-align: center; color: #999">
+                Click "Run Speed Test" to measure your connection speed
+              </p>
+            </div>
+          </div>
+
+          <!-- WiFi Management Section -->
+          <div>
+            <h3 style="color: #667eea; margin-bottom: 15px">
+              📡 WiFi Management
+            </h3>
+            <button class="btn-admin" onclick="scanWifi()" id="scan-btn">
+              🔄 Scan Networks
+            </button>
+            <div
+              id="wifi-status"
+              style="
+                margin: 15px 0;
+                padding: 10px;
+                background: #f8f9ff;
+                border-radius: 6px;
+                font-size: 14px;
+              "
+            ></div>
+            <div id="wifi-list"></div>
+          </div>
         </div>
       </div>
     </div>
@@ -910,15 +971,208 @@
         }
       };
 
-      async function openWifiModal() {
+      async function openNetworkModal() {
         const modal = document.getElementById("wifi-modal");
         modal.style.display = "block";
+        await fetchNetworkDetails();
         await fetchWifiStatus();
-        await scanWifi();
       }
 
       function closeWifiModal() {
         document.getElementById("wifi-modal").style.display = "none";
+      }
+
+      async function fetchNetworkDetails() {
+        try {
+          const response = await fetch("/api/network/details");
+          if (response.ok) {
+            const data = await response.json();
+            displayNetworkDetails(data);
+          }
+        } catch (error) {
+          console.error("Error fetching network details:", error);
+          document.getElementById("network-details").innerHTML =
+            '<p style="color: #f5576c;">Error loading network details</p>';
+        }
+      }
+
+      function displayNetworkDetails(data) {
+        const detailsDiv = document.getElementById("network-details");
+
+        let html = `
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 15px;">
+            <div>
+              <strong>Connection Type:</strong><br>
+              <span style="font-size: 18px;">${
+                data.connectionType === "WiFi" ? "📶" : "🔌"
+              } ${data.connectionType}</span>
+            </div>
+            <div>
+              <strong>Status:</strong><br>
+              ${
+                data.connected
+                  ? '<span style="color: #28a745;">✅ Connected</span>'
+                  : '<span style="color: #f5576c;">❌ Disconnected</span>'
+              }
+            </div>
+          </div>
+          <hr style="margin: 15px 0; border: none; border-top: 1px solid #e0e0e0;">
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 10px;">
+            <div><strong>Interface:</strong> ${data.interface}</div>
+            <div><strong>IP Address:</strong> ${data.ipAddress}</div>
+            <div><strong>MAC Address:</strong> ${data.macAddress}</div>
+            <div><strong>Gateway:</strong> ${data.gateway}</div>
+            ${
+              data.speed
+                ? `<div><strong>Link Speed:</strong> ${data.speed} Mbps</div>`
+                : ""
+            }
+            <div><strong>MTU:</strong> ${data.mtu}</div>
+            <div><strong>DHCP:</strong> ${data.dhcp ? "Yes" : "No"}</div>
+            ${
+              data.duplex !== "N/A"
+                ? `<div><strong>Duplex:</strong> ${data.duplex}</div>`
+                : ""
+            }
+          </div>
+        `;
+
+        if (data.wifi) {
+          html += `
+            <hr style="margin: 15px 0; border: none; border-top: 1px solid #e0e0e0;">
+            <div><strong style="color: #667eea;">WiFi Details:</strong></div>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 10px; margin-top: 10px;">
+              <div><strong>SSID:</strong> ${data.wifi.ssid}</div>
+              <div><strong>Signal:</strong> ${data.wifi.signalLevel}%</div>
+              <div><strong>Channel:</strong> ${data.wifi.channel}</div>
+              <div><strong>Frequency:</strong> ${data.wifi.frequency} GHz</div>
+              ${
+                data.wifi.txRate !== "N/A"
+                  ? `<div><strong>TX Rate:</strong> ${data.wifi.txRate} Mbps</div>`
+                  : ""
+              }
+              <div><strong>BSSID:</strong> ${data.wifi.bssid}</div>
+              <div><strong>Security:</strong> ${
+                Array.isArray(data.wifi.security)
+                  ? data.wifi.security.join(", ")
+                  : data.wifi.security
+              }</div>
+            </div>
+          `;
+        }
+
+        if (data.stats) {
+          html += `
+            <hr style="margin: 15px 0; border: none; border-top: 1px solid #e0e0e0;">
+            <div><strong style="color: #667eea;">Traffic Statistics:</strong></div>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 10px; margin-top: 10px;">
+              <div><strong>Download:</strong> ${data.stats.rxSec} KB/s</div>
+              <div><strong>Upload:</strong> ${data.stats.txSec} KB/s</div>
+              <div><strong>Total RX:</strong> ${(
+                data.stats.rxBytes /
+                1024 /
+                1024 /
+                1024
+              ).toFixed(2)} GB</div>
+              <div><strong>Total TX:</strong> ${(
+                data.stats.txBytes /
+                1024 /
+                1024 /
+                1024
+              ).toFixed(2)} GB</div>
+              <div><strong>RX Errors:</strong> ${data.stats.rxErrors}</div>
+              <div><strong>TX Errors:</strong> ${data.stats.txErrors}</div>
+              <div><strong>RX Dropped:</strong> ${data.stats.rxDropped}</div>
+              <div><strong>TX Dropped:</strong> ${data.stats.txDropped}</div>
+            </div>
+          `;
+        }
+
+        if (data.connections) {
+          html += `
+            <hr style="margin: 15px 0; border: none; border-top: 1px solid #e0e0e0;">
+            <div><strong style="color: #667eea;">Network Connections:</strong></div>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 10px; margin-top: 10px;">
+              <div><strong>Established:</strong> ${data.connections.established}</div>
+              <div><strong>Listening:</strong> ${data.connections.listening}</div>
+              <div><strong>Total:</strong> ${data.connections.total}</div>
+            </div>
+          `;
+        }
+
+        detailsDiv.innerHTML = html;
+      }
+
+      async function runSpeedtest() {
+        const btn = document.getElementById("speedtest-btn");
+        const resultsDiv = document.getElementById("speedtest-results");
+
+        btn.disabled = true;
+        btn.textContent = "⏳ Running Speed Test...";
+        resultsDiv.innerHTML =
+          '<p style="text-align: center; color: #667eea;">⏳ Testing connection speed... This may take up to 60 seconds</p>';
+
+        try {
+          const response = await fetch("/api/network/speedtest", {
+            method: "POST",
+          });
+
+          if (response.ok) {
+            const data = await response.json();
+
+            if (data.success) {
+              let html = `
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; text-align: center;">
+                  <div style="background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                    <div style="font-size: 12px; color: #888; margin-bottom: 5px;">PING</div>
+                    <div style="font-size: 28px; font-weight: bold; color: #667eea;">${data.ping}</div>
+                    <div style="font-size: 12px; color: #888;">ms</div>
+                  </div>
+              `;
+
+              if (data.download !== null) {
+                html += `
+                  <div style="background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                    <div style="font-size: 12px; color: #888; margin-bottom: 5px;">DOWNLOAD</div>
+                    <div style="font-size: 28px; font-weight: bold; color: #28a745;">${data.download}</div>
+                    <div style="font-size: 12px; color: #888;">${data.unit}</div>
+                  </div>
+                `;
+              }
+
+              if (data.upload !== null) {
+                html += `
+                  <div style="background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                    <div style="font-size: 12px; color: #888; margin-bottom: 5px;">UPLOAD</div>
+                    <div style="font-size: 28px; font-weight: bold; color: #f5576c;">${data.upload}</div>
+                    <div style="font-size: 12px; color: #888;">${data.unit}</div>
+                  </div>
+                `;
+              }
+
+              html += `</div>`;
+
+              if (data.message) {
+                html += `<p style="margin-top: 15px; font-size: 12px; color: #888; text-align: center;">${data.message}</p>`;
+              }
+
+              html += `<p style="margin-top: 10px; font-size: 11px; color: #aaa; text-align: center;">Tested at: ${new Date(
+                data.timestamp
+              ).toLocaleString()}</p>`;
+
+              resultsDiv.innerHTML = html;
+            } else {
+              resultsDiv.innerHTML = `<p style="color: #f5576c; text-align: center;">${data.message}</p>`;
+            }
+          }
+        } catch (error) {
+          console.error("Error running speedtest:", error);
+          resultsDiv.innerHTML =
+            '<p style="color: #f5576c; text-align: center;">Error running speed test</p>';
+        } finally {
+          btn.disabled = false;
+          btn.textContent = "▶️ Run Speed Test";
+        }
       }
 
       async function fetchWifiStatus() {
