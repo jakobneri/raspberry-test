@@ -168,7 +168,10 @@ const server = http.createServer(async (req, res) => {
 
   try {
     const payload = await verifyToken(cookieToken, users);
-    sessionService.updateSessionActivity(cookieToken, payload[propUserId] as string);
+    sessionService.updateSessionActivity(
+      cookieToken,
+      payload[propUserId] as string
+    );
 
     // Cockpit page
     if (method === "GET" && url === "/cockpit") {
