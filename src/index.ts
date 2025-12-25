@@ -100,7 +100,7 @@ const server = http.createServer(async (req, res) => {
       try {
         const payload = await verifyToken(cookieToken, users);
         sessionService.updateSessionActivity(cookieToken);
-        userId = payload[propUserId];
+        userId = payload[propUserId] as string;
       } catch {}
     }
 
@@ -168,7 +168,7 @@ const server = http.createServer(async (req, res) => {
 
   try {
     const payload = await verifyToken(cookieToken, users);
-    sessionService.updateSessionActivity(cookieToken, payload[propUserId]);
+    sessionService.updateSessionActivity(cookieToken, payload[propUserId] as string);
 
     // Cockpit page
     if (method === "GET" && url === "/cockpit") {

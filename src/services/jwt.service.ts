@@ -1,9 +1,9 @@
 import { SignJWT, jwtVerify, type JWTPayload } from "jose";
-import { JWT_SECRET } from "../../env.json";
+import { JWT_SECRET } from "../../config/env.json";
 import type { User } from "./user.service.js";
 
 // userid claim key
-const propUserId = "urn:app:userid";
+export const propUserId = "urn:app:userid";
 const secret = new TextEncoder().encode(JWT_SECRET);
 
 export const createToken = (userId: string) => {
@@ -15,7 +15,10 @@ export const createToken = (userId: string) => {
     .sign(secret);
 };
 
-export const verifyToken = async (jwt: string, users: User[]) => {
+export const verifyToken = async (
+  jwt: string,
+  users: User[]
+): Promise<JWTPayload> => {
   const { payload } = await jwtVerify<JWTPayload>(jwt, secret);
 
   const userId = payload[propUserId];
