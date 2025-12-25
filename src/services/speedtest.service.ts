@@ -14,12 +14,18 @@ export interface SpeedTestResult {
 }
 
 export const runSpeedTest = async (): Promise<SpeedTestResult> => {
+  console.log("[Speedtest] Starting speed test...");
   try {
     // Check if speedtest-cli is available
     try {
+      console.log("[Speedtest] Checking for speedtest-cli...");
       await execAsync("which speedtest-cli");
+      console.log("[Speedtest] speedtest-cli found, running full test...");
     } catch {
       // speedtest-cli not found, try ping only
+      console.log(
+        "[Speedtest] speedtest-cli not found, falling back to ping test..."
+      );
       try {
         const { stdout } = await execAsync("ping -c 4 8.8.8.8");
         const match = stdout.match(/avg = ([\d.]+)/);
@@ -71,6 +77,9 @@ export const runSpeedTest = async (): Promise<SpeedTestResult> => {
       }
     }
 
+    console.log(
+      `[Speedtest] Test complete - Ping: ${ping}ms, Download: ${download} Mbit/s, Upload: ${upload} Mbit/s`
+    );
     return {
       success: true,
       ping,

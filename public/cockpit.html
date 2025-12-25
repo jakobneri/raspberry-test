@@ -1208,13 +1208,34 @@
 
         btn.disabled = true;
         btn.textContent = "⏳ Running Speed Test...";
-        resultsDiv.innerHTML =
-          '<p style="text-align: center; color: #667eea;">⏳ Testing connection speed... This may take up to 60 seconds</p>';
+
+        // Animated progress bar
+        resultsDiv.innerHTML = `
+          <div style="text-align: center; padding: 20px;">
+            <p style="color: #667eea; margin-bottom: 15px; font-weight: 600;">⏳ Testing connection speed...</p>
+            <div style="background: #e0e0e0; height: 8px; border-radius: 4px; overflow: hidden; margin-bottom: 10px;">
+              <div id="speedtest-progress" style="height: 100%; background: linear-gradient(90deg, #667eea, #764ba2); width: 0%; transition: width 0.3s;"></div>
+            </div>
+            <p style="font-size: 12px; color: #888;">This may take up to 60 seconds</p>
+          </div>
+        `;
+
+        // Animate progress bar
+        let progress = 0;
+        const progressBar = document.getElementById("speedtest-progress");
+        const progressInterval = setInterval(() => {
+          progress += 1.5;
+          if (progress > 95) progress = 95;
+          progressBar.style.width = progress + "%";
+        }, 500);
 
         try {
-          const response = await fetch("/api/network/speedtest", {
+          const response = await fetch("/api/speedtest", {
             method: "POST",
           });
+
+          clearInterval(progressInterval);
+          progressBar.style.width = "100%";
 
           if (response.ok) {
             const data = await response.json();
@@ -1266,6 +1287,7 @@
           }
         } catch (error) {
           console.error("Error running speedtest:", error);
+          clearInterval(progressInterval);
           resultsDiv.innerHTML =
             '<p style="color: #f5576c; text-align: center;">Error running speed test</p>';
         } finally {
