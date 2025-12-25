@@ -146,10 +146,15 @@ show_menu() {
 }
 
 # Main loop
-while true; do
+# Check if option was passed as command line argument
+if [ $# -gt 0 ]; then
+    choice=$1
+else
     show_menu
     choice=$?
-    
+fi
+
+while true; do
     clear
     case $choice in
         0)
@@ -185,4 +190,13 @@ while true; do
             exit 0
             ;;
     esac
+    
+    # If we had a command line argument, exit after first iteration
+    if [ $# -gt 0 ]; then
+        break
+    fi
+    
+    # Otherwise show menu again
+    show_menu
+    choice=$?
 done

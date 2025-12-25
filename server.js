@@ -478,8 +478,8 @@ var server = http.createServer(async (req, res) => {
 
       // Execute start.sh with option 0 (pull updates and start server)
       setTimeout(() => {
-        console.log("[ADMIN] Executing start.sh for update and restart...");
-        exec("bash start.sh", (error) => {
+        console.log("[ADMIN] Executing start.sh with option 0...");
+        exec("bash start.sh 0", (error) => {
           if (error) {
             console.error(`[ADMIN] start.sh execution error: ${error.message}`);
           }
