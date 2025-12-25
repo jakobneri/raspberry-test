@@ -624,5 +624,15 @@ const server = http.createServer(async (req, res) => {
 server.listen(PORT);
 console.log(`Server: http://pi.local:${PORT}`);
 
-// Start speedtest scheduler with default 1-minute interval
-speedTestService.startSpeedTestScheduler(60);
+// Start speedtest scheduler if enabled
+try {
+  const envConfig = JSON.parse(readFileSync("config/env.json", "utf8"));
+  if (envConfig.ENABLE_SPEEDTEST !== false) {
+    speedTestService.startSpeedTestScheduler(60);
+  } else {
+    console.log("[Speedtest] Scheduler disabled in config");
+  }
+} catch (e) {
+  // Default to enabled if config missing
+  speedTestService.startSpeedTestScheduler(60);
+}

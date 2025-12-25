@@ -208,17 +208,9 @@
             Letzte Aktualisierung: <span id="last-update">--</span>
           </div>
 
-          <!-- Admin Section -->
+          <!-- System Info Section -->
           <div class="admin-section">
-            <h2>⚙️ Administration</h2>
-            <div class="admin-buttons">
-              <button class="btn-admin btn-restart" onclick="restartServer()">
-                🔄 Server Neustarten
-              </button>
-              <button class="btn-admin btn-shutdown" onclick="shutdownServer()">
-                ⛔ Server Beenden
-              </button>
-            </div>
+            <h2>ℹ️ System Info</h2>
             <div class="system-info" id="system-info">
               <div class="info-row">
                 <span class="info-label">Lade System-Info...</span>
@@ -1273,40 +1265,24 @@
           const container = document.getElementById("system-info");
           container.innerHTML = `
           <div class="info-row">
-            <span class="info-label">🖥️ System</span>
-            <span class="info-value">${info.system.manufacturer} ${
-            info.system.model
-          }</span>
-          </div>
-          <div class="info-row">
-            <span class="info-label">💻 OS</span>
-            <span class="info-value">${info.os.distro} ${info.os.release}</span>
+            <span class="info-label">� OS</span>
+            <span class="info-value">${info.os.distro}</span>
           </div>
           <div class="info-row">
             <span class="info-label">🏷️ Hostname</span>
             <span class="info-value">${info.os.hostname}</span>
           </div>
           <div class="info-row">
-            <span class="info-label">⏱️ System Uptime</span>
+            <span class="info-label">⏱️ Uptime</span>
             <span class="info-value">${formatUptime(info.os.uptime)}</span>
           </div>
-          <div class="info-row">
-            <span class="info-label">🚀 Server Uptime</span>
-            <span class="info-value">${formatUptime(info.server.uptime)}</span>
-          </div>
-          <div class="info-row">
-            <span class="info-label">📦 Node Version</span>
-            <span class="info-value">${info.server.nodeVersion}</span>
-          </div>
-          <div class="info-row">
-            <span class="info-label">🆔 Process ID</span>
-            <span class="info-value">${info.server.pid}</span>
-          </div>
-          <div class="info-row">
-            <span class="info-label">⚡ Processes</span>
-            <span class="info-value">Running: ${
-              info.process.running
-            } | Sleeping: ${info.process.sleeping}</span>
+          <div class="admin-buttons" style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #eee; display: flex; gap: 10px; justify-content: center;">
+              <button class="btn-admin btn-restart" onclick="restartServer()" style="flex: 1;">
+                🔄 Neustart
+              </button>
+              <button class="btn-admin btn-shutdown" onclick="shutdownServer()" style="flex: 1;">
+                ⛔ Beenden
+              </button>
           </div>
         `;
         }

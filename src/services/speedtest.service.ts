@@ -16,11 +16,11 @@ export interface SpeedTestResult {
 }
 
 export const runSpeedTest = async (): Promise<SpeedTestResult> => {
-  console.log("[Speedtest] Starting speed test...");
+  // console.log("[Speedtest] Starting speed test...");
 
   // Try speedtest-cli with JSON output
   try {
-    console.log("[Speedtest] Running speedtest with JSON output...");
+    // console.log("[Speedtest] Running speedtest with JSON output...");
     const { stdout } = await execAsync("speedtest --json", {
       timeout: 90000,
     });
@@ -34,9 +34,9 @@ export const runSpeedTest = async (): Promise<SpeedTestResult> => {
       ? Math.round((data.upload / 1000000) * 100) / 100
       : null;
 
-    console.log(
-      `[Speedtest] Test complete - Ping: ${ping}ms, Download: ${download} Mbit/s, Upload: ${upload} Mbit/s`
-    );
+    // console.log(
+    //   `[Speedtest] Test complete - Ping: ${ping}ms, Download: ${download} Mbit/s, Upload: ${upload} Mbit/s`
+    // );
     return {
       success: true,
       ping,

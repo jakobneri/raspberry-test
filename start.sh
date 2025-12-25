@@ -80,19 +80,9 @@ pull_updates() {
         echo -e "${GREEN}✓ Successfully pulled latest changes!${NC}"
         
         # Display changes in requested format
-        STATS=$(git diff --shortstat ORIG_HEAD HEAD)
-        if [ -n "$STATS" ]; then
-            INSERTIONS=$(echo "$STATS" | grep -oE '[0-9]+ insertion' | awk '{print $1}')
-            DELETIONS=$(echo "$STATS" | grep -oE '[0-9]+ deletion' | awk '{print $1}')
-            
-            [ -z "$INSERTIONS" ] && INSERTIONS=0
-            [ -z "$DELETIONS" ] && DELETIONS=0
-            
-            echo ""
-            echo -e "   ${GREEN}+ ${INSERTIONS}${NC}"
-            echo -e "   ${RED}- ${DELETIONS}${NC}"
-            echo ""
-        fi
+        echo ""
+        git diff --stat ORIG_HEAD HEAD
+        echo ""
 
         echo -e "${GREEN}✓ Restored execute permissions for start.sh${NC}"
         echo ""
