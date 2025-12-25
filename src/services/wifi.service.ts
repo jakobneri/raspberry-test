@@ -40,7 +40,7 @@ export const scanWifi = async (): Promise<WifiNetwork[]> => {
         return {
           ssid: ssid || "Hidden Network",
           signal: parseInt(signal) || 0,
-          security: security && security !== "--" && security !== "",
+          security: !!(security && security !== "--" && security !== ""),
           connected: active === "yes",
         };
       })
