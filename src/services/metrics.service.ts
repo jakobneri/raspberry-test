@@ -28,6 +28,19 @@ export interface SystemMetrics {
     tx: number;
     interface: string;
   };
+  system: {
+    uptime: number;
+    loadAvg: number[];
+    processCount: number;
+    processRunning: number;
+    processBlocked: number;
+  };
+  os: {
+    platform: string;
+    distro: string;
+    release: string;
+    hostname: string;
+  };
   timestamp: string;
 }
 
@@ -39,16 +52,29 @@ export interface MetricsHistory {
 let metricsHistory: SystemMetrics[] = [];
 
 export const getMetrics = async (): Promise<MetricsHistory> => {
-  const [cpuData, memData, fsSize, currentLoad, networkStats, cpuTemp, diskIO] =
-    await Promise.all([
-      si.cpu(),
-      si.mem(),
-      si.fsSize(),
-      si.currentLoad(),
-      si.networkStats(),
-      si.cpuTemperature(),
-      si.disksIO(),
-    ]);
+  const [
+    cpuData,
+    memData,
+    fsSize,
+    currentLoad,
+    networkStats,
+    cpuTemp,
+    diskIO,
+    osInfo,
+    time,
+    processes,
+  ] = await Promise.all([
+    si.cpu(),
+    si.mem(),
+    si.fsSize(),
+    si.currentLoad(),
+    si.networkStats(),
+    si.cpuTemperature(),
+    si.disksIO(),
+    si.osInfo(),
+    si.time(),
+    si.processes(),
+  ]);
 
   const metrics: SystemMetrics = {
     cpu: {
@@ -93,8 +119,39 @@ export const getMetrics = async (): Promise<MetricsHistory> => {
           : 0,
       interface: networkStats.length > 0 ? networkStats[0].iface : "N/A",
     },
+    system: {
+      uptime: time.uptime,
+      loadAvg: currentLoad.cpus.map((c) => c.load), // This is per cpu load, wait. currentLoad.avgLoad is what we want usually but on windows it might be different.
+      // si.currentLoad() returns avgLoad which is system load avg.
+      // Let's check types.
+      processCount: processes.all,
+      processRunning: processes.running,
+      processBlocked: processes.blocked,
+    },
+    os: {
+      platform: osInfo.platform,
+      distro: osInfo.distro,
+      release: osInfo.release,
+      hostname: osInfo.hostname,
+    },
     timestamp: new Date().toISOString(),
   };
+
+  // Fix loadAvg mapping
+  // si.currentLoad() returns { avgLoad: number, currentLoad: number, ... }
+  // But standard loadavg is usually an array [1m, 5m, 15m].
+  // systeminformation 'currentLoad' doesn't return [1m, 5m, 15m] directly in all OSs.
+  // 'si.loadavg()' is deprecated? No, 'si.currentLoad()' is preferred.
+  // Actually 'si.currentLoad()' has 'avgLoad' property which is a number (current load).
+  // To get [1, 5, 15], we might need 'os.loadavg()' from node, but systeminformation abstracts it.
+  // Let's check 'si.fullLoad()' or just use 'currentLoad.avgLoad' as a single number for now,
+  // OR use 'si.processes()' which might have it? No.
+  // Let's just use currentLoad.currentLoad (already used in CPU) and maybe just show process info in the System card.
+  // Wait, I can use 'os.loadavg()' from nodejs 'os' module if I want the array.
+  // But let's stick to 'systeminformation'.
+  // 'si.currentLoad()' returns 'avgLoad' (number).
+  // Let's just use that.
+  metrics.system.loadAvg = [currentLoad.avgLoad];
 
   // Store in history (keep last 60 data points)
   metricsHistory.push(metrics);

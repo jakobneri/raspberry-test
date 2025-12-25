@@ -66,8 +66,6 @@ pull_updates() {
     GIT_OUTPUT=$(git pull 2>&1)
     GIT_EXIT_CODE=$?
     
-    echo "$GIT_OUTPUT"
-    
     if [ $GIT_EXIT_CODE -eq 0 ]; then
         # Ensure start.sh has execute permissions after pull
         chmod +x start.sh
@@ -80,7 +78,22 @@ pull_updates() {
         fi
         
         echo -e "${GREEN}✓ Successfully pulled latest changes!${NC}"
-        echo ""
+        
+        # Display changes in requested format
+        STATS=$(git diff --shortstat ORIG_HEAD HEAD)
+        if [ -n "$STATS" ]; then
+            INSERTIONS=$(echo "$STATS" | grep -oE '[0-9]+ insertion' | awk '{print $1}')
+            DELETIONS=$(echo "$STATS" | grep -oE '[0-9]+ deletion' | awk '{print $1}')
+            
+            [ -z "$INSERTIONS" ] && INSERTIONS=0
+            [ -z "$DELETIONS" ] && DELETIONS=0
+            
+            echo ""
+            echo -e "   ${GREEN}+ ${INSERTIONS}${NC}"
+            echo -e "   ${RED}- ${DELETIONS}${NC}"
+            echo ""
+        fi
+
         echo -e "${GREEN}✓ Restored execute permissions for start.sh${NC}"
         echo ""
         
@@ -112,6 +125,7 @@ pull_updates() {
         
         return 0
     else
+        echo "$GIT_OUTPUT"
         echo -e "${RED}✗ Failed to pull changes${NC}"
         echo -e "${RED}  Please check your git configuration or internet connection${NC}"
         echo ""

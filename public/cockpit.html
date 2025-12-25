@@ -4,586 +4,7 @@
     <meta charset="UTF-8" />
     <title>Raspberry Pi Cockpit</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <style>
-      * {
-        margin: 0;
-        padding: 0;
-        box-sizing: border-box;
-      }
-      body {
-        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
-          sans-serif;
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        min-height: 100vh;
-        display: flex;
-        overflow-x: hidden;
-      }
-
-      /* Left Sidebar */
-      .sidebar {
-        width: 250px;
-        background: white;
-        box-shadow: 2px 0 6px rgba(0, 0, 0, 0.1);
-        display: flex;
-        flex-direction: column;
-        position: fixed;
-        left: 0;
-        top: 0;
-        bottom: 0;
-        z-index: 1000;
-      }
-
-      .sidebar-header {
-        padding: 20px;
-        border-bottom: 2px solid #f0f0f0;
-      }
-
-      .sidebar-header h1 {
-        color: #333;
-        font-size: 20px;
-        margin-bottom: 5px;
-      }
-
-      .sidebar-header .subtitle {
-        color: #888;
-        font-size: 14px;
-      }
-
-      .sidebar-nav {
-        flex: 1;
-        padding: 20px 0;
-        overflow-y: auto;
-      }
-
-      .nav-section {
-        margin-bottom: 25px;
-      }
-
-      .nav-section-title {
-        color: #888;
-        font-size: 12px;
-        font-weight: 600;
-        text-transform: uppercase;
-        padding: 0 20px;
-        margin-bottom: 10px;
-      }
-
-      .nav-link {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        padding: 12px 20px;
-        color: #555;
-        text-decoration: none;
-        transition: all 0.3s;
-        border-left: 3px solid transparent;
-      }
-
-      .nav-link:hover {
-        background: #f5f5f5;
-        color: #667eea;
-        border-left-color: #667eea;
-      }
-
-      .nav-link.active {
-        background: #f0f4ff;
-        color: #667eea;
-        border-left-color: #667eea;
-        font-weight: 600;
-      }
-
-      .nav-link-icon {
-        font-size: 20px;
-        width: 24px;
-        text-align: center;
-      }
-
-      .sidebar-footer {
-        padding: 15px 20px;
-        border-top: 2px solid #f0f0f0;
-      }
-
-      .logout-btn {
-        width: 100%;
-        padding: 10px;
-        background: #f5576c;
-        color: white;
-        border: none;
-        border-radius: 6px;
-        font-size: 14px;
-        font-weight: 600;
-        cursor: pointer;
-        transition: background 0.3s;
-      }
-
-      .logout-btn:hover {
-        background: #e04555;
-      }
-
-      /* Main content area */
-      .main-content {
-        margin-left: 250px;
-        flex: 1;
-        padding: 20px;
-        width: calc(100% - 250px);
-      }
-
-      .container {
-        max-width: 1400px;
-        margin: 0 auto;
-      }
-
-      /* Remove old header styles */
-      .metrics-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-        gap: 20px;
-        margin-bottom: 20px;
-      }
-      .metric-card {
-        background: white;
-        padding: 20px;
-        border-radius: 12px;
-        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-      }
-      .metric-header {
-        display: flex;
-        align-items: center;
-        margin-bottom: 15px;
-      }
-      .metric-icon {
-        font-size: 28px;
-        margin-right: 12px;
-      }
-      .metric-title {
-        font-size: 16px;
-        color: #666;
-        font-weight: 600;
-      }
-      .metric-value {
-        font-size: 32px;
-        font-weight: bold;
-        color: #333;
-        margin-bottom: 8px;
-      }
-      .metric-detail {
-        font-size: 14px;
-        color: #888;
-        margin: 4px 0;
-      }
-      .progress-bar {
-        width: 100%;
-        height: 8px;
-        background: #e0e0e0;
-        border-radius: 4px;
-        overflow: hidden;
-        margin-top: 10px;
-      }
-      .progress-fill {
-        height: 100%;
-        background: linear-gradient(90deg, #667eea, #764ba2);
-        transition: width 0.3s ease;
-        border-radius: 4px;
-      }
-      .warning {
-        background: linear-gradient(90deg, #f093fb, #f5576c);
-      }
-      .timestamp {
-        text-align: center;
-        color: white;
-        margin-top: 20px;
-        font-size: 14px;
-      }
-      .loading {
-        text-align: center;
-        color: white;
-        padding: 40px;
-        font-size: 18px;
-      }
-      .error {
-        background: #f5576c;
-        color: white;
-        padding: 15px;
-        border-radius: 8px;
-        text-align: center;
-        margin-bottom: 20px;
-      }
-      .scoreboard-section {
-        background: white;
-        padding: 20px;
-        border-radius: 12px;
-        margin-top: 20px;
-        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-      }
-      .scoreboard-section h2 {
-        color: #333;
-        margin-bottom: 15px;
-        display: flex;
-        align-items: center;
-        gap: 10px;
-      }
-      .score-table {
-        width: 100%;
-        border-collapse: collapse;
-      }
-      .score-table th {
-        background: #f5f5f5;
-        padding: 10px;
-        text-align: left;
-        color: #666;
-        font-weight: 600;
-        border-bottom: 2px solid #667eea;
-      }
-      .score-table td {
-        padding: 10px;
-        border-bottom: 1px solid #eee;
-      }
-      .score-table tr:hover {
-        background: #f9f9f9;
-      }
-      .rank-medal {
-        font-size: 18px;
-      }
-      .score-value {
-        font-weight: bold;
-        color: #667eea;
-      }
-      .admin-section {
-        background: white;
-        padding: 20px;
-        border-radius: 12px;
-        margin-top: 20px;
-        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-      }
-      .admin-section h2 {
-        color: #333;
-        margin-bottom: 15px;
-        display: flex;
-        align-items: center;
-        gap: 10px;
-      }
-      .admin-buttons {
-        display: flex;
-        gap: 10px;
-        flex-wrap: wrap;
-        margin-bottom: 20px;
-      }
-      .btn-admin {
-        padding: 12px 24px;
-        border: none;
-        border-radius: 6px;
-        cursor: pointer;
-        font-size: 16px;
-        font-weight: 600;
-        transition: all 0.3s;
-      }
-      .btn-restart {
-        background: #f093fb;
-        color: white;
-      }
-      .btn-restart:hover {
-        background: #e67ff0;
-      }
-      .btn-shutdown {
-        background: #f5576c;
-        color: white;
-      }
-      .btn-shutdown:hover {
-        background: #e64555;
-      }
-      .system-info {
-        background: #f9f9f9;
-        padding: 15px;
-        border-radius: 8px;
-        margin-top: 10px;
-      }
-      .info-row {
-        display: flex;
-        justify-content: space-between;
-        padding: 8px 0;
-        border-bottom: 1px solid #eee;
-      }
-      .info-row:last-child {
-        border-bottom: none;
-      }
-      .info-label {
-        font-weight: 600;
-        color: #666;
-      }
-      .info-value {
-        color: #333;
-      }
-      .chart-container {
-        height: 150px;
-        margin-top: 10px;
-      }
-      .sessions-badge {
-        background: #667eea;
-        color: white;
-        padding: 4px 12px;
-        border-radius: 12px;
-        font-size: 14px;
-        font-weight: 600;
-        cursor: pointer;
-        transition: all 0.3s;
-      }
-      .sessions-badge:hover {
-        background: #5568d3;
-        transform: scale(1.05);
-      }
-      @keyframes pulse {
-        0%,
-        100% {
-          opacity: 1;
-        }
-        50% {
-          opacity: 0.5;
-        }
-      }
-      @keyframes shimmer {
-        0% {
-          background-position: -1000px 0;
-        }
-        100% {
-          background-position: 1000px 0;
-        }
-      }
-      .speedtest-running {
-        animation: pulse 1.5s ease-in-out infinite;
-      }
-      .speedtest-shimmer {
-        background: linear-gradient(
-          90deg,
-          #f8f9ff 0%,
-          #667eea 50%,
-          #f8f9ff 100%
-        );
-        background-size: 1000px 100%;
-        animation: shimmer 2s linear infinite;
-      }
-      .speedtest-result-appear {
-        animation: slideIn 0.5s ease-out;
-      }
-      @keyframes slideIn {
-        from {
-          opacity: 0;
-          transform: translateY(20px);
-        }
-        to {
-          opacity: 1;
-          transform: translateY(0);
-        }
-      }
-      .speedometer {
-        position: relative;
-        width: 200px;
-        height: 200px;
-        margin: 20px auto;
-      }
-      .speedometer-arc {
-        position: absolute;
-        width: 100%;
-        height: 100%;
-      }
-      .speedometer-needle {
-        position: absolute;
-        bottom: 50%;
-        left: 50%;
-        width: 4px;
-        height: 45%;
-        background: #667eea;
-        transform-origin: bottom center;
-        transform: translateX(-50%) rotate(-90deg);
-        transition: transform 0.3s ease-out;
-        border-radius: 2px 2px 0 0;
-        z-index: 2;
-      }
-      .speedometer-center {
-        position: absolute;
-        bottom: 50%;
-        left: 50%;
-        width: 20px;
-        height: 20px;
-        background: #667eea;
-        border-radius: 50%;
-        transform: translate(-50%, 50%);
-        z-index: 3;
-        box-shadow: 0 0 10px rgba(102, 126, 234, 0.5);
-      }
-      .speedometer-value {
-        position: absolute;
-        top: 65%;
-        left: 50%;
-        transform: translateX(-50%);
-        font-size: 32px;
-        font-weight: bold;
-        color: #333;
-      }
-      .speedometer-label {
-        position: absolute;
-        top: 80%;
-        left: 50%;
-        transform: translateX(-50%);
-        font-size: 14px;
-        color: #888;
-      }
-      @keyframes rotate-needle {
-        0% {
-          transform: translateX(-50%) rotate(-90deg);
-        }
-        50% {
-          transform: translateX(-50%) rotate(0deg);
-        }
-        100% {
-          transform: translateX(-50%) rotate(90deg);
-        }
-      }
-      .speedometer-needle.testing {
-        animation: rotate-needle 2s ease-in-out infinite;
-      }
-      .modal {
-        display: none;
-        position: fixed;
-        z-index: 1000;
-        left: 0;
-        top: 0;
-        width: 100%;
-        height: 100%;
-        overflow: auto;
-        background-color: rgba(0, 0, 0, 0.6);
-      }
-      .modal-content {
-        background-color: white;
-        margin: 50px auto;
-        padding: 30px;
-        border-radius: 12px;
-        width: 90%;
-        max-width: 800px;
-        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
-      }
-      .modal-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 20px;
-      }
-      .modal-header h2 {
-        color: #333;
-        margin: 0;
-      }
-      .close {
-        color: #aaa;
-        font-size: 32px;
-        font-weight: bold;
-        cursor: pointer;
-        line-height: 1;
-      }
-      .close:hover {
-        color: #000;
-      }
-      .session-item {
-        background: #f9f9f9;
-        padding: 15px;
-        border-radius: 8px;
-        margin-bottom: 10px;
-      }
-      .session-item h3 {
-        color: #667eea;
-        margin: 0 0 10px 0;
-        font-size: 16px;
-      }
-      .token-display {
-        background: #fff;
-        padding: 10px;
-        border-radius: 6px;
-        border: 1px solid #ddd;
-        font-family: monospace;
-        font-size: 12px;
-        word-break: break-all;
-        margin: 5px 0;
-        position: relative;
-      }
-      .token-short {
-        cursor: pointer;
-        color: #667eea;
-      }
-      .token-full {
-        display: none;
-      }
-      .btn-copy {
-        background: #667eea;
-        color: white;
-        border: none;
-        padding: 6px 12px;
-        border-radius: 4px;
-        cursor: pointer;
-        font-size: 12px;
-        margin-top: 5px;
-      }
-      .btn-copy:hover {
-        background: #5568d3;
-      }
-      .wifi-network {
-        background: #fff;
-        border: 1px solid #ddd;
-        border-radius: 6px;
-        padding: 15px;
-        margin: 10px 0;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        transition: all 0.3s;
-      }
-      .wifi-network:hover {
-        border-color: #667eea;
-        box-shadow: 0 2px 8px rgba(102, 126, 234, 0.1);
-      }
-      .wifi-info {
-        flex: 1;
-      }
-      .wifi-ssid {
-        font-weight: 600;
-        color: #333;
-        margin-bottom: 5px;
-      }
-      .wifi-details {
-        font-size: 12px;
-        color: #888;
-      }
-      .wifi-connect-btn {
-        background: #667eea;
-        color: white;
-        border: none;
-        padding: 8px 16px;
-        border-radius: 6px;
-        cursor: pointer;
-        font-size: 14px;
-      }
-      .wifi-connect-btn:hover {
-        background: #5568d3;
-      }
-      .wifi-connect-btn.connected {
-        background: #28a745;
-      }
-      .wifi-connect-form {
-        margin-top: 10px;
-        padding: 10px;
-        background: #f8f9ff;
-        border-radius: 6px;
-      }
-      .wifi-connect-form input {
-        width: 100%;
-        padding: 8px;
-        margin: 5px 0;
-        border: 1px solid #ddd;
-        border-radius: 4px;
-        font-size: 14px;
-      }
-      .wifi-connect-form button {
-        margin-top: 5px;
-        margin-right: 5px;
-      }
-    </style>
+    <link rel="stylesheet" href="css/cockpit.css" />
   </head>
   <body>
     <!-- Left Sidebar -->
@@ -741,10 +162,69 @@
                 <canvas id="net-chart"></canvas>
               </div>
             </div>
+
+            <!-- System Load Card -->
+            <div class="metric-card">
+              <div class="metric-header">
+                <div class="metric-icon">⚙️</div>
+                <div class="metric-title">System Load</div>
+              </div>
+              <div class="metric-value" id="sys-load">--</div>
+              <div class="metric-detail">
+                Prozesse: <span id="sys-procs">--</span>
+              </div>
+              <div class="metric-detail">
+                Laufend: <span id="sys-procs-run">--</span>
+              </div>
+              <div class="metric-detail">
+                Blockiert: <span id="sys-procs-block">--</span>
+              </div>
+              <div class="chart-container">
+                <canvas id="sys-chart"></canvas>
+              </div>
+            </div>
+
+            <!-- System Info Card -->
+            <div class="metric-card">
+              <div class="metric-header">
+                <div class="metric-icon">ℹ️</div>
+                <div class="metric-title">System Info</div>
+              </div>
+              <div class="metric-value" id="sys-uptime">--</div>
+              <div class="metric-detail">
+                Host: <span id="sys-host">--</span>
+              </div>
+              <div class="metric-detail">OS: <span id="sys-os">--</span></div>
+              <div class="metric-detail">
+                Kernel: <span id="sys-kernel">--</span>
+              </div>
+              <div class="metric-detail">
+                Distro: <span id="sys-distro">--</span>
+              </div>
+            </div>
           </div>
 
           <div class="timestamp">
             Letzte Aktualisierung: <span id="last-update">--</span>
+          </div>
+
+          <!-- Admin Section -->
+          <div class="admin-section">
+            <h2>⚙️ Administration</h2>
+            <div class="admin-buttons">
+              <button class="btn-admin btn-restart" onclick="restartServer()">
+                🔄 Server Neustarten
+              </button>
+              <button class="btn-admin btn-shutdown" onclick="shutdownServer()">
+                ⛔ Server Beenden
+              </button>
+            </div>
+            <div class="system-info" id="system-info">
+              <div class="info-row">
+                <span class="info-label">Lade System-Info...</span>
+                <span class="info-value"></span>
+              </div>
+            </div>
           </div>
 
           <!-- Scoreboard Section -->
@@ -766,25 +246,6 @@
                 </tr>
               </tbody>
             </table>
-          </div>
-
-          <!-- Admin Section -->
-          <div class="admin-section">
-            <h2>⚙️ Administration</h2>
-            <div class="admin-buttons">
-              <button class="btn-admin btn-restart" onclick="restartServer()">
-                🔄 Server Neustarten
-              </button>
-              <button class="btn-admin btn-shutdown" onclick="shutdownServer()">
-                ⛔ Server Beenden
-              </button>
-            </div>
-            <div class="system-info" id="system-info">
-              <div class="info-row">
-                <span class="info-label">Lade System-Info...</span>
-                <span class="info-value"></span>
-              </div>
-            </div>
           </div>
         </div>
       </div>
@@ -1016,7 +477,7 @@
 
       <script>
         let updateInterval;
-        let cpuChart, memChart, netChart, speedtestChart;
+        let cpuChart, memChart, netChart, sysChart, speedtestChart;
         let speedtestFocusMode = "all";
 
         async function fetchMetrics() {
@@ -1084,6 +545,31 @@
             data.network.tx.toFixed(2);
           document.getElementById("net-interface").textContent =
             data.network.interface;
+
+          // System Load
+          if (data.system) {
+            document.getElementById("sys-load").textContent =
+              data.system.loadAvg[0].toFixed(2);
+            document.getElementById("sys-procs").textContent =
+              data.system.processCount;
+            document.getElementById("sys-procs-run").textContent =
+              data.system.processRunning;
+            document.getElementById("sys-procs-block").textContent =
+              data.system.processBlocked;
+          }
+
+          // System Info
+          if (data.os && data.system) {
+            const uptimeHours = Math.floor(data.system.uptime / 3600);
+            const uptimeMins = Math.floor((data.system.uptime % 3600) / 60);
+            document.getElementById(
+              "sys-uptime"
+            ).textContent = `${uptimeHours}h ${uptimeMins}m`;
+            document.getElementById("sys-host").textContent = data.os.hostname;
+            document.getElementById("sys-os").textContent = data.os.platform;
+            document.getElementById("sys-kernel").textContent = data.os.release;
+            document.getElementById("sys-distro").textContent = data.os.distro;
+          }
 
           // Timestamp
           const date = new Date(data.timestamp);
@@ -1179,6 +665,10 @@
           const netConfig = chartConfig("Network KB/s", "#4facfe");
           netConfig.options.scales.y.max = null; // Network has different scale
           netChart = new Chart(document.getElementById("net-chart"), netConfig);
+
+          const sysConfig = chartConfig("Load Avg", "#ff9f43");
+          sysConfig.options.scales.y.max = null; // Load can be anything
+          sysChart = new Chart(document.getElementById("sys-chart"), sysConfig);
         }
 
         function updateCharts(history) {
@@ -1206,6 +696,13 @@
             (h) => h.network.rx + h.network.tx
           );
           netChart.update("none");
+
+          // System Load Chart
+          sysChart.data.labels = labels;
+          sysChart.data.datasets[0].data = history.map((h) =>
+            h.system ? h.system.loadAvg[0] : 0
+          );
+          sysChart.update("none");
         }
 
         async function fetchSessions() {
