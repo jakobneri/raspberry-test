@@ -885,6 +885,8 @@
         updateProgressBar("disk-progress", data.disk.usagePercent);
 
         // Network
+        document.getElementById("net-down").textContent =
+          data.network.rx.toFixed(2) + " KB/s";
         document.getElementById("net-rx").textContent =
           data.network.rx.toFixed(2);
         document.getElementById("net-tx").textContent =
