@@ -74,7 +74,7 @@ pull_updates() {
         
         # Always install/update dependencies after pull
         echo -e "${YELLOW}📦 Installing dependencies...${NC}"
-        npm install --production
+        npm install
         if [ $? -eq 0 ]; then
             echo -e "${GREEN}✓ All dependencies installed successfully!${NC}"
         else
