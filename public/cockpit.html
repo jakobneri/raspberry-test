@@ -363,14 +363,15 @@
               <div
                 id="network-details"
                 style="
-                  background: #f8f9ff;
+                  background: var(--bg-color);
                   padding: 15px;
                   border-radius: 8px;
                   font-size: 14px;
                   line-height: 1.8;
+                  border: 1px solid var(--border-color);
                 "
               >
-                <p style="text-align: center; color: #999">
+                <p style="text-align: center; color: var(--text-secondary)">
                   Loading network information...
                 </p>
               </div>
@@ -447,10 +448,11 @@
               <!-- Speedtest Graphs -->
               <div
                 style="
-                  background: #f8f9ff;
+                  background: var(--bg-color);
                   padding: 20px;
                   border-radius: 8px;
                   margin-bottom: 15px;
+                  border: 1px solid var(--border-color);
                 "
               >
                 <div
@@ -496,13 +498,14 @@
 
               <div
                 id="speedtest-results"
-                style="
-                  background: #f8f9ff;
+                style="var(--bg-color);
                   padding: 15px;
                   border-radius: 8px;
                   font-size: 14px;
+                  border: 1px solid var(--border-color);
                 "
               >
+                <p style="text-align: center; color: var(--text-secondary)
                 <p style="text-align: center; color: #999">
                   Loading speed test data...
                 </p>
@@ -963,18 +966,16 @@
           const detailsDiv = document.getElementById("network-details");
 
           let html = `
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
-            <!-- Ethernet Section -->
-            <div style="background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+          <div style="display: grid;var(--card-bg); padding: 15px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); border: 1px solid var(--border-color);">
               <h4 style="margin: 0 0 15px 0; color: #667eea;">
                 🔌 Ethernet (eth0)
               </h4>
-              <div style="font-size: 14px; line-height: 2;">
+              <div style="font-size: 14px; line-height: 2; color: var(--text-primary);">
                 <div>
                   <strong>Status:</strong> ${
                     data.ethernet.connected
                       ? '<span style="color: #28a745;">✅ Connected</span>'
-                      : '<span style="color: #888;">⚫ Disconnected</span>'
+                      : '<span style="color: var(--text-secondary);">⚫ Disconnected</span>'
                   }
                 </div>
                 ${
@@ -996,14 +997,16 @@
             </div>
 
             <!-- WiFi Section -->
-            <div style="background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+            <div style="background: var(--card-bg); padding: 15px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); border: 1px solid var(--border-color);">
               <h4 style="margin: 0 0 15px 0; color: #667eea;">
                 📶 WiFi (wlan0)
               </h4>
-              <div style="font-size: 14px; line-height: 2;">
+              <div style="font-size: 14px; line-height: 2; color: var(--text-primary);">
                 <div>
                   <strong>Status:</strong> ${
                     data.wifi.connected
+                      ? '<span style="color: #28a745;">✅ Connected</span>'
+                      : '<span style="color: var(--text-secondary)
                       ? '<span style="color: #28a745;">✅ Connected</span>'
                       : '<span style="color: #888;">⚫ Disconnected</span>'
                   }
