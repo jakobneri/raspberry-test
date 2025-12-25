@@ -1225,30 +1225,8 @@
         const resultsDiv = document.getElementById("speedtest-results");
 
         btn.disabled = true;
-        btn.classList.add("speedtest-running");
         btn.textContent = "⏳ Running Speed Test...";
-
-        // Show speedometer gauge
-        resultsDiv.innerHTML = `
-          <div style="text-align: center;">
-            <div style="font-size: 18px; color: #667eea; font-weight: bold; margin-bottom: 10px;">⏳ Testing connection speed...</div>
-            <svg class="speedometer" viewBox="0 0 200 120" style="width: 300px; height: 180px; margin: 20px auto;">
-              <!-- Background arc -->
-              <path d="M 20 100 A 80 80 0 0 1 180 100" fill="none" stroke="#e0e0e0" stroke-width="20" stroke-linecap="round"/>
-              <!-- Animated arc -->
-              <path id="speed-arc" d="M 20 100 A 80 80 0 0 1 180 100" fill="none" stroke="#667eea" stroke-width="20" stroke-linecap="round" stroke-dasharray="251" stroke-dashoffset="251">
-                <animate attributeName="stroke-dashoffset" from="251" to="0" dur="2s" repeatCount="indefinite"/>
-              </path>
-              <!-- Center dot -->
-              <circle cx="100" cy="100" r="8" fill="#667eea"/>
-              <!-- Needle -->
-              <line id="speed-needle" x1="100" y1="100" x2="100" y2="30" stroke="#667eea" stroke-width="3" stroke-linecap="round">
-                <animateTransform attributeName="transform" type="rotate" from="-90 100 100" to="90 100 100" dur="2s" repeatCount="indefinite"/>
-              </line>
-            </svg>
-            <div style="font-size: 14px; color: #888; margin-top: 10px;">This may take up to 60 seconds</div>
-          </div>
-        `;
+        resultsDiv.innerHTML = '<p style="text-align: center; color: #667eea;">⏳ Testing connection speed... This may take up to 60 seconds</p>';
 
         try {
           const response = await fetch("/api/network/speedtest", {
@@ -1259,94 +1237,59 @@
             const data = await response.json();
 
             if (data.success) {
-              // Show results with gauges
-              let html = `<div class="speedtest-result-appear" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px;">`;
-
-              // Ping gauge
-              const pingAngle = Math.min((data.ping / 200) * 180 - 90, 90);
-              html += `
-                <div style="text-align: center; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
-                  <div style="font-size: 12px; color: #888; margin-bottom: 10px;">PING</div>
-                  <svg viewBox="0 0 200 120" style="width: 200px; height: 120px; margin: 0 auto;">
-                    <path d="M 20 100 A 80 80 0 0 1 180 100" fill="none" stroke="#e0e0e0" stroke-width="15" stroke-linecap="round"/>
-                    <path d="M 20 100 A 80 80 0 0 1 180 100" fill="none" stroke="#667eea" stroke-width="15" stroke-linecap="round" stroke-dasharray="251" stroke-dashoffset="${
-                      251 - (data.ping / 200) * 251
-                    }"/>
-                    <circle cx="100" cy="100" r="6" fill="#667eea"/>
-                    <line x1="100" y1="100" x2="${
-                      100 + 60 * Math.cos((pingAngle * Math.PI) / 180)
-                    }" y2="${
-                100 + 60 * Math.sin((pingAngle * Math.PI) / 180)
-              }" stroke="#667eea" stroke-width="3" stroke-linecap="round"/>
-                  </svg>
-                  <div style="font-size: 32px; font-weight: bold; color: #667eea; margin-top: 5px;">${
-                    data.ping
-                  }</div>
-                  <div style="font-size: 12px; color: #888;">ms</div>
-                </div>
+              let html = `
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; text-align: center;">
+                  <div style="background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                    <div style="font-size: 12px; color: #888; margin-bottom: 5px;">PING</div>
+                    <div style="font-size: 36px; font-weight: bold; color: #667eea;">${data.ping}</div>
+                    <div style="font-size: 14px; color: #888;">ms</div>
+                  </div>
               `;
 
               if (data.download !== null) {
-                const downloadAngle = Math.min(
-                  (data.download / 200) * 180 - 90,
-                  90
-                );
                 html += `
-                  <div style="text-align: center; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
-                    <div style="font-size: 12px; color: #888; margin-bottom: 10px;">DOWNLOAD</div>
-                    <svg viewBox="0 0 200 120" style="width: 200px; height: 120px; margin: 0 auto;">
-                      <path d="M 20 100 A 80 80 0 0 1 180 100" fill="none" stroke="#e0e0e0" stroke-width="15" stroke-linecap="round"/>
-                      <path d="M 20 100 A 80 80 0 0 1 180 100" fill="none" stroke="#28a745" stroke-width="15" stroke-linecap="round" stroke-dasharray="251" stroke-dashoffset="${
-                        251 - (data.download / 200) * 251
-                      }"/>
-                      <circle cx="100" cy="100" r="6" fill="#28a745"/>
-                      <line x1="100" y1="100" x2="${
-                        100 + 60 * Math.cos((downloadAngle * Math.PI) / 180)
-                      }" y2="${
-                  100 + 60 * Math.sin((downloadAngle * Math.PI) / 180)
-                }" stroke="#28a745" stroke-width="3" stroke-linecap="round"/>
-                    </svg>
-                    <div style="font-size: 32px; font-weight: bold; color: #28a745; margin-top: 5px;">${
-                      data.download
-                    }</div>
-                    <div style="font-size: 12px; color: #888;">${
-                      data.unit
-                    }</div>
+                  <div style="background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                    <div style="font-size: 12px; color: #888; margin-bottom: 5px;">DOWNLOAD</div>
+                    <div style="font-size: 36px; font-weight: bold; color: #28a745;">${data.download}</div>
+                    <div style="font-size: 14px; color: #888;">${data.unit}</div>
                   </div>
                 `;
               }
 
               if (data.upload !== null) {
-                const uploadAngle = Math.min(
-                  (data.upload / 100) * 180 - 90,
-                  90
-                );
                 html += `
-                  <div style="text-align: center; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
-                    <div style="font-size: 12px; color: #888; margin-bottom: 10px;">UPLOAD</div>
-                    <svg viewBox="0 0 200 120" style="width: 200px; height: 120px; margin: 0 auto;">
-                      <path d="M 20 100 A 80 80 0 0 1 180 100" fill="none" stroke="#e0e0e0" stroke-width="15" stroke-linecap="round"/>
-                      <path d="M 20 100 A 80 80 0 0 1 180 100" fill="none" stroke="#f5576c" stroke-width="15" stroke-linecap="round" stroke-dasharray="251" stroke-dashoffset="${
-                        251 - (data.upload / 100) * 251
-                      }"/>
-                      <circle cx="100" cy="100" r="6" fill="#f5576c"/>
-                      <line x1="100" y1="100" x2="${
-                        100 + 60 * Math.cos((uploadAngle * Math.PI) / 180)
-                      }" y2="${
-                  100 + 60 * Math.sin((uploadAngle * Math.PI) / 180)
-                }" stroke="#f5576c" stroke-width="3" stroke-linecap="round"/>
-                    </svg>
-                    <div style="font-size: 32px; font-weight: bold; color: #f5576c; margin-top: 5px;">${
-                      data.upload
-                    }</div>
-                    <div style="font-size: 12px; color: #888;">${
-                      data.unit
-                    }</div>
+                  <div style="background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                    <div style="font-size: 12px; color: #888; margin-bottom: 5px;">UPLOAD</div>
+                    <div style="font-size: 36px; font-weight: bold; color: #f5576c;">${data.upload}</div>
+                    <div style="font-size: 14px; color: #888;">${data.unit}</div>
                   </div>
                 `;
               }
 
               html += `</div>`;
+
+              if (data.message) {
+                html += `<p style="margin-top: 15px; font-size: 12px; color: #888; text-align: center;">${data.message}</p>`;
+              }
+
+              html += `<p style="margin-top: 10px; font-size: 11px; color: #aaa; text-align: center;">Tested at: ${new Date(
+                data.timestamp
+              ).toLocaleString()}</p>`;
+
+              resultsDiv.innerHTML = html;
+            } else {
+              resultsDiv.innerHTML = `<p style="color: #f5576c; text-align: center;">${data.message}</p>`;
+            }
+          }
+        } catch (error) {
+          console.error("Error running speedtest:", error);
+          resultsDiv.innerHTML =
+            '<p style="color: #f5576c; text-align: center;">Error running speed test</p>';
+        } finally {
+          btn.disabled = false;
+          btn.textContent = "▶️ Run Speed Test";
+        }
+      }
 
               if (data.message) {
                 html += `<p style="margin-top: 15px; font-size: 12px; color: #888; text-align: center;">${data.message}</p>`;
@@ -1462,8 +1405,8 @@
                   }
                 </div>
               </div>
-              <button 
-                class="wifi-connect-btn ${isConnected ? "connected" : ""}" 
+              <button
+                class="wifi-connect-btn ${isConnected ? "connected" : ""}"
                 onclick="showConnectForm(${index}, '${network.ssid}', ${
               network.security
             })"
@@ -1498,9 +1441,9 @@
             ${
               requiresPassword
                 ? `
-              <input 
-                type="password" 
-                id="wifi-password-${index}" 
+              <input
+                type="password"
+                id="wifi-password-${index}"
                 placeholder="Enter password"
                 autocomplete="off"
               />
