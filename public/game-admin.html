@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="de">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Game Admin - Pi Cockpit</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="css/cockpit.css" />
+    <style>
+      .difficulty-card {
+        background: white;
+        border-radius: 12px;
+        padding: 20px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+        margin-bottom: 20px;
+      }
+      .difficulty-options {
+        display: flex;
+        gap: 15px;
+        margin-top: 15px;
+      }
+      .difficulty-btn {
+        flex: 1;
+        padding: 15px;
+        border: 2px solid #eee;
+        border-radius: 8px;
+        background: white;
+        cursor: pointer;
+        transition: all 0.3s;
+        font-weight: bold;
+        text-align: center;
+      }
+      .difficulty-btn:hover {
+        border-color: #667eea;
+        background: #f8f9fa;
+      }
+      .difficulty-btn.active {
+        border-color: #667eea;
+        background: #667eea;
+        color: white;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Left Sidebar -->
+    <div class="sidebar">
+      <div class="sidebar-header">
+        <h1>🥧 Pi Cockpit</h1>
+        <div class="subtitle">Raspberry Pi Server</div>
+      </div>
+
+      <nav class="sidebar-nav">
+        <div class="nav-section">
+          <div class="nav-section-title">Main</div>
+          <a href="/cockpit" class="nav-link">
+            <span class="nav-link-icon">📊</span>
+            <span>Dashboard</span>
+          </a>
+          <a href="/users" class="nav-link">
+            <span class="nav-link-icon">👥</span>
+            <span>User Management</span>
+          </a>
+        </div>
+
+        <div class="nav-section">
+          <div class="nav-section-title">Pages</div>
+          <a href="/files" class="nav-link">
+            <span class="nav-link-icon">📁</span>
+            <span>Files</span>
+          </a>
+          <a href="/game" class="nav-link">
+            <span class="nav-link-icon">🎮</span>
+            <span>Game</span>
+          </a>
+          <a href="/game-admin" class="nav-link active">
+            <span class="nav-link-icon">⚙️</span>
+            <span>Game Admin</span>
+          </a>
+        </div>
+
+        <div class="nav-section">
+          <div class="nav-section-title">System</div>
+          <a href="#" class="nav-link" onclick="logout(); return false;">
+            <span class="nav-link-icon">🚪</span>
+            <span>Logout</span>
+          </a>
+        </div>
+      </nav>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content">
+      <div class="container">
+        <div class="header">
+          <h1>Game Administration</h1>
+        </div>
+
+        <!-- Difficulty Section -->
+        <div class="difficulty-card">
+          <h2>🎮 Schwierigkeit</h2>
+          <div class="difficulty-options">
+            <button
+              class="difficulty-btn"
+              onclick="setDifficulty('easy')"
+              id="diff-easy"
+            >
+              <div>Einfach</div>
+              <div
+                style="font-size: 0.8em; font-weight: normal; margin-top: 5px"
+              >
+                Langsam
+              </div>
+            </button>
+            <button
+              class="difficulty-btn active"
+              onclick="setDifficulty('medium')"
+              id="diff-medium"
+            >
+              <div>Mittel</div>
+              <div
+                style="font-size: 0.8em; font-weight: normal; margin-top: 5px"
+              >
+                Normal
+              </div>
+            </button>
+            <button
+              class="difficulty-btn"
+              onclick="setDifficulty('hard')"
+              id="diff-hard"
+            >
+              <div>Schwer</div>
+              <div
+                style="font-size: 0.8em; font-weight: normal; margin-top: 5px"
+              >
+                Schnell
+              </div>
+            </button>
+          </div>
+        </div>
+
+        <!-- Scoreboard Section -->
+        <div class="scoreboard-section">
+          <h2>🏆 Pi Runner - Top Scores</h2>
+          <table class="score-table">
+            <thead>
+              <tr>
+                <th>Rang</th>
+                <th>Score</th>
+                <th>Datum</th>
+              </tr>
+            </thead>
+            <tbody id="scoreboard-body">
+              <tr>
+                <td colspan="3" style="text-align: center; color: #999">
+                  Lade Scoreboard...
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      // Initial fetch
+      fetchScoreboard();
+
+      // Update scoreboard every 10 seconds
+      setInterval(fetchScoreboard, 10000);
+
+      async function fetchScoreboard() {
+        try {
+          const response = await fetch("/api/scores");
+          if (response.ok) {
+            const scores = await response.json();
+            updateScoreboard(scores);
+          }
+        } catch (error) {
+          console.error("Error loading scoreboard:", error);
+        }
+      }
+
+      function updateScoreboard(scores) {
+        const tbody = document.getElementById("scoreboard-body");
+
+        if (scores.length === 0) {
+          tbody.innerHTML =
+            '<tr><td colspan="3" style="text-align: center; color: #999;">Noch keine Scores</td></tr>';
+          return;
+        }
+
+        const medals = ["🥇", "🥈", "🥉"];
+        tbody.innerHTML = scores
+          .map((score, index) => {
+            const date = new Date(score.timestamp);
+            const medal = index < 3 ? medals[index] : `#${index + 1}`;
+            return `
+            <tr>
+              <td><span class="rank-medal">${medal}</span></td>
+              <td><span class="score-value">${score.score}</span></td>
+              <td>${date.toLocaleDateString("de-DE")} ${date.toLocaleTimeString(
+              "de-DE",
+              { hour: "2-digit", minute: "2-digit" }
+            )}</td>
+            </tr>
+          `;
+          })
+          .join("");
+      }
+
+      function setDifficulty(level) {
+        // Update UI
+        document
+          .querySelectorAll(".difficulty-btn")
+          .forEach((btn) => btn.classList.remove("active"));
+        document.getElementById("diff-" + level).classList.add("active");
+
+        // TODO: Save to server
+        console.log("Difficulty set to:", level);
+      }
+
+      async function logout() {
+        try {
+          await fetch("/api/logout", { method: "POST" });
+          window.location.href = "/";
+        } catch (error) {
+          console.error("Error during logout:", error);
+          window.location.href = "/";
+        }
+      }
+    </script>
+  </body>
+</html>

@@ -247,6 +247,14 @@ const server = http.createServer(async (req, res) => {
       return;
     }
 
+    // Game Admin page
+    if (method === "GET" && url === "/game-admin") {
+      const body = readFileSync("public/game-admin.html", "utf8");
+      res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
+      res.end(body);
+      return;
+    }
+
     // Approve user request
     if (method === "POST" && url === "/api/user-requests/approve") {
       try {

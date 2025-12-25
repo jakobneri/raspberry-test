@@ -3,16 +3,19 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Login</title>
+    <title>Login - Pi Cockpit</title>
     <link rel="stylesheet" href="css/login.css" />
   </head>
   <body>
     <div class="container">
-      <h1>Login</h1>
+      <div class="header">
+        <h1>🥧 Pi Cockpit</h1>
+        <div class="subtitle">Raspberry Pi Server</div>
+      </div>
 
       <form method="POST" action="/">
         <div class="form-group">
-          <label for="email">E-Mail:</label>
+          <label for="email">E-Mail</label>
           <input
             type="email"
             id="email"
@@ -23,7 +26,7 @@
         </div>
 
         <div class="form-group">
-          <label for="password">Passwort:</label>
+          <label for="password">Passwort</label>
           <input
             type="password"
             id="password"
@@ -33,34 +36,40 @@
           />
         </div>
 
-        <button type="submit">Login</button>
+        <button type="submit">Anmelden</button>
       </form>
-      <form action="/auth/login" method="get" style="margin-top: 1rem">
-        <button type="submit">Login with SSO</button>
-      </form>
-      <button
-        type="button"
-        class="secondary"
-        onclick="openRequestModal()"
-        style="width: 100%"
-      >
-        Request Access
-      </button>
-      <a
-        href="/game"
-        style="margin-top: 1rem; display: block; text-decoration: none"
-      >
-        <button type="button" style="background: #764ba2; width: 100%">
-          Zum Spiel
+
+      <div class="divider">
+        <span>oder</span>
+      </div>
+
+      <form action="/auth/login" method="get">
+        <button type="submit" class="sso-btn">
+          <span class="icon">🔐</span> Mit SSO anmelden
         </button>
-      </a>
+      </form>
+
+      <div class="actions">
+        <button
+          type="button"
+          class="secondary"
+          onclick="openRequestModal()"
+        >
+          Zugang anfragen
+        </button>
+        <a href="/game" class="game-link">
+          <button type="button" class="game-btn">
+            🎮 Zum Spiel
+          </button>
+        </a>
+      </div>
     </div>
 
     <!-- Request Access Modal -->
     <div id="requestModal" class="modal">
       <div class="modal-content">
         <div class="modal-header">
-          <h2>Request Access</h2>
+          <h2>Zugang anfragen</h2>
           <button class="close-btn" onclick="closeRequestModal()">
             &times;
           </button>
@@ -70,34 +79,102 @@
 
         <form id="requestForm" onsubmit="submitRequest(event)">
           <div class="form-group">
-            <label for="requestName">Name:</label>
+            <label for="requestName">Name</label>
             <input
               type="text"
               id="requestName"
               name="name"
               required
-              placeholder="Your name"
+              placeholder="Dein Name"
             />
           </div>
 
           <div class="form-group">
-            <label for="requestEmail">E-Mail:</label>
+            <label for="requestEmail">E-Mail</label>
             <input
               type="email"
               id="requestEmail"
               name="email"
               required
-              placeholder="your.email@example.com"
+              placeholder="deine.email@example.com"
             />
           </div>
 
           <div class="form-group">
-            <label for="requestPassword">Password:</label>
+            <label for="requestPassword">Passwort</label>
             <input
               type="password"
               id="requestPassword"
               name="password"
               required
+              placeholder="Gewünschtes Passwort"
+            />
+          </div>
+
+          <button type="submit">Anfrage senden</button>
+        </form>
+      </div>
+    </div>
+
+    <script>
+      function openRequestModal() {
+        document.getElementById("requestModal").classList.add("show");
+      }
+
+      function closeRequestModal() {
+        document.getElementById("requestModal").classList.remove("show");
+        document.getElementById("requestMessage").style.display = "none";
+        document.getElementById("requestForm").reset();
+      }
+
+      async function submitRequest(event) {
+        event.preventDefault();
+        const form = event.target;
+        const formData = new FormData(form);
+        const data = Object.fromEntries(formData.entries());
+
+        try {
+          const response = await fetch("/api/request-access", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/x-www-form-urlencoded",
+            },
+            body: new URLSearchParams(data),
+          });
+
+          const result = await response.json();
+          const messageDiv = document.getElementById("requestMessage");
+          messageDiv.style.display = "block";
+
+          if (result.success) {
+            messageDiv.className = "message success";
+            messageDiv.textContent =
+              "Anfrage erfolgreich gesendet! Ein Administrator wird sie prüfen.";
+            form.reset();
+            setTimeout(closeRequestModal, 3000);
+          } else {
+            messageDiv.className = "message error";
+            messageDiv.textContent = result.message || "Fehler bei der Anfrage";
+          }
+        } catch (error) {
+          console.error("Error:", error);
+          const messageDiv = document.getElementById("requestMessage");
+          messageDiv.style.display = "block";
+          messageDiv.className = "message error";
+          messageDiv.textContent = "Ein Fehler ist aufgetreten";
+        }
+      }
+
+      // Close modal when clicking outside
+      window.onclick = function (event) {
+        const modal = document.getElementById("requestModal");
+        if (event.target == modal) {
+          closeRequestModal();
+        }
+      };
+    </script>
+  </body>
+</html>
               placeholder="Choose a password"
             />
           </div>

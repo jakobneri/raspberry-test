@@ -37,6 +37,10 @@
             <span class="nav-link-icon">🎮</span>
             <span>Game</span>
           </a>
+          <a href="/game-admin" class="nav-link">
+            <span class="nav-link-icon">⚙️</span>
+            <span>Game Admin</span>
+          </a>
         </div>
 
         <div class="nav-section">
@@ -201,43 +205,37 @@
               <div class="metric-detail">
                 Distro: <span id="sys-distro">--</span>
               </div>
+              <div
+                class="admin-buttons"
+                style="
+                  margin-top: 15px;
+                  padding-top: 15px;
+                  border-top: 1px solid #eee;
+                  display: flex;
+                  gap: 10px;
+                  justify-content: center;
+                "
+              >
+                <button
+                  class="btn-admin btn-restart"
+                  onclick="restartServer()"
+                  style="flex: 1"
+                >
+                  🔄 Neustart
+                </button>
+                <button
+                  class="btn-admin btn-shutdown"
+                  onclick="shutdownServer()"
+                  style="flex: 1"
+                >
+                  ⛔ Beenden
+                </button>
+              </div>
             </div>
           </div>
 
           <div class="timestamp">
             Letzte Aktualisierung: <span id="last-update">--</span>
-          </div>
-
-          <!-- System Info Section -->
-          <div class="admin-section">
-            <h2>ℹ️ System Info</h2>
-            <div class="system-info" id="system-info">
-              <div class="info-row">
-                <span class="info-label">Lade System-Info...</span>
-                <span class="info-value"></span>
-              </div>
-            </div>
-          </div>
-
-          <!-- Scoreboard Section -->
-          <div class="scoreboard-section">
-            <h2>🏆 Pi Runner - Top Scores</h2>
-            <table class="score-table">
-              <thead>
-                <tr>
-                  <th>Rang</th>
-                  <th>Score</th>
-                  <th>Datum</th>
-                </tr>
-              </thead>
-              <tbody id="scoreboard-body">
-                <tr>
-                  <td colspan="3" style="text-align: center; color: #999">
-                    Lade Scoreboard...
-                  </td>
-                </tr>
-              </tbody>
-            </table>
           </div>
         </div>
       </div>
@@ -1637,7 +1635,7 @@
 
         // Initial fetch
         fetchMetrics();
-        fetchScoreboard();
+        // fetchScoreboard(); // Moved to Game Admin
         fetchSystemInfo();
         fetchSessions();
         fetchSpeedtestHistory();
@@ -1646,7 +1644,7 @@
         updateInterval = setInterval(fetchMetrics, 1000);
 
         // Update scoreboard every 10 seconds
-        setInterval(fetchScoreboard, 10000);
+        // setInterval(fetchScoreboard, 10000); // Moved to Game Admin
 
         // Update sessions count every 5 seconds
         setInterval(fetchSessions, 5000);
