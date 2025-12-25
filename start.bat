@@ -54,6 +54,29 @@ goto end
 
 :pull_updates
 echo 📥 Pulling latest changes from repository...
+
+:: Check for local changes
+git diff-index --quiet HEAD -- >nul 2>&1
+if errorlevel 1 (
+    echo ⚠️  Local changes detected!
+    
+    :: Create timestamp-based branch name
+    for /f "tokens=1-4 delims=/:. " %%a in ("%date% %time%") do (
+        set TIMESTAMP=%%c%%a%%b_%%d%%e%%f
+    )
+    set BRANCH_NAME=local-changes-!TIMESTAMP!
+    
+    echo 📦 Creating branch: !BRANCH_NAME!
+    git checkout -b !BRANCH_NAME!
+    git add -A
+    git commit -m "Local changes before pull at !TIMESTAMP!"
+    echo ✓ Local changes saved to branch !BRANCH_NAME!
+    
+    :: Switch back to main
+    git checkout main
+    echo.
+)
+
 git pull
 if errorlevel 1 (
     echo ✗ Failed to pull changes

@@ -19,6 +19,24 @@ echo ""
 # Function to pull from git
 pull_updates() {
     echo -e "${YELLOW}📥 Pulling latest changes from repository...${NC}"
+    
+    # Check for local changes
+    if ! git diff-index --quiet HEAD --; then
+        echo -e "${YELLOW}⚠️  Local changes detected!${NC}"
+        TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+        BRANCH_NAME="local-changes-${TIMESTAMP}"
+        
+        echo -e "${YELLOW}📦 Creating branch: ${BRANCH_NAME}${NC}"
+        git checkout -b "${BRANCH_NAME}"
+        git add -A
+        git commit -m "Local changes before pull at ${TIMESTAMP}"
+        echo -e "${GREEN}✓ Local changes saved to branch ${BRANCH_NAME}${NC}"
+        
+        # Switch back to main
+        git checkout main
+        echo ""
+    fi
+    
     git pull
     if [ $? -eq 0 ]; then
         echo -e "${GREEN}✓ Successfully pulled latest changes!${NC}"

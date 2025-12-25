@@ -3,6 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <title>Raspberry Pi Cockpit</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
       * {
         margin: 0;
@@ -231,6 +232,106 @@
       .info-value {
         color: #333;
       }
+      .chart-container {
+        height: 150px;
+        margin-top: 10px;
+      }
+      .sessions-badge {
+        background: #667eea;
+        color: white;
+        padding: 4px 12px;
+        border-radius: 12px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s;
+      }
+      .sessions-badge:hover {
+        background: #5568d3;
+        transform: scale(1.05);
+      }
+      .modal {
+        display: none;
+        position: fixed;
+        z-index: 1000;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        overflow: auto;
+        background-color: rgba(0, 0, 0, 0.6);
+      }
+      .modal-content {
+        background-color: white;
+        margin: 50px auto;
+        padding: 30px;
+        border-radius: 12px;
+        width: 90%;
+        max-width: 800px;
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+      }
+      .modal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+      }
+      .modal-header h2 {
+        color: #333;
+        margin: 0;
+      }
+      .close {
+        color: #aaa;
+        font-size: 32px;
+        font-weight: bold;
+        cursor: pointer;
+        line-height: 1;
+      }
+      .close:hover {
+        color: #000;
+      }
+      .session-item {
+        background: #f9f9f9;
+        padding: 15px;
+        border-radius: 8px;
+        margin-bottom: 10px;
+      }
+      .session-item h3 {
+        color: #667eea;
+        margin: 0 0 10px 0;
+        font-size: 16px;
+      }
+      .token-display {
+        background: #fff;
+        padding: 10px;
+        border-radius: 6px;
+        border: 1px solid #ddd;
+        font-family: monospace;
+        font-size: 12px;
+        word-break: break-all;
+        margin: 5px 0;
+        position: relative;
+      }
+      .token-short {
+        cursor: pointer;
+        color: #667eea;
+      }
+      .token-full {
+        display: none;
+      }
+      .btn-copy {
+        background: #667eea;
+        color: white;
+        border: none;
+        padding: 6px 12px;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 12px;
+        margin-top: 5px;
+      }
+      .btn-copy:hover {
+        background: #5568d3;
+      }
     </style>
   </head>
   <body>
@@ -238,6 +339,13 @@
       <div class="header">
         <h1>🥧 Raspberry Pi Performance Monitor</h1>
         <div class="header-buttons">
+          <button
+            class="sessions-badge"
+            id="sessions-badge"
+            onclick="openSessionsModal()"
+          >
+            📊 Sessions (<span id="session-count">0</span>)
+          </button>
           <a href="/game">🎮 Spiel</a>
           <a href="/">Abmelden</a>
         </div>
@@ -271,6 +379,9 @@
                 style="width: 0%"
               ></div>
             </div>
+            <div class="chart-container">
+              <canvas id="cpu-chart"></canvas>
+            </div>
           </div>
 
           <!-- Memory Card -->
@@ -295,6 +406,9 @@
                 id="mem-progress"
                 style="width: 0%"
               ></div>
+            </div>
+            <div class="chart-container">
+              <canvas id="mem-chart"></canvas>
             </div>
           </div>
 
@@ -323,6 +437,9 @@
                 style="width: 0%"
               ></div>
             </div>
+            <div class="chart-container">
+              <canvas id="disk-chart"></canvas>
+            </div>
           </div>
 
           <!-- Network Card -->
@@ -340,6 +457,9 @@
             </div>
             <div class="metric-detail">
               Interface: <span id="net-interface">--</span>
+            </div>
+            <div class="chart-container">
+              <canvas id="net-chart"></canvas>
             </div>
           </div>
         </div>
@@ -390,8 +510,20 @@
       </div>
     </div>
 
+    <!-- Sessions Modal -->
+    <div id="sessions-modal" class="modal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2>📊 Aktive Sessions</h2>
+          <span class="close" onclick="closeSessionsModal()">&times;</span>
+        </div>
+        <div id="sessions-list"></div>
+      </div>
+    </div>
+
     <script>
       let updateInterval;
+      let cpuChart, memChart, diskChart, netChart;
 
       async function fetchMetrics() {
         try {
@@ -406,7 +538,7 @@
           }
 
           const data = await response.json();
-          updateUI(data);
+          updateUI(data.current, data.history);
 
           document.getElementById("loading").style.display = "none";
           document.getElementById("metrics").style.display = "block";
@@ -419,7 +551,7 @@
         }
       }
 
-      function updateUI(data) {
+      function updateUI(data, history) {
         // CPU
         document.getElementById("cpu-usage").textContent =
           data.cpu.usage.toFixed(1) + "%";
@@ -465,6 +597,11 @@
         const date = new Date(data.timestamp);
         document.getElementById("last-update").textContent =
           date.toLocaleTimeString("de-DE");
+
+        // Update charts
+        if (history && history.length > 0) {
+          updateCharts(history);
+        }
       }
 
       function updateProgressBar(id, percent) {
@@ -478,6 +615,200 @@
           bar.classList.remove("warning");
         }
       }
+
+      function initCharts() {
+        const chartConfig = (label, color) => ({
+          type: "line",
+          data: {
+            labels: [],
+            datasets: [
+              {
+                label: label,
+                data: [],
+                borderColor: color,
+                backgroundColor: color + "20",
+                tension: 0.4,
+                fill: true,
+              },
+            ],
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: { display: false },
+            },
+            scales: {
+              y: {
+                beginAtZero: true,
+                max: 100,
+              },
+              x: {
+                display: false,
+              },
+            },
+          },
+        });
+
+        cpuChart = new Chart(
+          document.getElementById("cpu-chart"),
+          chartConfig("CPU %", "#667eea")
+        );
+        memChart = new Chart(
+          document.getElementById("mem-chart"),
+          chartConfig("RAM %", "#764ba2")
+        );
+        diskChart = new Chart(
+          document.getElementById("disk-chart"),
+          chartConfig("Disk %", "#f093fb")
+        );
+
+        const netConfig = chartConfig("Network KB/s", "#4facfe");
+        netConfig.options.scales.y.max = null; // Network has different scale
+        netChart = new Chart(document.getElementById("net-chart"), netConfig);
+      }
+
+      function updateCharts(history) {
+        if (!cpuChart) {
+          initCharts();
+        }
+
+        const labels = history.map((_, i) => i);
+
+        // CPU Chart
+        cpuChart.data.labels = labels;
+        cpuChart.data.datasets[0].data = history.map((h) => h.cpu.usage);
+        cpuChart.update("none");
+
+        // Memory Chart
+        memChart.data.labels = labels;
+        memChart.data.datasets[0].data = history.map(
+          (h) => h.memory.usagePercent
+        );
+        memChart.update("none");
+
+        // Disk Chart
+        diskChart.data.labels = labels;
+        diskChart.data.datasets[0].data = history.map(
+          (h) => h.disk.usagePercent
+        );
+        diskChart.update("none");
+
+        // Network Chart (combined RX + TX)
+        netChart.data.labels = labels;
+        netChart.data.datasets[0].data = history.map(
+          (h) => h.network.rx + h.network.tx
+        );
+        netChart.update("none");
+      }
+
+      async function fetchSessions() {
+        try {
+          const response = await fetch("/api/sessions");
+          if (response.ok) {
+            const data = await response.json();
+            document.getElementById("session-count").textContent =
+              data.sessions.length;
+            return data;
+          }
+        } catch (error) {
+          console.error("Error loading sessions:", error);
+        }
+        return null;
+      }
+
+      async function openSessionsModal() {
+        const data = await fetchSessions();
+        if (!data) return;
+
+        const modal = document.getElementById("sessions-modal");
+        const list = document.getElementById("sessions-list");
+
+        let html = "";
+
+        // App Token
+        if (data.appToken) {
+          const shortToken =
+            data.appToken.substring(0, 20) +
+            "..." +
+            data.appToken.substring(data.appToken.length - 10);
+          html += `
+            <div class="session-item">
+              <h3>🔑 Azure App Token</h3>
+              <div class="token-display" id="app-token-display">${shortToken}</div>
+              <button class="btn-copy" onclick="toggleToken('app-token-display', '${data.appToken}', this)">Show Full</button>
+              <button class="btn-copy" onclick="copyToken('${data.appToken}')">Copy</button>
+            </div>
+          `;
+        }
+
+        // Sessions
+        data.sessions.forEach((session, index) => {
+          const shortToken =
+            session.token.substring(0, 20) +
+            "..." +
+            session.token.substring(session.token.length - 10);
+          const created = new Date(session.createdAt).toLocaleString("de-DE");
+          const lastActivity = new Date(session.lastActivity).toLocaleString(
+            "de-DE"
+          );
+
+          html += `
+            <div class="session-item">
+              <h3>👤 Session ${index + 1} - User: ${session.userId}</h3>
+              <p><strong>Erstellt:</strong> ${created}</p>
+              <p><strong>Letzte Aktivität:</strong> ${lastActivity}</p>
+              <div class="token-display" id="token-${
+                session.id
+              }">${shortToken}</div>
+              <button class="btn-copy" onclick="toggleToken('token-${
+                session.id
+              }', '${session.token}', this)">Show Full</button>
+              <button class="btn-copy" onclick="copyToken('${
+                session.token
+              }')">Copy</button>
+            </div>
+          `;
+        });
+
+        list.innerHTML =
+          html ||
+          '<p style="text-align:center;padding:20px;">Keine aktiven Sessions</p>';
+        modal.style.display = "block";
+      }
+
+      function closeSessionsModal() {
+        document.getElementById("sessions-modal").style.display = "none";
+      }
+
+      function toggleToken(elementId, fullToken, button) {
+        const element = document.getElementById(elementId);
+        if (button.textContent === "Show Full") {
+          element.textContent = fullToken;
+          button.textContent = "Show Short";
+        } else {
+          const shortToken =
+            fullToken.substring(0, 20) +
+            "..." +
+            fullToken.substring(fullToken.length - 10);
+          element.textContent = shortToken;
+          button.textContent = "Show Full";
+        }
+      }
+
+      function copyToken(token) {
+        navigator.clipboard.writeText(token).then(() => {
+          alert("Token kopiert!");
+        });
+      }
+
+      // Close modal when clicking outside
+      window.onclick = function (event) {
+        const modal = document.getElementById("sessions-modal");
+        if (event.target === modal) {
+          closeSessionsModal();
+        }
+      };
 
       async function fetchScoreboard() {
         try {
@@ -630,12 +961,16 @@
       fetchMetrics();
       fetchScoreboard();
       fetchSystemInfo();
+      fetchSessions();
 
       // Update every 1 second
       updateInterval = setInterval(fetchMetrics, 1000);
 
       // Update scoreboard every 10 seconds
       setInterval(fetchScoreboard, 10000);
+
+      // Update sessions count every 5 seconds
+      setInterval(fetchSessions, 5000);
 
       // Cleanup on page unload
       window.addEventListener("beforeunload", () => {

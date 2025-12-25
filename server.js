@@ -14,7 +14,7 @@ var JWT_SECRET =
 var propUserId = "urn:app:userid";
 var secret = new TextEncoder().encode(JWT_SECRET);
 var createToken = (userId) => {
-  console.log(`[JWT] Token Created: ${userId}`);
+  console.log(`[JWT] Token created for user: ${userId}`);
   return new SignJWT({ [propUserId]: userId })
     .setProtectedHeader({ alg: "HS256" })
     .setIssuedAt()
@@ -107,8 +107,10 @@ var cca = new ConfidentialClientApplication(msalConfig);
 var result = await cca.acquireTokenByClientCredential({
   scopes: ["https://graph.microsoft.com/.default"],
 });
+var appToken = "";
 if (result) {
-  console.log("App Token Acquired: ");
+  console.log("App Token Acquired");
+  appToken = result.accessToken || "";
 } else {
   console.log("Failed to acquire app token");
 }
@@ -118,6 +120,37 @@ var PORT = 3e3;
 
 // Scoreboard storage
 var scores = [];
+
+// Active sessions storage
+var activeSessions = [];
+
+// Metrics history storage (keep last 60 data points)
+var metricsHistory = [];
+
+// Track session
+function addSession(userId, token) {
+  const session = {
+    id: `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+    userId,
+    token,
+    createdAt: new Date().toISOString(),
+    lastActivity: new Date().toISOString(),
+  };
+  activeSessions.push(session);
+  // Clean old sessions (older than 15 minutes)
+  const fifteenMinutesAgo = Date.now() - 15 * 60 * 1000;
+  activeSessions = activeSessions.filter(
+    (s) => new Date(s.lastActivity).getTime() > fifteenMinutesAgo
+  );
+  return session;
+}
+
+function updateSessionActivity(token) {
+  const session = activeSessions.find((s) => s.token === token);
+  if (session) {
+    session.lastActivity = new Date().toISOString();
+  }
+}
 
 var parseBody = async (req) => {
   const body = await getReqBody(req);
@@ -161,6 +194,7 @@ var server = http.createServer(async (req, res) => {
       return;
     }
     const token = await createToken(user.id);
+    addSession(user.id, token);
     res.setHeader("Set-Cookie", `jwt=${token}; HttpOnly; Path=/; Max-Age=900`);
     res.writeHead(302, { Location: "/cockpit" }).end();
     return;
@@ -191,6 +225,7 @@ var server = http.createServer(async (req, res) => {
     }
     try {
       await verifyToken(cookieToken, userArray);
+      updateSessionActivity(cookieToken);
       const [
         cpuData,
         memData,
@@ -257,8 +292,15 @@ var server = http.createServer(async (req, res) => {
         timestamp: new Date().toISOString(),
       };
 
+      // Store in history (keep last 60 data points)
+      metricsHistory.push(metrics);
+      if (metricsHistory.length > 60) {
+        metricsHistory.shift();
+      }
+
+      // Return current metrics with history
       res.writeHead(200, { "Content-Type": "application/json" });
-      res.end(JSON.stringify(metrics));
+      res.end(JSON.stringify({ current: metrics, history: metricsHistory }));
       return;
     } catch (error) {
       res.writeHead(401).end("Unauthorized");
@@ -302,6 +344,25 @@ var server = http.createServer(async (req, res) => {
     res.end(JSON.stringify(scores.slice(0, 10)));
     return;
   }
+  if (method === "GET" && url === "/api/sessions") {
+    const cookieToken = (req.headers.cookie || "").match(/jwt=([^;]+)/)?.[1];
+    if (!cookieToken) {
+      res.writeHead(401).end("Unauthorized");
+      return;
+    }
+    try {
+      await verifyToken(cookieToken, userArray);
+      updateSessionActivity(cookieToken);
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(
+        JSON.stringify({ sessions: activeSessions, appToken: appToken || null })
+      );
+      return;
+    } catch (error) {
+      res.writeHead(401).end("Unauthorized");
+      return;
+    }
+  }
   if (method === "POST" && url === "/api/admin/restart") {
     const cookieToken = (req.headers.cookie || "").match(/jwt=([^;]+)/)?.[1];
     if (!cookieToken) {
@@ -310,6 +371,7 @@ var server = http.createServer(async (req, res) => {
     }
     try {
       await verifyToken(cookieToken, userArray);
+      updateSessionActivity(cookieToken);
       res.writeHead(200, { "Content-Type": "application/json" });
       res.end(
         JSON.stringify({ success: true, message: "Server restarting..." })
@@ -332,6 +394,7 @@ var server = http.createServer(async (req, res) => {
     }
     try {
       await verifyToken(cookieToken, userArray);
+      updateSessionActivity(cookieToken);
       res.writeHead(200, { "Content-Type": "application/json" });
       res.end(
         JSON.stringify({ success: true, message: "Server shutting down..." })
@@ -354,6 +417,7 @@ var server = http.createServer(async (req, res) => {
     }
     try {
       await verifyToken(cookieToken, userArray);
+      updateSessionActivity(cookieToken);
       const [osInfo, systemInfo, timeInfo, processInfo] = await Promise.all([
         si.osInfo(),
         si.system(),
