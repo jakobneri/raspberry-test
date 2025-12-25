@@ -1,5 +1,7 @@
 import si from "systeminformation";
 
+// ========== SYSTEM METRICS ==========
+
 export interface SystemMetrics {
   cpu: {
     usage: number;
@@ -136,47 +138,6 @@ export const getSystemInfo = async () => {
       nodeVersion: process.version,
       pid: process.pid,
       uptime: Math.floor(process.uptime() / 60),
-    },
-  };
-};
-
-export const getNetworkDetails = async () => {
-  const [networkInterfaces, networkStats, wifiInfo] = await Promise.all([
-    si.networkInterfaces(),
-    si.networkStats(),
-    si.wifiNetworks(),
-  ]);
-
-  // Find eth0 and wlan0 interfaces
-  const eth0 = networkInterfaces.find((iface) => iface.iface === "eth0");
-  const wlan0 = networkInterfaces.find((iface) => iface.iface === "wlan0");
-
-  // Find active stats for each
-  const eth0Stats = networkStats.find((stat) => stat.iface === "eth0");
-  const wlan0Stats = networkStats.find((stat) => stat.iface === "wlan0");
-
-  return {
-    ethernet: {
-      connected: eth0 && eth0.ip4 ? true : false,
-      interface: "eth0",
-      ipAddress: eth0?.ip4 || "N/A",
-      ipv6Address: eth0?.ip6 || "N/A",
-      macAddress: eth0?.mac || "N/A",
-      speed: eth0?.speed ? `${eth0.speed} Mbps` : "Unknown",
-      rx: eth0Stats ? Math.round((eth0Stats.rx_sec / 1024) * 100) / 100 : 0,
-      tx: eth0Stats ? Math.round((eth0Stats.tx_sec / 1024) * 100) / 100 : 0,
-    },
-    wifi: {
-      connected: wlan0 && wlan0.ip4 ? true : false,
-      interface: "wlan0",
-      ipAddress: wlan0?.ip4 || "N/A",
-      ipv6Address: wlan0?.ip6 || "N/A",
-      macAddress: wlan0?.mac || "N/A",
-      speed: wlan0?.speed ? `${wlan0.speed} Mbps` : "Unknown",
-      ssid: wifiInfo.length > 0 ? wifiInfo[0].ssid : "N/A",
-      signal: wifiInfo.length > 0 ? wifiInfo[0].signalLevel : null,
-      rx: wlan0Stats ? Math.round((wlan0Stats.rx_sec / 1024) * 100) / 100 : 0,
-      tx: wlan0Stats ? Math.round((wlan0Stats.tx_sec / 1024) * 100) / 100 : 0,
     },
   };
 };

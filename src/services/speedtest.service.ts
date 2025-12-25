@@ -3,6 +3,8 @@ import { promisify } from "node:util";
 
 const execAsync = promisify(exec);
 
+// ========== SPEEDTEST EXECUTION ==========
+
 export interface SpeedTestResult {
   success: boolean;
   ping: number | null;
@@ -122,4 +124,111 @@ export const runSpeedTest = async (): Promise<SpeedTestResult> => {
       }
     }
   }
+};
+
+// ========== SPEEDTEST HISTORY ==========
+
+export interface SpeedTestHistoryEntry {
+  timestamp: string;
+  ping: number | null;
+  download: number | null;
+  upload: number | null;
+}
+
+const MAX_HISTORY = 1000;
+const history: SpeedTestHistoryEntry[] = [];
+
+export const addSpeedTestResult = (result: SpeedTestResult): void => {
+  if (result.success) {
+    history.push({
+      timestamp: result.timestamp,
+      ping: result.ping,
+      download: result.download,
+      upload: result.upload,
+    });
+
+    // Keep only the last MAX_HISTORY entries
+    if (history.length > MAX_HISTORY) {
+      history.shift();
+    }
+
+    console.log(
+      `[Speedtest] Added result to history. Total entries: ${history.length}`
+    );
+  }
+};
+
+export const getSpeedTestHistory = (): SpeedTestHistoryEntry[] => {
+  return [...history];
+};
+
+export const clearSpeedTestHistory = (): void => {
+  history.length = 0;
+  console.log("[Speedtest] Cleared all history entries");
+};
+
+// ========== SPEEDTEST SCHEDULER ==========
+
+export type SpeedTestInterval = 10 | 30 | 60 | 300 | 600; // seconds
+
+let currentInterval: SpeedTestInterval = 60; // 1 minute default
+let intervalHandle: NodeJS.Timeout | null = null;
+let isRunning = false;
+
+const runScheduledSpeedTest = async () => {
+  if (isRunning) {
+    console.log("[Speedtest] Test already running, skipping...");
+    return;
+  }
+
+  isRunning = true;
+  console.log("[Speedtest] Running scheduled speed test...");
+
+  try {
+    const result = await runSpeedTest();
+    addSpeedTestResult(result);
+  } catch (error) {
+    console.error("[Speedtest] Error running test:", error);
+  } finally {
+    isRunning = false;
+  }
+};
+
+export const startSpeedTestScheduler = (interval: SpeedTestInterval = 60) => {
+  console.log(`[Speedtest] Starting scheduler with ${interval}s interval`);
+  currentInterval = interval;
+
+  // Stop existing interval if any
+  if (intervalHandle) {
+    clearInterval(intervalHandle);
+  }
+
+  // Run immediately on start
+  runScheduledSpeedTest();
+
+  // Schedule recurring tests
+  intervalHandle = setInterval(runScheduledSpeedTest, interval * 1000);
+};
+
+export const stopSpeedTestScheduler = () => {
+  if (intervalHandle) {
+    clearInterval(intervalHandle);
+    intervalHandle = null;
+    console.log("[Speedtest] Scheduler stopped");
+  }
+};
+
+export const setSpeedTestInterval = (interval: SpeedTestInterval) => {
+  if (interval !== currentInterval) {
+    console.log(`[Speedtest] Changing interval to ${interval}s`);
+    startSpeedTestScheduler(interval);
+  }
+};
+
+export const getCurrentInterval = (): SpeedTestInterval => {
+  return currentInterval;
+};
+
+export const isSpeedTestRunning = (): boolean => {
+  return isRunning;
 };

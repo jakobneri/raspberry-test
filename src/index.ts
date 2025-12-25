@@ -5,19 +5,17 @@ import {
   verifyToken,
   propUserId,
   clearTokenCache,
-} from "./services/jwt.service.js";
-import { users } from "./services/user.service.js";
-import { getAppToken } from "./services/sso.service.js";
-import * as sessionService from "./services/session.service.js";
+  users,
+  getAppToken,
+  getCookieToken,
+} from "./services/auth.service.js";
+import * as sessionService from "./services/auth.service.js";
 import * as scoreService from "./services/score.service.js";
 import * as metricsService from "./services/metrics.service.js";
 import * as filesService from "./services/files.service.js";
-import * as adminService from "./services/admin.service.js";
-import * as wifiService from "./services/wifi.service.js";
+import * as systemService from "./services/system.service.js";
+import * as networkService from "./services/network.service.js";
 import * as speedTestService from "./services/speedtest.service.js";
-import * as speedTestHistoryService from "./services/speedtest-history.service.js";
-import * as speedTestSchedulerService from "./services/speedtest-scheduler.service.js";
-import * as logService from "./services/log.service.js";
 
 const PORT = 3000;
 
@@ -82,10 +80,10 @@ const server = http.createServer(async (req, res) => {
 
   // Game page (public but track session if logged in)
   if (method === "GET" && url === "/game") {
-    const cookieToken = sessionService.getCookieToken(req);
+    const cookieToken = getCookieToken(req);
     if (cookieToken) {
       try {
-        await verifyToken(cookieToken, users);
+        await verifyToken(cookieToken);
         sessionService.updateSessionActivity(cookieToken);
       } catch {}
     }
@@ -97,12 +95,12 @@ const server = http.createServer(async (req, res) => {
 
   // Submit score (public)
   if (method === "POST" && url === "/api/scores") {
-    const cookieToken = sessionService.getCookieToken(req);
+    const cookieToken = getCookieToken(req);
     let userId = "anonymous";
 
     if (cookieToken) {
       try {
-        const payload = await verifyToken(cookieToken, users);
+        const payload = await verifyToken(cookieToken);
         sessionService.updateSessionActivity(cookieToken);
         userId = payload[propUserId] as string;
       } catch {}
@@ -131,10 +129,10 @@ const server = http.createServer(async (req, res) => {
 
   // Who am I (public)
   if (method === "GET" && url === "/api/whoami") {
-    const cookieToken = sessionService.getCookieToken(req);
+    const cookieToken = getCookieToken(req);
     if (cookieToken) {
       try {
-        const payload = await verifyToken(cookieToken, users);
+        const payload = await verifyToken(cookieToken);
         res.writeHead(200, { "Content-Type": "application/json" });
         res.end(
           JSON.stringify({ loggedIn: true, userId: payload[propUserId] })
@@ -149,10 +147,10 @@ const server = http.createServer(async (req, res) => {
 
   // Files page (public but track session if logged in)
   if (method === "GET" && url === "/files") {
-    const cookieToken = sessionService.getCookieToken(req);
+    const cookieToken = getCookieToken(req);
     if (cookieToken) {
       try {
-        await verifyToken(cookieToken, users);
+        await verifyToken(cookieToken);
         sessionService.updateSessionActivity(cookieToken);
       } catch {}
     }
@@ -164,14 +162,14 @@ const server = http.createServer(async (req, res) => {
 
   // ========== AUTHENTICATED ROUTES ==========
 
-  const cookieToken = sessionService.getCookieToken(req);
+  const cookieToken = getCookieToken(req);
   if (!cookieToken) {
     res.writeHead(401).end("Unauthorized");
     return;
   }
 
   try {
-    const payload = await verifyToken(cookieToken, users);
+    const payload = await verifyToken(cookieToken);
     sessionService.updateSessionActivity(
       cookieToken,
       payload[propUserId] as string
@@ -195,7 +193,7 @@ const server = http.createServer(async (req, res) => {
 
     // Get logs
     if (method === "GET" && url === "/api/logs") {
-      const logs = logService.getLogs();
+      const logs = systemService.getLogs();
       res.writeHead(200, { "Content-Type": "application/json" });
       res.end(JSON.stringify({ logs }));
       return;
@@ -203,7 +201,7 @@ const server = http.createServer(async (req, res) => {
 
     // Clear logs
     if (method === "POST" && url === "/api/logs/clear") {
-      logService.clearLogs();
+      systemService.clearLogs();
       res.writeHead(200, { "Content-Type": "application/json" });
       res.end(JSON.stringify({ success: true }));
       return;
@@ -231,7 +229,7 @@ const server = http.createServer(async (req, res) => {
 
     // Network details
     if (method === "GET" && url === "/api/network/details") {
-      const details = await metricsService.getNetworkDetails();
+      const details = await networkService.getNetworkDetails();
       res.writeHead(200, { "Content-Type": "application/json" });
       res.end(JSON.stringify(details));
       return;
@@ -241,7 +239,7 @@ const server = http.createServer(async (req, res) => {
     if (method === "POST" && url === "/api/speedtest") {
       try {
         const result = await speedTestService.runSpeedTest();
-        speedTestHistoryService.addSpeedTestResult(result);
+        speedTestService.addSpeedTestResult(result);
         res.writeHead(200, { "Content-Type": "application/json" });
         res.end(JSON.stringify(result));
         return;
@@ -254,7 +252,7 @@ const server = http.createServer(async (req, res) => {
 
     // Get speedtest history
     if (method === "GET" && url === "/api/speedtest/history") {
-      const history = speedTestHistoryService.getSpeedTestHistory();
+      const history = speedTestService.getSpeedTestHistory();
       res.writeHead(200, { "Content-Type": "application/json" });
       res.end(JSON.stringify({ history }));
       return;
@@ -262,7 +260,7 @@ const server = http.createServer(async (req, res) => {
 
     // Clear speedtest history
     if (method === "POST" && url === "/api/speedtest/history/clear") {
-      speedTestHistoryService.clearSpeedTestHistory();
+      speedTestService.clearSpeedTestHistory();
       res.writeHead(200, { "Content-Type": "application/json" });
       res.end(JSON.stringify({ success: true }));
       return;
@@ -270,7 +268,7 @@ const server = http.createServer(async (req, res) => {
 
     // Get speedtest interval
     if (method === "GET" && url === "/api/speedtest/interval") {
-      const interval = speedTestSchedulerService.getCurrentInterval();
+      const interval = speedTestService.getCurrentInterval();
       res.writeHead(200, { "Content-Type": "application/json" });
       res.end(JSON.stringify({ interval }));
       return;
@@ -282,7 +280,7 @@ const server = http.createServer(async (req, res) => {
         const body = await parseBody(req);
         const interval = parseInt(body.get("interval") || "60");
         if ([10, 30, 60, 300, 600].includes(interval)) {
-          speedTestSchedulerService.setSpeedTestInterval(interval as any);
+          speedTestService.setSpeedTestInterval(interval as any);
           res.writeHead(200, { "Content-Type": "application/json" });
           res.end(JSON.stringify({ success: true, interval }));
         } else {
@@ -299,7 +297,7 @@ const server = http.createServer(async (req, res) => {
     // WiFi status
     if (method === "GET" && url === "/api/wifi/status") {
       try {
-        const status = await wifiService.getWifiStatus();
+        const status = await networkService.getWifiStatus();
         res.writeHead(200, { "Content-Type": "application/json" });
         res.end(JSON.stringify(status));
         return;
@@ -312,7 +310,7 @@ const server = http.createServer(async (req, res) => {
     // WiFi scan
     if (method === "GET" && url === "/api/wifi/scan") {
       try {
-        const networks = await wifiService.scanWifi();
+        const networks = await networkService.scanWifi();
         res.writeHead(200, { "Content-Type": "application/json" });
         res.end(JSON.stringify(networks));
         return;
@@ -334,7 +332,7 @@ const server = http.createServer(async (req, res) => {
           return;
         }
 
-        const result = await wifiService.connectWifi(ssid, password);
+        const result = await networkService.connectWifi(ssid, password);
         res.writeHead(200, { "Content-Type": "application/json" });
         res.end(JSON.stringify(result));
         return;
@@ -452,7 +450,7 @@ const server = http.createServer(async (req, res) => {
         })
       );
 
-      adminService.updateAndRestart();
+      systemService.updateAndRestart();
       return;
     }
 
@@ -467,7 +465,7 @@ const server = http.createServer(async (req, res) => {
         JSON.stringify({ success: true, message: "Server restarting..." })
       );
 
-      adminService.restart();
+      systemService.restart();
       return;
     }
 
@@ -482,7 +480,7 @@ const server = http.createServer(async (req, res) => {
         JSON.stringify({ success: true, message: "Server shutting down..." })
       );
 
-      adminService.shutdown();
+      systemService.shutdown();
       return;
     }
 
@@ -511,4 +509,4 @@ server.listen(PORT);
 console.log(`Server: http://pi.local:${PORT}`);
 
 // Start speedtest scheduler with default 1-minute interval
-speedTestSchedulerService.startSpeedTestScheduler(60);
+speedTestService.startSpeedTestScheduler(60);

@@ -1,3 +1,7 @@
+import { exec } from "node:child_process";
+
+// ========== LOG MANAGEMENT ==========
+
 export interface LogEntry {
   timestamp: string;
   level: "info" | "warn" | "error";
@@ -33,10 +37,7 @@ console.error = (...args: any[]) => {
   originalConsole.error(...args);
 };
 
-export const addLog = (
-  level: "info" | "warn" | "error",
-  message: string
-): void => {
+const addLog = (level: "info" | "warn" | "error", message: string): void => {
   logs.push({
     timestamp: new Date().toISOString(),
     level,
@@ -58,4 +59,35 @@ export const getLogs = (limit?: number): LogEntry[] => {
 
 export const clearLogs = (): void => {
   logs.length = 0;
+};
+
+// ========== ADMIN MANAGEMENT ==========
+
+export const restart = (): void => {
+  console.log("[System] Server restart requested");
+  setTimeout(() => {
+    console.log("[System] Server restarting now...");
+    process.exit(42);
+  }, 500);
+};
+
+export const shutdown = (): void => {
+  console.log("[System] Server shutdown requested");
+  setTimeout(() => {
+    console.log("[System] Server shutting down now...");
+    process.exit(0);
+  }, 500);
+};
+
+export const updateAndRestart = (): void => {
+  console.log("[System] Server update & restart requested");
+  setTimeout(() => {
+    console.log("[System] Executing start.sh with option 0...");
+    exec("bash start.sh 0", (error) => {
+      if (error) {
+        console.error(`[System] start.sh execution error: ${error.message}`);
+      }
+    });
+    process.exit(42);
+  }, 500);
 };
