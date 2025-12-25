@@ -185,8 +185,9 @@ function updateSessionActivity(token) {
       const decoded = JSON.parse(
         Buffer.from(token.split(".")[1], "base64").toString()
       );
-      if (decoded && decoded.userId) {
-        addSession(decoded.userId, token);
+      const userId = decoded[propUserId];
+      if (userId) {
+        addSession(userId, token);
       }
     } catch (err) {
       console.error(
@@ -898,6 +899,20 @@ var server = http.createServer(async (req, res) => {
       res.writeHead(500).end("Error getting WiFi status");
       return;
     }
+  }
+  if (method === "POST" && url === "/api/logout") {
+    const cookieToken = (req.headers.cookie || "").match(/jwt=([^;]+)/)?.[1];
+    if (cookieToken) {
+      // Remove session
+      activeSessions = activeSessions.filter((s) => s.token !== cookieToken);
+      // Clear token from cache
+      tokenCache.delete(cookieToken);
+    }
+    // Clear cookie
+    res.setHeader("Set-Cookie", "jwt=; HttpOnly; Path=/; Max-Age=0");
+    res.writeHead(200, { "Content-Type": "application/json" });
+    res.end(JSON.stringify({ success: true }));
+    return;
   }
   if (method === "GET" && url === "/api/wifi/scan") {
     const cookieToken = (req.headers.cookie || "").match(/jwt=([^;]+)/)?.[1];
