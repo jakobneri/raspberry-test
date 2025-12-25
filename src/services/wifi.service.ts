@@ -69,9 +69,9 @@ export const connectWifi = async (
   password?: string
 ): Promise<{ success: boolean; message: string }> => {
   try {
-    // Use sudo for nmcli device wifi connect which handles WPA automatically
+    // Use sudo and explicitly set key-mgmt for WPA networks
     const connectCmd = password
-      ? `sudo nmcli device wifi connect "${ssid}" password "${password}"`
+      ? `sudo nmcli dev wifi connect "${ssid}" password "${password}" wpa-psk`
       : `sudo nmcli device wifi connect "${ssid}"`;
 
     console.log(`[WiFi] Attempting to connect to: ${ssid}`);
