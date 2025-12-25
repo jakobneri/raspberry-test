@@ -69,34 +69,27 @@ export const connectWifi = async (
   password?: string
 ): Promise<{ success: boolean; message: string }> => {
   try {
+    // Use sudo for nmcli device wifi connect which handles WPA automatically
     const connectCmd = password
-      ? `nmcli device wifi connect "${ssid}" password "${password}" wep-key-type key`
-      : `nmcli device wifi connect "${ssid}"`;
+      ? `sudo nmcli device wifi connect "${ssid}" password "${password}"`
+      : `sudo nmcli device wifi connect "${ssid}"`;
 
+    console.log(`[WiFi] Attempting to connect to: ${ssid}`);
     await execAsync(connectCmd);
 
+    console.log(`[WiFi] Successfully connected to: ${ssid}`);
     return { success: true, message: "Connected successfully" };
   } catch (error: any) {
-    // If WEP failed, try WPA
-    if (password && error.message?.includes("key-mgmt")) {
-      try {
-        const wpaCmd = `nmcli connection add type wifi con-name "${ssid}" ifname wlan0 ssid "${ssid}" wifi-sec.key-mgmt wpa-psk wifi-sec.psk "${password}"`;
-        await execAsync(wpaCmd);
-        await execAsync(`nmcli connection up "${ssid}"`);
-        return { success: true, message: "Connected successfully" };
-      } catch (wpaError: any) {
-        console.error("[WiFi WPA Connect Error]", wpaError);
-        return {
-          success: false,
-          message: wpaError.message || "Connection failed",
-        };
-      }
-    }
-
     console.error("[WiFi Connect Error]", error);
+
+    // Extract meaningful error message
+    const errorMsg = error.stderr || error.message || "Connection failed";
+
     return {
       success: false,
-      message: error.message || "Connection failed",
+      message: errorMsg.includes("Insufficient privileges")
+        ? "Permission denied. Server needs sudo privileges for WiFi operations."
+        : errorMsg,
     };
   }
 };
