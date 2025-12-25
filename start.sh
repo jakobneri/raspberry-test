@@ -62,17 +62,29 @@ pull_updates() {
         echo ""
     fi
     
-    git pull
-    if [ $? -eq 0 ]; then
-        echo -e "${GREEN}✓ Successfully pulled latest changes!${NC}"
-        echo ""
-        
+    # Capture git pull output to check if anything changed
+    GIT_OUTPUT=$(git pull 2>&1)
+    GIT_EXIT_CODE=$?
+    
+    echo "$GIT_OUTPUT"
+    
+    if [ $GIT_EXIT_CODE -eq 0 ]; then
         # Ensure start.sh has execute permissions after pull
         chmod +x start.sh
+        
+        # Check if there were actual updates
+        if echo "$GIT_OUTPUT" | grep -q "Already up to date"; then
+            echo -e "${GREEN}✓ Repository already up to date - skipping build steps${NC}"
+            echo ""
+            return 0
+        fi
+        
+        echo -e "${GREEN}✓ Successfully pulled latest changes!${NC}"
+        echo ""
         echo -e "${GREEN}✓ Restored execute permissions for start.sh${NC}"
         echo ""
         
-        # Always install/update dependencies after pull
+        # Only install/build if there were updates
         echo -e "${YELLOW}📦 Installing dependencies...${NC}"
         npm install
         if [ $? -eq 0 ]; then
