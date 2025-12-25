@@ -74,12 +74,23 @@ pull_updates() {
         
         # Always install/update dependencies after pull
         echo -e "${YELLOW}📦 Installing dependencies...${NC}"
-        npm install --production
+        npm install
         if [ $? -eq 0 ]; then
             echo -e "${GREEN}✓ All dependencies installed successfully!${NC}"
         else
             echo -e "${RED}✗ Failed to install dependencies${NC}"
             echo -e "${RED}  Please check your internet connection or package.json${NC}"
+            return 1
+        fi
+        echo ""
+        
+        # Build TypeScript
+        echo -e "${YELLOW}🔨 Building TypeScript...${NC}"
+        npm run build
+        if [ $? -eq 0 ]; then
+            echo -e "${GREEN}✓ Build successful!${NC}"
+        else
+            echo -e "${RED}✗ Build failed${NC}"
             return 1
         fi
         echo ""
@@ -102,8 +113,19 @@ start_server() {
     echo -e "${BLUE}═══════════════════════════════════════${NC}"
     echo ""
     
+    # Build TypeScript if dist doesn't exist
+    if [ ! -d "dist" ]; then
+        echo -e "${YELLOW}🔨 Building TypeScript...${NC}"
+        npm run build
+        if [ $? -ne 0 ]; then
+            echo -e "${RED}✗ Build failed${NC}"
+            return 1
+        fi
+        echo ""
+    fi
+    
     while true; do
-        node server.js
+        npm start
         EXIT_CODE=$?
         
         if [ $EXIT_CODE -eq 42 ]; then
