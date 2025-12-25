@@ -720,6 +720,7 @@
                 gap: 10px;
                 align-items: center;
                 margin-bottom: 10px;
+                flex-wrap: wrap;
               "
             >
               <button
@@ -730,10 +731,81 @@
               >
                 ▶️ Run Speed Test
               </button>
-              <div id="speedtest-warning" style="font-size: 12px; color: #888">
-                Speedtest can take up to 60 seconds
+              <select
+                id="speedtest-interval"
+                onchange="setSpeedtestInterval()"
+                style="
+                  padding: 8px 12px;
+                  border-radius: 6px;
+                  border: 2px solid #667eea;
+                  font-size: 14px;
+                  cursor: pointer;
+                "
+              >
+                <option value="10">Every 10 seconds</option>
+                <option value="30">Every 30 seconds</option>
+                <option value="60" selected>Every 1 minute</option>
+                <option value="300">Every 5 minutes</option>
+                <option value="600">Every 10 minutes</option>
+              </select>
+              <div
+                id="speedtest-warning"
+                style="font-size: 12px; color: #888; flex: 1"
+              >
+                Auto-running speed tests
               </div>
             </div>
+
+            <!-- Speedtest Graphs -->
+            <div
+              style="
+                background: #f8f9ff;
+                padding: 20px;
+                border-radius: 8px;
+                margin-bottom: 15px;
+              "
+            >
+              <div
+                style="
+                  display: flex;
+                  gap: 10px;
+                  margin-bottom: 15px;
+                  justify-content: center;
+                "
+              >
+                <button
+                  class="btn-admin"
+                  onclick="focusSpeedtestMetric('all')"
+                  id="focus-all"
+                  style="background: #667eea"
+                >
+                  All Metrics
+                </button>
+                <button
+                  class="btn-admin"
+                  onclick="focusSpeedtestMetric('ping')"
+                  id="focus-ping"
+                >
+                  Ping
+                </button>
+                <button
+                  class="btn-admin"
+                  onclick="focusSpeedtestMetric('download')"
+                  id="focus-download"
+                >
+                  Download
+                </button>
+                <button
+                  class="btn-admin"
+                  onclick="focusSpeedtestMetric('upload')"
+                  id="focus-upload"
+                >
+                  Upload
+                </button>
+              </div>
+              <canvas id="speedtest-chart" style="max-height: 300px"></canvas>
+            </div>
+
             <div
               id="speedtest-results"
               style="
@@ -744,7 +816,7 @@
               "
             >
               <p style="text-align: center; color: #999">
-                Click "Run Speed Test" to measure your connection speed
+                Loading speed test data...
               </p>
             </div>
           </div>
@@ -826,7 +898,8 @@
 
     <script>
       let updateInterval;
-      let cpuChart, memChart, netChart;
+      let cpuChart, memChart, netChart, speedtestChart;
+      let speedtestFocusMode = "all";
 
       async function fetchMetrics() {
         try {
@@ -1160,42 +1233,74 @@
         const detailsDiv = document.getElementById("network-details");
 
         let html = `
-          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 15px;">
-            <div>
-              <strong>Connection Type:</strong><br>
-              <span style="font-size: 18px;">${
-                data.connectionType === "WiFi" ? "📶" : "🔌"
-              } ${data.connectionType}</span>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+            <!-- Ethernet Section -->
+            <div style="background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+              <h4 style="margin: 0 0 15px 0; color: #667eea;">
+                🔌 Ethernet (eth0)
+              </h4>
+              <div style="font-size: 14px; line-height: 2;">
+                <div>
+                  <strong>Status:</strong> ${
+                    data.ethernet.connected
+                      ? '<span style="color: #28a745;">✅ Connected</span>'
+                      : '<span style="color: #888;">⚫ Disconnected</span>'
+                  }
+                </div>
+                ${
+                  data.ethernet.connected
+                    ? `
+                  <div><strong>IP:</strong> ${data.ethernet.ipAddress}</div>
+                  <div><strong>MAC:</strong> ${data.ethernet.macAddress}</div>
+                  <div><strong>Speed:</strong> ${data.ethernet.speed}</div>
+                  <div><strong>RX:</strong> ${data.ethernet.rx.toFixed(
+                    2
+                  )} KB/s</div>
+                  <div><strong>TX:</strong> ${data.ethernet.tx.toFixed(
+                    2
+                  )} KB/s</div>
+                `
+                    : ""
+                }
+              </div>
             </div>
-            <div>
-              <strong>Status:</strong><br>
-              ${
-                data.connected
-                  ? '<span style="color: #28a745;">✅ Connected</span>'
-                  : '<span style="color: #f5576c;">❌ Disconnected</span>'
-              }
+
+            <!-- WiFi Section -->
+            <div style="background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+              <h4 style="margin: 0 0 15px 0; color: #667eea;">
+                📶 WiFi (wlan0)
+              </h4>
+              <div style="font-size: 14px; line-height: 2;">
+                <div>
+                  <strong>Status:</strong> ${
+                    data.wifi.connected
+                      ? '<span style="color: #28a745;">✅ Connected</span>'
+                      : '<span style="color: #888;">⚫ Disconnected</span>'
+                  }
+                </div>
+                ${
+                  data.wifi.connected
+                    ? `
+                  <div><strong>SSID:</strong> ${data.wifi.ssid}</div>
+                  ${
+                    data.wifi.signal
+                      ? `<div><strong>Signal:</strong> ${data.wifi.signal}%</div>`
+                      : ""
+                  }
+                  <div><strong>IP:</strong> ${data.wifi.ipAddress}</div>
+                  <div><strong>MAC:</strong> ${data.wifi.macAddress}</div>
+                  <div><strong>Speed:</strong> ${data.wifi.speed}</div>
+                  <div><strong>RX:</strong> ${data.wifi.rx.toFixed(
+                    2
+                  )} KB/s</div>
+                  <div><strong>TX:</strong> ${data.wifi.tx.toFixed(
+                    2
+                  )} KB/s</div>
+                `
+                    : ""
+                }
+              </div>
             </div>
-          </div>
-          <hr style="margin: 15px 0; border: none; border-top: 1px solid #e0e0e0;">
-          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 10px;">
-            <div><strong>Interface:</strong> ${data.interface}</div>
-            <div><strong>IP Address:</strong> ${data.ipAddress}</div>
-            ${
-              data.ipv6Address !== "N/A"
-                ? `<div><strong>IPv6:</strong> ${data.ipv6Address}</div>`
-                : ""
-            }
-            <div><strong>MAC Address:</strong> ${data.macAddress}</div>
-            ${
-              data.speed !== "Unknown"
-                ? `<div><strong>Link Speed:</strong> ${data.speed}</div>`
-                : ""
-            }
-            ${
-              data.ssid !== "N/A"
-                ? `<div><strong>WiFi SSID:</strong> ${data.ssid}</div>`
-                : ""
-            }
           </div>
         `;
 
@@ -1744,11 +1849,199 @@
         }
       }
 
+      // Speedtest Functions
+      async function setSpeedtestInterval() {
+        const select = document.getElementById("speedtest-interval");
+        const interval = select.value;
+
+        try {
+          const response = await fetch("/api/speedtest/interval", {
+            method: "POST",
+            headers: { "Content-Type": "application/x-www-form-urlencoded" },
+            body: `interval=${interval}`,
+          });
+
+          if (response.ok) {
+            console.log(`Speed test interval set to ${interval} seconds`);
+          }
+        } catch (error) {
+          console.error("Error setting interval:", error);
+        }
+      }
+
+      async function fetchSpeedtestHistory() {
+        try {
+          const response = await fetch("/api/speedtest/history");
+          if (response.ok) {
+            const data = await response.json();
+            updateSpeedtestChart(data.history);
+            updateSpeedtestResults(data.history);
+          }
+        } catch (error) {
+          console.error("Error fetching speedtest history:", error);
+        }
+      }
+
+      function updateSpeedtestChart(history) {
+        if (history.length === 0) return;
+
+        const ctx = document.getElementById("speedtest-chart");
+        const labels = history.map((entry) =>
+          new Date(entry.timestamp).toLocaleTimeString("de-DE")
+        );
+
+        const datasets = [];
+
+        if (speedtestFocusMode === "all" || speedtestFocusMode === "ping") {
+          datasets.push({
+            label: "Ping (ms)",
+            data: history.map((entry) => entry.ping),
+            borderColor: "#667eea",
+            backgroundColor: "rgba(102, 126, 234, 0.1)",
+            yAxisID: "y-ping",
+            hidden:
+              speedtestFocusMode !== "all" && speedtestFocusMode !== "ping",
+          });
+        }
+
+        if (speedtestFocusMode === "all" || speedtestFocusMode === "download") {
+          datasets.push({
+            label: "Download (Mbit/s)",
+            data: history.map((entry) => entry.download),
+            borderColor: "#28a745",
+            backgroundColor: "rgba(40, 167, 69, 0.1)",
+            yAxisID: "y-speed",
+            hidden:
+              speedtestFocusMode !== "all" && speedtestFocusMode !== "download",
+          });
+        }
+
+        if (speedtestFocusMode === "all" || speedtestFocusMode === "upload") {
+          datasets.push({
+            label: "Upload (Mbit/s)",
+            data: history.map((entry) => entry.upload),
+            borderColor: "#f5576c",
+            backgroundColor: "rgba(245, 87, 108, 0.1)",
+            yAxisID: "y-speed",
+            hidden:
+              speedtestFocusMode !== "all" && speedtestFocusMode !== "upload",
+          });
+        }
+
+        if (speedtestChart) {
+          speedtestChart.destroy();
+        }
+
+        speedtestChart = new Chart(ctx, {
+          type: "line",
+          data: { labels, datasets },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: {
+              mode: "index",
+              intersect: false,
+            },
+            scales: {
+              "y-ping": {
+                type: "linear",
+                display:
+                  speedtestFocusMode === "all" || speedtestFocusMode === "ping",
+                position: "left",
+                title: {
+                  display: true,
+                  text: "Ping (ms)",
+                },
+              },
+              "y-speed": {
+                type: "linear",
+                display:
+                  speedtestFocusMode === "all" ||
+                  speedtestFocusMode === "download" ||
+                  speedtestFocusMode === "upload",
+                position: speedtestFocusMode === "all" ? "right" : "left",
+                title: {
+                  display: true,
+                  text: "Speed (Mbit/s)",
+                },
+                grid: {
+                  drawOnChartArea: speedtestFocusMode !== "all",
+                },
+              },
+            },
+          },
+        });
+      }
+
+      function updateSpeedtestResults(history) {
+        if (history.length === 0) return;
+
+        const latest = history[history.length - 1];
+        const resultsDiv = document.getElementById("speedtest-results");
+
+        let html = `
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; text-align: center;">
+            <div style="background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+              <div style="font-size: 11px; color: #888; margin-bottom: 5px;">LATEST PING</div>
+              <div style="font-size: 28px; font-weight: bold; color: #667eea;">${
+                latest.ping || "--"
+              }</div>
+              <div style="font-size: 12px; color: #888;">ms</div>
+            </div>
+        `;
+
+        if (latest.download !== null) {
+          html += `
+            <div style="background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+              <div style="font-size: 11px; color: #888; margin-bottom: 5px;">LATEST DOWNLOAD</div>
+              <div style="font-size: 28px; font-weight: bold; color: #28a745;">${latest.download}</div>
+              <div style="font-size: 12px; color: #888;">Mbit/s</div>
+            </div>
+          `;
+        }
+
+        if (latest.upload !== null) {
+          html += `
+            <div style="background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+              <div style="font-size: 11px; color: #888; margin-bottom: 5px;">LATEST UPLOAD</div>
+              <div style="font-size: 28px; font-weight: bold; color: #f5576c;">${latest.upload}</div>
+              <div style="font-size: 12px; color: #888;">Mbit/s</div>
+            </div>
+          `;
+        }
+
+        html += `</div>`;
+        html += `<p style="margin-top: 10px; font-size: 11px; color: #aaa; text-align: center;">Last test: ${new Date(
+          latest.timestamp
+        ).toLocaleString("de-DE")}</p>`;
+        html += `<p style="margin-top: 5px; font-size: 11px; color: #aaa; text-align: center;">Total tests: ${history.length}</p>`;
+
+        resultsDiv.innerHTML = html;
+      }
+
+      function focusSpeedtestMetric(metric) {
+        speedtestFocusMode = metric;
+
+        // Update button states
+        document.getElementById("focus-all").style.background =
+          metric === "all" ? "#667eea" : "#888";
+        document.getElementById("focus-ping").style.background =
+          metric === "ping" ? "#667eea" : "#888";
+        document.getElementById("focus-download").style.background =
+          metric === "download" ? "#667eea" : "#888";
+        document.getElementById("focus-upload").style.background =
+          metric === "upload" ? "#667eea" : "#888";
+
+        // Refresh chart
+        fetchSpeedtestHistory();
+      }
+
       // Initial fetch
       fetchMetrics();
       fetchScoreboard();
       fetchSystemInfo();
       fetchSessions();
+      fetchSpeedtestHistory();
 
       // Update every 1 second
       updateInterval = setInterval(fetchMetrics, 1000);
@@ -1758,6 +2051,9 @@
 
       // Update sessions count every 5 seconds
       setInterval(fetchSessions, 5000);
+
+      // Update speedtest history every 10 seconds
+      setInterval(fetchSpeedtestHistory, 10000);
 
       // Cleanup on page unload
       window.addEventListener("beforeunload", () => {

@@ -15,6 +15,8 @@ import * as filesService from "./services/files.service.js";
 import * as adminService from "./services/admin.service.js";
 import * as wifiService from "./services/wifi.service.js";
 import * as speedTestService from "./services/speedtest.service.js";
+import * as speedTestHistoryService from "./services/speedtest-history.service.js";
+import * as speedTestSchedulerService from "./services/speedtest-scheduler.service.js";
 import * as logService from "./services/log.service.js";
 
 const PORT = 3000;
@@ -239,12 +241,57 @@ const server = http.createServer(async (req, res) => {
     if (method === "POST" && url === "/api/speedtest") {
       try {
         const result = await speedTestService.runSpeedTest();
+        speedTestHistoryService.addSpeedTestResult(result);
         res.writeHead(200, { "Content-Type": "application/json" });
         res.end(JSON.stringify(result));
         return;
       } catch (error) {
         console.error("[Speedtest Error]", error);
         res.writeHead(500).end("Error running speedtest");
+        return;
+      }
+    }
+
+    // Get speedtest history
+    if (method === "GET" && url === "/api/speedtest/history") {
+      const history = speedTestHistoryService.getSpeedTestHistory();
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ history }));
+      return;
+    }
+
+    // Clear speedtest history
+    if (method === "POST" && url === "/api/speedtest/history/clear") {
+      speedTestHistoryService.clearSpeedTestHistory();
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ success: true }));
+      return;
+    }
+
+    // Get speedtest interval
+    if (method === "GET" && url === "/api/speedtest/interval") {
+      const interval = speedTestSchedulerService.getCurrentInterval();
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ interval }));
+      return;
+    }
+
+    // Set speedtest interval
+    if (method === "POST" && url === "/api/speedtest/interval") {
+      try {
+        const body = await parseBody(req);
+        const interval = parseInt(body.get("interval") || "60");
+        if ([10, 30, 60, 300, 600].includes(interval)) {
+          speedTestSchedulerService.setSpeedTestInterval(interval as any);
+          res.writeHead(200, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({ success: true, interval }));
+        } else {
+          res.writeHead(400).end("Invalid interval");
+        }
+        return;
+      } catch (error) {
+        console.error("[Speedtest Interval Error]", error);
+        res.writeHead(500).end("Error setting interval");
         return;
       }
     }
@@ -462,3 +509,6 @@ const server = http.createServer(async (req, res) => {
 
 server.listen(PORT);
 console.log(`Server: http://pi.local:${PORT}`);
+
+// Start speedtest scheduler with default 1-minute interval
+speedTestSchedulerService.startSpeedTestScheduler(60);

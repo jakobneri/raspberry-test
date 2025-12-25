@@ -147,23 +147,36 @@ export const getNetworkDetails = async () => {
     si.wifiNetworks(),
   ]);
 
-  const activeInterface = networkStats.length > 0 ? networkStats[0] : null;
-  const interfaceDetails = networkInterfaces.find(
-    (iface) => iface.iface === activeInterface?.iface
-  );
+  // Find eth0 and wlan0 interfaces
+  const eth0 = networkInterfaces.find((iface) => iface.iface === "eth0");
+  const wlan0 = networkInterfaces.find((iface) => iface.iface === "wlan0");
 
-  const isWifi = interfaceDetails?.type === "wireless";
+  // Find active stats for each
+  const eth0Stats = networkStats.find((stat) => stat.iface === "eth0");
+  const wlan0Stats = networkStats.find((stat) => stat.iface === "wlan0");
 
   return {
-    connectionType: isWifi ? "WiFi" : "Ethernet",
-    connected: activeInterface ? true : false,
-    interface: activeInterface?.iface || "N/A",
-    ipAddress: interfaceDetails?.ip4 || "N/A",
-    ipv6Address: interfaceDetails?.ip6 || "N/A",
-    macAddress: interfaceDetails?.mac || "N/A",
-    speed: interfaceDetails?.speed
-      ? `${interfaceDetails.speed} Mbps`
-      : "Unknown",
-    ssid: isWifi ? (await si.wifiNetworks())[0]?.ssid || "N/A" : "N/A",
+    ethernet: {
+      connected: eth0 && eth0.ip4 ? true : false,
+      interface: "eth0",
+      ipAddress: eth0?.ip4 || "N/A",
+      ipv6Address: eth0?.ip6 || "N/A",
+      macAddress: eth0?.mac || "N/A",
+      speed: eth0?.speed ? `${eth0.speed} Mbps` : "Unknown",
+      rx: eth0Stats ? Math.round((eth0Stats.rx_sec / 1024) * 100) / 100 : 0,
+      tx: eth0Stats ? Math.round((eth0Stats.tx_sec / 1024) * 100) / 100 : 0,
+    },
+    wifi: {
+      connected: wlan0 && wlan0.ip4 ? true : false,
+      interface: "wlan0",
+      ipAddress: wlan0?.ip4 || "N/A",
+      ipv6Address: wlan0?.ip6 || "N/A",
+      macAddress: wlan0?.mac || "N/A",
+      speed: wlan0?.speed ? `${wlan0.speed} Mbps` : "Unknown",
+      ssid: wifiInfo.length > 0 ? wifiInfo[0].ssid : "N/A",
+      signal: wifiInfo.length > 0 ? wifiInfo[0].signalLevel : null,
+      rx: wlan0Stats ? Math.round((wlan0Stats.rx_sec / 1024) * 100) / 100 : 0,
+      tx: wlan0Stats ? Math.round((wlan0Stats.tx_sec / 1024) * 100) / 100 : 0,
+    },
   };
 };
