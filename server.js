@@ -21,7 +21,17 @@ var createToken = (userId) => {
     .setExpirationTime("15m")
     .sign(secret);
 };
+// Token verification cache (token -> {payload, expiry})
+var tokenCache = new Map();
+var CACHE_TTL = 60000; // 60 seconds cache
+
 var verifyToken = async (jwt, users) => {
+  // Check cache first
+  const cached = tokenCache.get(jwt);
+  if (cached && cached.expiry > Date.now()) {
+    return cached.payload;
+  }
+
   const { payload } = await jwtVerify(jwt, secret);
   const userId = payload[propUserId];
   if (!userId || typeof userId !== "string") {
@@ -38,6 +48,13 @@ var verifyToken = async (jwt, users) => {
     throw new Error(`[JWT] Invalid token: user '${userId}' not found.`);
   }
   console.log(`[JWT] '${userId}' verified.`);
+
+  // Cache the verified token
+  tokenCache.set(jwt, {
+    payload,
+    expiry: Date.now() + CACHE_TTL,
+  });
+
   return payload;
 };
 
@@ -98,6 +115,10 @@ if (result) {
 
 // src/index.ts
 var PORT = 3e3;
+
+// Scoreboard storage
+var scores = [];
+
 var parseBody = async (req) => {
   const body = await getReqBody(req);
   return new URLSearchParams(body || "");
@@ -238,6 +259,68 @@ var server = http.createServer(async (req, res) => {
 
       res.writeHead(200, { "Content-Type": "application/json" });
       res.end(JSON.stringify(metrics));
+      return;
+    } catch (error) {
+      res.writeHead(401).end("Unauthorized");
+      return;
+    }
+  }
+  if (method === "GET" && url === "/game") {
+    const cookieToken = (req.headers.cookie || "").match(/jwt=([^;]+)/)?.[1];
+    if (!cookieToken) {
+      res.writeHead(302, { Location: "/" }).end();
+      return;
+    }
+    try {
+      await verifyToken(cookieToken, userArray);
+      const body = readFileSync2("public/game.html", "utf8");
+      res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
+      res.end(body);
+      return;
+    } catch {
+      res.writeHead(302, { Location: "/" }).end();
+      return;
+    }
+  }
+  if (method === "POST" && url === "/api/scores") {
+    const cookieToken = (req.headers.cookie || "").match(/jwt=([^;]+)/)?.[1];
+    if (!cookieToken) {
+      res.writeHead(401).end("Unauthorized");
+      return;
+    }
+    try {
+      const payload = await verifyToken(cookieToken, userArray);
+      const body = await getReqBody(req);
+      const data = JSON.parse(body || "{}");
+
+      scores.push({
+        score: data.score || 0,
+        userId: payload[propUserId],
+        timestamp: new Date().toISOString(),
+      });
+
+      // Keep only top 100 scores
+      scores.sort((a, b) => b.score - a.score);
+      scores = scores.slice(0, 100);
+
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ success: true }));
+      return;
+    } catch (error) {
+      res.writeHead(401).end("Unauthorized");
+      return;
+    }
+  }
+  if (method === "GET" && url === "/api/scores") {
+    const cookieToken = (req.headers.cookie || "").match(/jwt=([^;]+)/)?.[1];
+    if (!cookieToken) {
+      res.writeHead(401).end("Unauthorized");
+      return;
+    }
+    try {
+      await verifyToken(cookieToken, userArray);
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(JSON.stringify(scores.slice(0, 10)));
       return;
     } catch (error) {
       res.writeHead(401).end("Unauthorized");

@@ -29,10 +29,16 @@
         display: flex;
         justify-content: space-between;
         align-items: center;
+        flex-wrap: wrap;
+        gap: 10px;
       }
       .header h1 {
         color: #333;
         font-size: 24px;
+      }
+      .header-buttons {
+        display: flex;
+        gap: 10px;
       }
       .header a {
         color: #667eea;
@@ -120,13 +126,56 @@
         text-align: center;
         margin-bottom: 20px;
       }
+      .scoreboard-section {
+        background: white;
+        padding: 20px;
+        border-radius: 12px;
+        margin-top: 20px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      }
+      .scoreboard-section h2 {
+        color: #333;
+        margin-bottom: 15px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      .score-table {
+        width: 100%;
+        border-collapse: collapse;
+      }
+      .score-table th {
+        background: #f5f5f5;
+        padding: 10px;
+        text-align: left;
+        color: #666;
+        font-weight: 600;
+        border-bottom: 2px solid #667eea;
+      }
+      .score-table td {
+        padding: 10px;
+        border-bottom: 1px solid #eee;
+      }
+      .score-table tr:hover {
+        background: #f9f9f9;
+      }
+      .rank-medal {
+        font-size: 18px;
+      }
+      .score-value {
+        font-weight: bold;
+        color: #667eea;
+      }
     </style>
   </head>
   <body>
     <div class="container">
       <div class="header">
         <h1>🥧 Raspberry Pi Performance Monitor</h1>
-        <a href="/">Abmelden</a>
+        <div class="header-buttons">
+          <a href="/game">🎮 Spiel</a>
+          <a href="/">Abmelden</a>
+        </div>
       </div>
 
       <div id="error-message" style="display: none" class="error"></div>
@@ -233,6 +282,27 @@
         <div class="timestamp">
           Letzte Aktualisierung: <span id="last-update">--</span>
         </div>
+
+        <!-- Scoreboard Section -->
+        <div class="scoreboard-section">
+          <h2>🏆 Pi Runner - Top Scores</h2>
+          <table class="score-table">
+            <thead>
+              <tr>
+                <th>Rang</th>
+                <th>Score</th>
+                <th>Datum</th>
+              </tr>
+            </thead>
+            <tbody id="scoreboard-body">
+              <tr>
+                <td colspan="3" style="text-align: center; color: #999">
+                  Lade Scoreboard...
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
 
@@ -325,11 +395,55 @@
         }
       }
 
+      async function fetchScoreboard() {
+        try {
+          const response = await fetch("/api/scores");
+          if (response.ok) {
+            const scores = await response.json();
+            updateScoreboard(scores);
+          }
+        } catch (error) {
+          console.error("Error loading scoreboard:", error);
+        }
+      }
+
+      function updateScoreboard(scores) {
+        const tbody = document.getElementById("scoreboard-body");
+
+        if (scores.length === 0) {
+          tbody.innerHTML =
+            '<tr><td colspan="3" style="text-align: center; color: #999;">Noch keine Scores</td></tr>';
+          return;
+        }
+
+        const medals = ["🥇", "🥈", "🥉"];
+        tbody.innerHTML = scores
+          .map((score, index) => {
+            const date = new Date(score.timestamp);
+            const medal = index < 3 ? medals[index] : `#${index + 1}`;
+            return `
+            <tr>
+              <td><span class="rank-medal">${medal}</span></td>
+              <td><span class="score-value">${score.score}</span></td>
+              <td>${date.toLocaleDateString("de-DE")} ${date.toLocaleTimeString(
+              "de-DE",
+              { hour: "2-digit", minute: "2-digit" }
+            )}</td>
+            </tr>
+          `;
+          })
+          .join("");
+      }
+
       // Initial fetch
       fetchMetrics();
+      fetchScoreboard();
 
       // Update every 2 seconds
       updateInterval = setInterval(fetchMetrics, 2000);
+
+      // Update scoreboard every 10 seconds
+      setInterval(fetchScoreboard, 10000);
 
       // Cleanup on page unload
       window.addEventListener("beforeunload", () => {
