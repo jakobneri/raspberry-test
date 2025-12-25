@@ -78,6 +78,27 @@ const server = http.createServer(async (req, res) => {
     return;
   }
 
+  // Request access POST
+  if (method === "POST" && url === "/api/request-access") {
+    try {
+      const params = await parseBody(req);
+      const email = params.get("email") || "";
+      const password = params.get("password") || "";
+      const name = params.get("name") || "";
+
+      const result = (
+        await import("./services/auth.service.js")
+      ).createUserRequest(email, password, name);
+
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(JSON.stringify(result));
+      return;
+    } catch (error) {
+      res.writeHead(500).end("Error creating request");
+      return;
+    }
+  }
+
   // Game page (public but track session if logged in)
   if (method === "GET" && url === "/game") {
     const cookieToken = getCookieToken(req);
@@ -181,6 +202,84 @@ const server = http.createServer(async (req, res) => {
       res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
       res.end(body);
       return;
+    }
+
+    // User management page
+    if (method === "GET" && url === "/users") {
+      const body = readFileSync("public/users.html", "utf8");
+      res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
+      res.end(body);
+      return;
+    }
+
+    // Get all users
+    if (method === "GET" && url === "/api/users") {
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(JSON.stringify(users));
+      return;
+    }
+
+    // Get pending user requests
+    if (method === "GET" && url === "/api/user-requests") {
+      const { getPendingUserRequests } = await import(
+        "./services/auth.service.js"
+      );
+      const requests = getPendingUserRequests();
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(JSON.stringify(requests));
+      return;
+    }
+
+    // Approve user request
+    if (method === "POST" && url === "/api/user-requests/approve") {
+      try {
+        const body = await getReqBody(req);
+        const data = JSON.parse(body || "{}");
+        const { approveUserRequest } = await import(
+          "./services/auth.service.js"
+        );
+        const result = approveUserRequest(data.requestId);
+        res.writeHead(200, { "Content-Type": "application/json" });
+        res.end(JSON.stringify(result));
+        return;
+      } catch (error) {
+        res.writeHead(500).end("Error approving request");
+        return;
+      }
+    }
+
+    // Reject user request
+    if (method === "POST" && url === "/api/user-requests/reject") {
+      try {
+        const body = await getReqBody(req);
+        const data = JSON.parse(body || "{}");
+        const { rejectUserRequest } = await import(
+          "./services/auth.service.js"
+        );
+        const result = rejectUserRequest(data.requestId);
+        res.writeHead(200, { "Content-Type": "application/json" });
+        res.end(JSON.stringify(result));
+        return;
+      } catch (error) {
+        res.writeHead(500).end("Error rejecting request");
+        return;
+      }
+    }
+
+    // Delete user
+    if (method === "POST" && url === "/api/users/delete") {
+      try {
+        const body = await getReqBody(req);
+        const data = JSON.parse(body || "{}");
+        const { deleteUser } = await import("./services/auth.service.js");
+        const result = deleteUser(data.userId);
+        res.writeHead(200, { "Content-Type": "application/json" });
+        res.end(JSON.stringify(result));
+        return;
+      } catch (error) {
+        res.writeHead(500).end("Error deleting user");
+        return;
+      }
     }
 
     // Get metrics

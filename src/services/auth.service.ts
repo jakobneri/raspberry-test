@@ -1,9 +1,11 @@
 import { SignJWT, jwtVerify, type JWTPayload } from "jose";
 import { ConfidentialClientApplication, Configuration } from "@azure/msal-node";
-import { readFileSync } from "node:fs";
+import { readFileSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 import type { IncomingMessage } from "node:http";
+import { z } from "zod";
 import usersJson from "../../config/users.json" with { type: "json" };
+import userRequestsJson from "../../config/user-requests.json" with { type: "json" };
 
 // ========== USER MANAGEMENT ==========
 
@@ -187,4 +189,161 @@ export const cleanOldSessions = (): void => {
   if (cleanedCount > 0) {
     console.log(`[Auth] Cleaned ${cleanedCount} expired session(s)`);
   }
+};
+
+// ========== USER REQUEST MANAGEMENT ==========
+
+const emailSchema = z.string().email();
+
+export interface UserRequest {
+  id: string;
+  email: string;
+  password: string;
+  name: string;
+  requestedAt: string;
+  status: "pending" | "approved" | "rejected";
+}
+
+interface UserRequestsData {
+  requests: UserRequest[];
+}
+
+const userRequestsPath = resolve("./config/user-requests.json");
+const userRequestsData = userRequestsJson as UserRequestsData;
+let userRequests: UserRequest[] = userRequestsData.requests || [];
+
+const saveUserRequests = (): void => {
+  writeFileSync(
+    userRequestsPath,
+    JSON.stringify({ requests: userRequests }, null, 2),
+    "utf-8"
+  );
+};
+
+export const createUserRequest = (
+  email: string,
+  password: string,
+  name: string
+): { success: boolean; message: string } => {
+  try {
+    // Validate email with Zod
+    emailSchema.parse(email);
+
+    // Check if email already exists in users
+    if (users.some((u) => u.email === email)) {
+      return { success: false, message: "Email already registered" };
+    }
+
+    // Check if there's already a pending request for this email
+    if (userRequests.some((r) => r.email === email && r.status === "pending")) {
+      return { success: false, message: "Request already pending for this email" };
+    }
+
+    const request: UserRequest = {
+      id: `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      email,
+      password,
+      name,
+      requestedAt: new Date().toISOString(),
+      status: "pending",
+    };
+
+    userRequests.push(request);
+    saveUserRequests();
+
+    console.log(`[Auth] New user request created: ${email}`);
+    return { success: true, message: "Access request submitted successfully" };
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return { success: false, message: "Invalid email format" };
+    }
+    return { success: false, message: "Failed to create request" };
+  }
+};
+
+export const getPendingUserRequests = (): UserRequest[] => {
+  return userRequests.filter((r) => r.status === "pending");
+};
+
+export const getAllUserRequests = (): UserRequest[] => {
+  return [...userRequests];
+};
+
+export const approveUserRequest = (
+  requestId: string
+): { success: boolean; message: string } => {
+  const request = userRequests.find((r) => r.id === requestId);
+  if (!request) {
+    return { success: false, message: "Request not found" };
+  }
+
+  if (request.status !== "pending") {
+    return { success: false, message: "Request already processed" };
+  }
+
+  // Add user to users array
+  const newUser: User = {
+    id: `user_${Date.now()}`,
+    email: request.email,
+    password: request.password,
+  };
+
+  userArray.push(newUser);
+
+  // Save to users.json
+  const usersPath = resolve("./config/users.json");
+  writeFileSync(
+    usersPath,
+    JSON.stringify({ users: userArray }, null, 2),
+    "utf-8"
+  );
+
+  // Update request status
+  request.status = "approved";
+  saveUserRequests();
+
+  console.log(`[Auth] User request approved: ${request.email}`);
+  return { success: true, message: "User approved successfully" };
+};
+
+export const rejectUserRequest = (
+  requestId: string
+): { success: boolean; message: string } => {
+  const request = userRequests.find((r) => r.id === requestId);
+  if (!request) {
+    return { success: false, message: "Request not found" };
+  }
+
+  if (request.status !== "pending") {
+    return { success: false, message: "Request already processed" };
+  }
+
+  request.status = "rejected";
+  saveUserRequests();
+
+  console.log(`[Auth] User request rejected: ${request.email}`);
+  return { success: true, message: "User request rejected" };
+};
+
+export const deleteUser = (
+  userId: string
+): { success: boolean; message: string } => {
+  const userIndex = userArray.findIndex((u) => u.id === userId);
+  if (userIndex === -1) {
+    return { success: false, message: "User not found" };
+  }
+
+  const user = userArray[userIndex];
+  userArray.splice(userIndex, 1);
+
+  // Save to users.json
+  const usersPath = resolve("./config/users.json");
+  writeFileSync(
+    usersPath,
+    JSON.stringify({ users: userArray }, null, 2),
+    "utf-8"
+  );
+
+  console.log(`[Auth] User deleted: ${user.email}`);
+  return { success: true, message: "User deleted successfully" };
 };
