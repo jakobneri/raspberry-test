@@ -152,7 +152,7 @@ export const getNetworkDetails = async () => {
     (iface) => iface.iface === activeInterface?.iface
   );
 
-  const isWifi = interfaceDetails?.type === "wireless" || wifiInfo.length > 0;
+  const isWifi = interfaceDetails?.type === "wireless";
 
   return {
     connectionType: isWifi ? "WiFi" : "Ethernet",
@@ -164,6 +164,6 @@ export const getNetworkDetails = async () => {
     speed: interfaceDetails?.speed
       ? `${interfaceDetails.speed} Mbps`
       : "Unknown",
-    ssid: isWifi && wifiInfo.length > 0 ? wifiInfo[0].ssid : "N/A",
+    ssid: isWifi ? (await si.wifiNetworks())[0]?.ssid || "N/A" : "N/A",
   };
 };
