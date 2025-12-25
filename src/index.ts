@@ -1,6 +1,10 @@
 import http from "node:http";
 import { readFileSync, createWriteStream } from "node:fs";
-import { createToken, verifyToken, propUserId } from "./services/jwt.service.js";
+import {
+  createToken,
+  verifyToken,
+  propUserId,
+} from "./services/jwt.service.js";
 import { users } from "./services/user.service.js";
 import { getAppToken } from "./services/sso.service.js";
 import * as sessionService from "./services/session.service.js";
@@ -326,7 +330,9 @@ const server = http.createServer(async (req, res) => {
     // Download file
     if (method === "GET" && url.startsWith("/api/files/download/")) {
       try {
-        const filename = decodeURIComponent(url.split("/api/files/download/")[1]);
+        const filename = decodeURIComponent(
+          url.split("/api/files/download/")[1]
+        );
         const file = filesService.getFile(filename);
 
         res.writeHead(200, {

@@ -37,23 +37,16 @@ export interface MetricsHistory {
 let metricsHistory: SystemMetrics[] = [];
 
 export const getMetrics = async (): Promise<MetricsHistory> => {
-  const [
-    cpuData,
-    memData,
-    fsSize,
-    currentLoad,
-    networkStats,
-    cpuTemp,
-    diskIO,
-  ] = await Promise.all([
-    si.cpu(),
-    si.mem(),
-    si.fsSize(),
-    si.currentLoad(),
-    si.networkStats(),
-    si.cpuTemperature(),
-    si.disksIO(),
-  ]);
+  const [cpuData, memData, fsSize, currentLoad, networkStats, cpuTemp, diskIO] =
+    await Promise.all([
+      si.cpu(),
+      si.mem(),
+      si.fsSize(),
+      si.currentLoad(),
+      si.networkStats(),
+      si.cpuTemperature(),
+      si.disksIO(),
+    ]);
 
   const metrics: SystemMetrics = {
     cpu: {
@@ -66,8 +59,7 @@ export const getMetrics = async (): Promise<MetricsHistory> => {
       total: Math.round((memData.total / 1024 / 1024 / 1024) * 100) / 100,
       used: Math.round((memData.used / 1024 / 1024 / 1024) * 100) / 100,
       free: Math.round((memData.free / 1024 / 1024 / 1024) * 100) / 100,
-      usagePercent:
-        Math.round((memData.used / memData.total) * 100 * 10) / 10,
+      usagePercent: Math.round((memData.used / memData.total) * 100 * 10) / 10,
     },
     disk: {
       totalSize:
@@ -84,8 +76,7 @@ export const getMetrics = async (): Promise<MetricsHistory> => {
               ((fsSize[0].size - fsSize[0].used) / 1024 / 1024 / 1024) * 100
             ) / 100
           : 0,
-      usagePercent:
-        fsSize.length > 0 ? Math.round(fsSize[0].use * 10) / 10 : 0,
+      usagePercent: fsSize.length > 0 ? Math.round(fsSize[0].use * 10) / 10 : 0,
       rIO: diskIO.rIO || 0,
       wIO: diskIO.wIO || 0,
     },

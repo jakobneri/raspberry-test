@@ -5,6 +5,7 @@ A TypeScript-based server manager for Raspberry Pi with monitoring, file sharing
 ## 🚀 Quick Start
 
 ### Development (Windows)
+
 ```powershell
 npm install
 npm run build
@@ -12,11 +13,13 @@ npm start
 ```
 
 ### Production (Raspberry Pi)
+
 ```bash
 ./start.sh
 ```
 
 The start script will automatically:
+
 - Pull latest changes from git
 - Install dependencies
 - Build TypeScript code
@@ -54,16 +57,19 @@ raspberry-test/
 ## 🛠️ Development
 
 ### Build TypeScript
+
 ```bash
 npm run build
 ```
 
 ### Start Development Server
+
 ```bash
 npm run dev
 ```
 
 ### Clean Build
+
 ```bash
 npm run clean
 npm run build
@@ -72,6 +78,7 @@ npm run build
 ## 🔧 TypeScript Configuration
 
 The project uses modern TypeScript with:
+
 - **Target:** ES2022
 - **Module:** ESNext
 - **Strict mode** enabled
@@ -81,22 +88,26 @@ The project uses modern TypeScript with:
 ## 📦 Dependencies
 
 ### Production
+
 - `@azure/msal-node` - Azure SSO authentication
 - `jose` - JWT token handling
 - `systeminformation` - System metrics
 
 ### Development
+
 - `typescript` - TypeScript compiler
 - `@types/node` - Node.js type definitions
 
 ## 🔐 Features
 
 ### Authentication
+
 - Email/password login
 - JWT token-based sessions
 - Session tracking and cleanup
 
 ### System Monitoring
+
 - CPU usage and temperature
 - Memory usage
 - Disk I/O and usage
@@ -104,21 +115,25 @@ The project uses modern TypeScript with:
 - Real-time metrics history
 
 ### File Management
+
 - Upload/download files
 - List shared files
 - Delete files
 
 ### WiFi Management
+
 - Scan available networks
 - Connect to WiFi
 - View connection status
 
 ### Administration
+
 - Server restart
 - Server shutdown
 - Update and restart (git pull + restart)
 
 ### Game Integration
+
 - Score tracking
 - Leaderboard (top 10)
 - Anonymous and authenticated play
@@ -126,12 +141,14 @@ The project uses modern TypeScript with:
 ## 🚀 Deployment on Raspberry Pi
 
 1. Clone the repository:
+
 ```bash
 git clone https://github.com/jakobneri/raspberry-test.git
 cd raspberry-test
 ```
 
 2. Run the start script:
+
 ```bash
 ./start.sh
 ```
@@ -151,6 +168,7 @@ The start script automatically restarts the server if it crashes (exit code 42).
 ## 📝 Environment Configuration
 
 Create `env.json` with your Azure SSO credentials:
+
 ```json
 {
   "CLIENT_ID": "your-client-id",
@@ -174,6 +192,7 @@ Check `users.json` for default credentials (development only).
 ## 📊 Monitoring
 
 Access the cockpit at `/cockpit` to view:
+
 - Real-time system metrics
 - Active sessions
 - System information
@@ -183,6 +202,7 @@ Access the cockpit at `/cockpit` to view:
 ## 🎯 API Endpoints
 
 ### Public Routes
+
 - `GET /` - Login page
 - `POST /` - Login
 - `GET /game` - Game page
@@ -192,6 +212,7 @@ Access the cockpit at `/cockpit` to view:
 - `GET /api/whoami` - Check auth status
 
 ### Authenticated Routes
+
 - `GET /cockpit` - Dashboard
 - `GET /api/metrics` - System metrics
 - `GET /api/system-info` - System information
@@ -209,6 +230,6 @@ Access the cockpit at `/cockpit` to view:
 - `POST /api/admin/update` - Update and restart
 - `POST /api/logout` - Logout
 
-## 🎄 Merry Christmas! 
+## 🎄 Merry Christmas!
 
 Built on December 25, 2025

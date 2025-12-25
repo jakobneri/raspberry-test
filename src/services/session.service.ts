@@ -26,7 +26,7 @@ export const addSession = (userId: string, token: string): Session => {
 
   // Clean old sessions (older than 15 minutes)
   cleanOldSessions();
-  
+
   return session;
 };
 
@@ -60,6 +60,8 @@ export const cleanOldSessions = (): void => {
   }
 };
 
-export const getCookieToken = (req: http.IncomingMessage): string | undefined => {
+export const getCookieToken = (
+  req: http.IncomingMessage
+): string | undefined => {
   return (req.headers.cookie || "").match(/jwt=([^;]+)/)?.[1];
 };
