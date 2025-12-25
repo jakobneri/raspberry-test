@@ -81,7 +81,13 @@ pull_updates() {
         
         # Display changes in requested format
         echo ""
-        git diff --stat ORIG_HEAD HEAD
+        git diff --numstat ORIG_HEAD HEAD | while read -r insertions deletions filename; do
+            if [ "$insertions" = "-" ]; then
+                echo -e "${filename}   (binary)"
+            else
+                echo -e "${filename}   ${GREEN}+ ${insertions}${NC}   ${RED}- ${deletions}${NC}"
+            fi
+        done
         echo ""
 
         echo -e "${GREEN}✓ Restored execute permissions for start.sh${NC}"
