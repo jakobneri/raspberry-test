@@ -594,9 +594,6 @@
                 style="width: 0%"
               ></div>
             </div>
-            <div class="chart-container">
-              <canvas id="disk-chart"></canvas>
-            </div>
           </div>
 
           <!-- Network Card -->
@@ -775,7 +772,7 @@
 
     <script>
       let updateInterval;
-      let cpuChart, memChart, diskChart, netChart;
+      let cpuChart, memChart, netChart;
 
       async function fetchMetrics() {
         try {
@@ -932,11 +929,6 @@
           document.getElementById("mem-chart"),
           chartConfig("RAM %", "#764ba2")
         );
-        diskChart = new Chart(
-          document.getElementById("disk-chart"),
-          chartConfig("Disk %", "#f093fb")
-        );
-
         const netConfig = chartConfig("Network KB/s", "#4facfe");
         netConfig.options.scales.y.max = null; // Network has different scale
         netChart = new Chart(document.getElementById("net-chart"), netConfig);
@@ -960,13 +952,6 @@
           (h) => h.memory.usagePercent
         );
         memChart.update("none");
-
-        // Disk Chart
-        diskChart.data.labels = labels;
-        diskChart.data.datasets[0].data = history.map(
-          (h) => h.disk.usagePercent
-        );
-        diskChart.update("none");
 
         // Network Chart (combined RX + TX)
         netChart.data.labels = labels;
