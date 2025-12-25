@@ -396,6 +396,29 @@
                 >
                   ▶️ Run Speed Test
                 </button>
+                <div
+                  style="
+                    display: flex;
+                    align-items: center;
+                    gap: 8px;
+                    margin: 0 10px;
+                  "
+                >
+                  <input
+                    type="checkbox"
+                    id="auto-speedtest-toggle"
+                    onchange="toggleAutoSpeedtest(this.checked)"
+                  />
+                  <label
+                    for="auto-speedtest-toggle"
+                    style="
+                      font-size: 14px;
+                      cursor: pointer;
+                      color: var(--text-primary);
+                    "
+                    >Auto Run</label
+                  >
+                </div>
                 <select
                   id="speedtest-interval"
                   onchange="setSpeedtestInterval()"
@@ -1739,12 +1762,58 @@
           fetchSpeedtestHistory();
         }
 
+        async function fetchSpeedtestStatus() {
+          try {
+            const response = await fetch("/api/admin/speedtest/status");
+            if (response.ok) {
+              const data = await response.json();
+              const toggle = document.getElementById("auto-speedtest-toggle");
+              const warning = document.getElementById("speedtest-warning");
+              if (toggle) {
+                toggle.checked = data.enabled;
+              }
+              if (warning) {
+                warning.style.display = data.enabled ? "block" : "none";
+              }
+            }
+          } catch (error) {
+            console.error("Error fetching speedtest status:", error);
+          }
+        }
+
+        async function toggleAutoSpeedtest(enabled) {
+          try {
+            const response = await fetch("/api/admin/speedtest/toggle", {
+              method: "POST",
+              body: new URLSearchParams({ enabled: enabled }),
+            });
+            if (response.ok) {
+              const data = await response.json();
+              const warning = document.getElementById("speedtest-warning");
+              if (warning) {
+                warning.style.display = data.enabled ? "block" : "none";
+              }
+              if (data.enabled) {
+                fetchSpeedtestHistory();
+              }
+            } else {
+              console.error("Failed to toggle speedtest");
+              document.getElementById("auto-speedtest-toggle").checked =
+                !enabled;
+            }
+          } catch (error) {
+            console.error("Error toggling speedtest:", error);
+            document.getElementById("auto-speedtest-toggle").checked = !enabled;
+          }
+        }
+
         // Initial fetch
         fetchMetrics();
         // fetchScoreboard(); // Moved to Game Admin
         fetchSystemInfo();
         fetchSessions();
         fetchSpeedtestHistory();
+        fetchSpeedtestStatus();
 
         // Update every 1 second
         updateInterval = setInterval(fetchMetrics, 1000);

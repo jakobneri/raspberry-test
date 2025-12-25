@@ -1,5 +1,5 @@
 import http from "node:http";
-import { readFileSync, createWriteStream } from "node:fs";
+import { readFileSync, createWriteStream, writeFileSync } from "node:fs";
 import {
   createToken,
   verifyToken,
@@ -616,6 +616,50 @@ const server = http.createServer(async (req, res) => {
       return;
     }
 
+    // Admin: Toggle Speedtest
+    if (method === "POST" && url === "/api/admin/speedtest/toggle") {
+      const params = await parseBody(req);
+      const enabled = params.get("enabled") === "true";
+
+      console.log(
+        `[ADMIN] Speedtest toggle requested: ${enabled} by user: ${payload[propUserId]}`
+      );
+
+      try {
+        const envConfig = JSON.parse(readFileSync("config/env.json", "utf8"));
+        envConfig.ENABLE_SPEEDTEST = enabled;
+        writeFileSync("config/env.json", JSON.stringify(envConfig, null, 2));
+
+        if (enabled) {
+          speedTestService.startSpeedTestScheduler(60);
+        } else {
+          speedTestService.stopSpeedTestScheduler();
+        }
+
+        res.writeHead(200, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ success: true, enabled }));
+      } catch (error) {
+        console.error("Error toggling speedtest:", error);
+        res.writeHead(500, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ success: false, message: "Internal Error" }));
+      }
+      return;
+    }
+
+    // Admin: Get Speedtest Status
+    if (method === "GET" && url === "/api/admin/speedtest/status") {
+      try {
+        const envConfig = JSON.parse(readFileSync("config/env.json", "utf8"));
+        const enabled = envConfig.ENABLE_SPEEDTEST === true;
+        res.writeHead(200, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ enabled }));
+      } catch (error) {
+        res.writeHead(200, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ enabled: false }));
+      }
+      return;
+    }
+
     // Logout
     if (method === "POST" && url === "/api/logout") {
       console.log(`[AUTH] User logged out: ${payload[propUserId]}`);
@@ -644,12 +688,12 @@ console.log("");
 // Start speedtest scheduler if enabled
 try {
   const envConfig = JSON.parse(readFileSync("config/env.json", "utf8"));
-  if (envConfig.ENABLE_SPEEDTEST !== false) {
+  if (envConfig.ENABLE_SPEEDTEST === true) {
     speedTestService.startSpeedTestScheduler(60);
   } else {
     console.log("[Speedtest] Scheduler disabled in config");
   }
 } catch (e) {
-  // Default to enabled if config missing
-  speedTestService.startSpeedTestScheduler(60);
+  // Default to disabled if config missing or error
+  console.log("[Speedtest] Scheduler disabled (default)");
 }
