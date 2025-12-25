@@ -316,7 +316,7 @@ var server = http.createServer(async (req, res) => {
       );
 
       setTimeout(() => {
-        process.exit(0);
+        process.exit(42);
       }, 500);
       return;
     } catch (error) {

@@ -79,7 +79,18 @@ exit /b 0
 echo 🚀 Starting server...
 echo ═══════════════════════════════════════
 echo.
+
+:server_loop
 node server.js
+if errorlevel 42 if not errorlevel 43 (
+    echo.
+    echo 🔄 Server restarting...
+    echo.
+    timeout /t 1 /nobreak >nul
+    goto server_loop
+)
+echo.
+echo Server stopped (exit code: %errorlevel%)
 exit /b 0
 
 :end

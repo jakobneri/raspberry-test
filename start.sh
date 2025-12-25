@@ -49,7 +49,22 @@ start_server() {
     echo -e "${GREEN}🚀 Starting server...${NC}"
     echo -e "${BLUE}═══════════════════════════════════════${NC}"
     echo ""
-    node server.js
+    
+    while true; do
+        node server.js
+        EXIT_CODE=$?
+        
+        if [ $EXIT_CODE -eq 42 ]; then
+            echo ""
+            echo -e "${YELLOW}🔄 Server restarting...${NC}"
+            echo ""
+            sleep 1
+        else
+            echo ""
+            echo -e "${GREEN}Server stopped (exit code: $EXIT_CODE)${NC}"
+            break
+        fi
+    done
 }
 
 # Main menu
