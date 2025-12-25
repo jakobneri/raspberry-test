@@ -811,7 +811,6 @@
         document.getElementById("cpu-speed").textContent = data.cpu.speed;
         document.getElementById("cpu-temp").textContent =
           data.cpu.temperature.toFixed(1);
-        updateProgressBar("cpu-progress", data.cpu.usage);
 
         // Memory
         document.getElementById("mem-usage").textContent =
@@ -822,7 +821,6 @@
           data.memory.free.toFixed(2);
         document.getElementById("mem-total").textContent =
           data.memory.total.toFixed(2);
-        updateProgressBar("mem-progress", data.memory.usagePercent);
 
         // Disk
         document.getElementById("disk-usage").textContent =
@@ -858,13 +856,15 @@
 
       function updateProgressBar(id, percent) {
         const bar = document.getElementById(id);
-        bar.style.width = percent + "%";
+        if (bar) {
+          bar.style.width = percent + "%";
 
-        // Add warning class if usage is high
-        if (percent > 80) {
-          bar.classList.add("warning");
-        } else {
-          bar.classList.remove("warning");
+          // Add warning class if usage is high
+          if (percent > 80) {
+            bar.classList.add("warning");
+          } else {
+            bar.classList.remove("warning");
+          }
         }
       }
 
