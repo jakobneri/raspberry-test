@@ -141,24 +141,26 @@ button[type="submit"]:hover {
 
 .actions {
   margin-top: 25px;
-  display: flex;
-  gap: 10px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 15px;
 }
 
 .secondary {
   background: transparent;
-  color: var(--accent-color);
-  border: 1px solid transparent;
+  color: var(--text-secondary);
+  border: 1px solid var(--border-color);
 }
 
 .secondary:hover {
-  background: rgba(102, 126, 234, 0.1);
-  color: var(--accent-hover);
+  background: var(--nav-hover);
+  color: var(--text-primary);
+  border-color: var(--text-secondary);
 }
 
 .game-link {
-  flex: 1;
   text-decoration: none;
+  display: block;
 }
 
 .game-btn {
@@ -253,6 +255,4 @@ button[type="submit"]:hover {
   background-color: rgba(245, 87, 108, 0.2);
   color: #f5576c;
   border: 1px solid #f5576c;
-}
-
 }

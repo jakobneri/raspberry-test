@@ -498,15 +498,15 @@
 
               <div
                 id="speedtest-results"
-                style="var(--bg-color);
+                style="
+                  background: var(--bg-color);
                   padding: 15px;
                   border-radius: 8px;
                   font-size: 14px;
                   border: 1px solid var(--border-color);
                 "
               >
-                <p style="text-align: center; color: var(--text-secondary)
-                <p style="text-align: center; color: #999">
+                <p style="text-align: center; color: var(--text-secondary)">
                   Loading speed test data...
                 </p>
               </div>
@@ -966,7 +966,9 @@
           const detailsDiv = document.getElementById("network-details");
 
           let html = `
-          <div style="display: grid;var(--card-bg); padding: 15px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); border: 1px solid var(--border-color);">
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+            <!-- Ethernet Section -->
+            <div style="background: var(--card-bg); padding: 15px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); border: 1px solid var(--border-color);">
               <h4 style="margin: 0 0 15px 0; color: #667eea;">
                 🔌 Ethernet (eth0)
               </h4>
