@@ -45,6 +45,7 @@ export const runSpeedTest = async (): Promise<SpeedTestResult> => {
     };
   } catch (jsonError) {
     console.log("[Speedtest] JSON mode failed, trying simple mode...");
+    console.error("[Speedtest] JSON error:", jsonError);
 
     // Fallback to simple output
     try {
@@ -82,6 +83,7 @@ export const runSpeedTest = async (): Promise<SpeedTestResult> => {
       console.log(
         "[Speedtest] Simple mode failed, falling back to ping only..."
       );
+      console.error("[Speedtest] Simple error:", simpleError);
 
       // Final fallback: ping only
       try {
@@ -106,6 +108,7 @@ export const runSpeedTest = async (): Promise<SpeedTestResult> => {
         };
       } catch (pingError) {
         console.error("[Speedtest] All methods failed");
+        console.error("[Speedtest] Ping error:", pingError);
         return {
           success: false,
           ping: null,
