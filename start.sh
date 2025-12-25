@@ -81,13 +81,29 @@ pull_updates() {
         
         # Display changes in requested format
         echo ""
-        git diff --numstat ORIG_HEAD HEAD | while read -r insertions deletions filename; do
-            if [ "$insertions" = "-" ]; then
-                echo -e "${filename}   (binary)"
-            else
-                echo -e "${filename}   ${GREEN}+ ${insertions}${NC}   ${RED}- ${deletions}${NC}"
+        DIFF_STATS=$(git diff --numstat ORIG_HEAD HEAD)
+        
+        # Calculate max filename length for alignment
+        MAX_LEN=0
+        while read -r ins del name; do
+            if [ -n "$name" ]; then
+                LEN=${#name}
+                if [ $LEN -gt $MAX_LEN ]; then MAX_LEN=$LEN; fi
             fi
-        done
+        done <<< "$DIFF_STATS"
+        
+        # Add padding
+        MAX_LEN=$((MAX_LEN + 3))
+        
+        while read -r insertions deletions filename; do
+            if [ -n "$filename" ]; then
+                if [ "$insertions" = "-" ]; then
+                    printf "%-${MAX_LEN}s   (binary)\n" "$filename"
+                else
+                    printf "%-${MAX_LEN}s   ${GREEN}+ %3s${NC}   ${RED}- %3s${NC}\n" "$filename" "$insertions" "$deletions"
+                fi
+            fi
+        done <<< "$DIFF_STATS"
         echo ""
 
         echo -e "${GREEN}✓ Restored execute permissions for start.sh${NC}"
