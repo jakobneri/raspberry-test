@@ -1235,7 +1235,12 @@
           });
 
           clearInterval(progressInterval);
+
+          // Smoothly complete the progress bar
           progressBar.style.width = "100%";
+
+          // Wait for animation to complete
+          await new Promise((resolve) => setTimeout(resolve, 500));
 
           if (response.ok) {
             const data = await response.json();

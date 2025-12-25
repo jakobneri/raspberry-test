@@ -70,13 +70,29 @@ export const connectWifi = async (
 ): Promise<{ success: boolean; message: string }> => {
   try {
     const connectCmd = password
-      ? `nmcli device wifi connect "${ssid}" password "${password}"`
+      ? `nmcli device wifi connect "${ssid}" password "${password}" wep-key-type key`
       : `nmcli device wifi connect "${ssid}"`;
 
     await execAsync(connectCmd);
 
     return { success: true, message: "Connected successfully" };
   } catch (error: any) {
+    // If WEP failed, try WPA
+    if (password && error.message?.includes("key-mgmt")) {
+      try {
+        const wpaCmd = `nmcli connection add type wifi con-name "${ssid}" ifname wlan0 ssid "${ssid}" wifi-sec.key-mgmt wpa-psk wifi-sec.psk "${password}"`;
+        await execAsync(wpaCmd);
+        await execAsync(`nmcli connection up "${ssid}"`);
+        return { success: true, message: "Connected successfully" };
+      } catch (wpaError: any) {
+        console.error("[WiFi WPA Connect Error]", wpaError);
+        return {
+          success: false,
+          message: wpaError.message || "Connection failed",
+        };
+      }
+    }
+
     console.error("[WiFi Connect Error]", error);
     return {
       success: false,
