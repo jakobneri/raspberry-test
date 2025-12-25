@@ -466,34 +466,27 @@ var server = http.createServer(async (req, res) => {
       const payload = await verifyToken(cookieToken, userArray);
       updateSessionActivity(cookieToken);
       console.log(
-        `[ADMIN] Server update requested by user: ${payload[propUserId]}`
+        `[ADMIN] Server update & restart requested by user: ${payload[propUserId]}`
       );
 
-      // Try to run git pull
-      try {
-        const { stdout, stderr } = await execAsync("git pull");
-        console.log(`[ADMIN] Git pull output: ${stdout}`);
-        if (stderr) {
-          console.log(`[ADMIN] Git pull stderr: ${stderr}`);
-        }
-        res.writeHead(200, { "Content-Type": "application/json" });
-        res.end(
-          JSON.stringify({
-            success: true,
-            message: "Server aktualisiert. Bitte Server neu starten.",
-            output: stdout,
-          })
-        );
-      } catch (gitError) {
-        console.error(`[ADMIN] Git pull failed:`, gitError.message);
-        res.writeHead(200, { "Content-Type": "application/json" });
-        res.end(
-          JSON.stringify({
-            success: false,
-            message: "Git pull fehlgeschlagen: " + gitError.message,
-          })
-        );
-      }
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(
+        JSON.stringify({
+          success: true,
+          message: "Server wird aktualisiert und neu gestartet...",
+        })
+      );
+
+      // Execute start.sh with option 0 (pull updates and start server)
+      setTimeout(() => {
+        console.log("[ADMIN] Executing start.sh for update and restart...");
+        exec("bash start.sh", (error) => {
+          if (error) {
+            console.error(`[ADMIN] start.sh execution error: ${error.message}`);
+          }
+        });
+        process.exit(42);
+      }, 500);
       return;
     } catch (error) {
       res.writeHead(401).end("Unauthorized");
@@ -793,16 +786,21 @@ var server = http.createServer(async (req, res) => {
       ]);
 
       const activeInterface = networkInterfaces.find((iface) => iface.default);
-      const wifiInfo = wifiNetworks[0];
+      const isWifi =
+        activeInterface?.iface?.toLowerCase().includes("wl") ||
+        activeInterface?.iface?.toLowerCase().includes("wifi") ||
+        activeInterface?.type?.toLowerCase() === "wireless";
+      const wifiInfo = isWifi ? wifiNetworks[0] : null;
 
       const detailedInfo = {
-        connectionType: wifiInfo ? "WiFi" : "Ethernet",
+        connectionType: isWifi ? "WiFi" : "Ethernet",
         connected: activeInterface ? true : false,
         interface: activeInterface?.iface || "N/A",
         ipAddress: activeInterface?.ip4 || "N/A",
         ipv6Address: activeInterface?.ip6 || "N/A",
         macAddress: activeInterface?.mac || "N/A",
-        gateway: activeInterface?.gateway || "N/A",
+        gateway:
+          activeInterface?.ip4Gateway || activeInterface?.gateway || "N/A",
         speed: activeInterface?.speed || null,
         duplex: activeInterface?.duplex || "N/A",
         mtu: activeInterface?.mtu || "N/A",

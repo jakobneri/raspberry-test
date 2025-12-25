@@ -1609,9 +1609,7 @@
       }
 
       async function updateServer() {
-        if (
-          !confirm("Möchten Sie den Server wirklich aktualisieren (git pull)?")
-        ) {
+        if (!confirm("Server aktualisieren und neu starten?")) {
           return;
         }
 
@@ -1622,7 +1620,7 @@
           if (response.ok) {
             const result = await response.json();
             alert(
-              result.message || "Server wurde aktualisiert. Bitte neu starten."
+              result.message || "Server wird aktualisiert und neu gestartet..."
             );
           } else {
             alert("Fehler beim Aktualisieren");
