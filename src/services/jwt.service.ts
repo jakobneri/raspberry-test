@@ -6,6 +6,15 @@ import type { User } from "./user.service.js";
 export const propUserId = "urn:app:userid";
 const secret = new TextEncoder().encode(envConfig.JWT_SECRET);
 
+// Token verification cache (token -> {payload, expiry})
+interface CachedToken {
+  payload: JWTPayload;
+  expiry: number;
+}
+
+const tokenCache = new Map<string, CachedToken>();
+const CACHE_TTL = 60000; // 60 seconds cache
+
 export const createToken = (userId: string) => {
   console.log(`[JWT] Token Created: ${userId}`);
   return new SignJWT({ [propUserId]: userId })
@@ -19,6 +28,12 @@ export const verifyToken = async (
   jwt: string,
   users: User[]
 ): Promise<JWTPayload> => {
+  // Check cache first
+  const cached = tokenCache.get(jwt);
+  if (cached && cached.expiry > Date.now()) {
+    return cached.payload;
+  }
+
   const { payload } = await jwtVerify<JWTPayload>(jwt, secret);
 
   const userId = payload[propUserId];
@@ -34,9 +49,20 @@ export const verifyToken = async (
     }
   }
   if (!userExists) {
+    console.log(`[AUTH] Token verification failed: user '${userId}' not found`);
     throw new Error(`[JWT] Invalid token: user '${userId}' not found.`);
   }
 
+  // Cache the verified token
+  tokenCache.set(jwt, {
+    payload,
+    expiry: Date.now() + CACHE_TTL,
+  });
+
   console.log(`[JWT] '${userId}' verified.`);
   return payload;
+};
+
+export const clearTokenCache = (jwt: string): void => {
+  tokenCache.delete(jwt);
 };

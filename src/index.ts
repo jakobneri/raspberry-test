@@ -4,6 +4,7 @@ import {
   createToken,
   verifyToken,
   propUserId,
+  clearTokenCache,
 } from "./services/jwt.service.js";
 import { users } from "./services/user.service.js";
 import { getAppToken } from "./services/sso.service.js";
@@ -417,6 +418,7 @@ const server = http.createServer(async (req, res) => {
     if (method === "POST" && url === "/api/logout") {
       console.log(`[AUTH] User logged out: ${payload[propUserId]}`);
       sessionService.removeSession(cookieToken);
+      clearTokenCache(cookieToken);
 
       res.setHeader("Set-Cookie", "jwt=; HttpOnly; Path=/; Max-Age=0");
       res.writeHead(200, { "Content-Type": "application/json" });
