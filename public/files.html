@@ -4,58 +4,105 @@
     <meta charset="UTF-8" />
     <title>File Sharing - Raspberry Pi</title>
     <link rel="stylesheet" href="css/files.css" />
+    <link rel="stylesheet" href="css/cockpit.css" />
   </head>
   <body>
-    <div class="container">
-      <div class="header">
-        <h1>📁 File Sharing</h1>
-        <div class="header-buttons">
-          <span
-            id="user-status"
-            style="
-              margin-right: 10px;
-              color: #333;
-              font-size: 14px;
-              font-weight: 600;
-            "
-          ></span>
-          <a href="/cockpit">📊 Cockpit</a>
-          <a href="/game">🎮 Spiel</a>
-          <a href="/" id="login-link">🔐 Login</a>
+    <!-- Left Sidebar -->
+    <div class="sidebar">
+      <div class="sidebar-header">
+        <h1>🥧 Pi Cockpit</h1>
+        <div class="subtitle">Raspberry Pi Server</div>
+      </div>
+
+      <nav class="sidebar-nav">
+        <div class="nav-section">
+          <div class="nav-section-title">Main</div>
+          <a href="/cockpit" class="nav-link">
+            <span class="nav-link-icon">📊</span>
+            <span>Dashboard</span>
+          </a>
+          <a href="/users" class="nav-link">
+            <span class="nav-link-icon">👥</span>
+            <span>User Management</span>
+          </a>
         </div>
-      </div>
 
-      <div class="upload-section">
-        <h2>📤 Datei hochladen</h2>
-        <div id="message-container"></div>
-        <form class="upload-form" id="upload-form">
-          <label class="file-input-wrapper" for="file-input">
-            <div>
-              <span style="font-size: 48px">📎</span>
-              <p style="margin-top: 10px; font-weight: 600; color: #667eea">
-                Klicken Sie hier, um eine Datei auszuwählen
-              </p>
-              <p style="margin-top: 5px; font-size: 14px; color: #999">
-                oder ziehen Sie eine Datei hierher
-              </p>
-              <p
-                id="upload-as-info"
-                style="margin-top: 10px; font-size: 12px; color: #666"
-              ></p>
-            </div>
-            <input type="file" id="file-input" />
-            <div class="file-info" id="file-info"></div>
-          </label>
-          <button type="submit" class="btn-upload" id="upload-btn" disabled>
-            Hochladen
-          </button>
-        </form>
-      </div>
+        <div class="nav-section">
+          <div class="nav-section-title">Pages</div>
+          <a href="/files" class="nav-link active">
+            <span class="nav-link-icon">📁</span>
+            <span>Files</span>
+          </a>
+          <a href="/game" class="nav-link">
+            <span class="nav-link-icon">🎮</span>
+            <span>Game</span>
+          </a>
+        </div>
 
-      <div class="files-section">
-        <h2>📂 Geteilte Dateien</h2>
-        <div id="file-list" class="file-list">
-          <div class="empty-state">Lade Dateien...</div>
+        <div class="nav-section">
+          <div class="nav-section-title">Admin Pages</div>
+          <a href="/game-admin" class="nav-link">
+            <span class="nav-link-icon">⚙️</span>
+            <span>Game Admin</span>
+          </a>
+        </div>
+      </nav>
+
+      <div class="sidebar-footer">
+        <button class="logout-btn" onclick="logout()">🚪 Logout</button>
+      </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content">
+      <div class="container">
+        <div class="header">
+          <h1>📁 File Sharing</h1>
+          <div class="header-buttons">
+            <span
+              id="user-status"
+              style="
+                margin-right: 10px;
+                color: #333;
+                font-size: 14px;
+                font-weight: 600;
+              "
+            ></span>
+          </div>
+        </div>
+
+        <div class="upload-section">
+          <h2>📤 Datei hochladen</h2>
+          <div id="message-container"></div>
+          <form class="upload-form" id="upload-form">
+            <label class="file-input-wrapper" for="file-input">
+              <div>
+                <span style="font-size: 48px">📎</span>
+                <p style="margin-top: 10px; font-weight: 600; color: #667eea">
+                  Klicken Sie hier, um eine Datei auszuwählen
+                </p>
+                <p style="margin-top: 5px; font-size: 14px; color: #999">
+                  oder ziehen Sie eine Datei hierher
+                </p>
+                <p
+                  id="upload-as-info"
+                  style="margin-top: 10px; font-size: 12px; color: #666"
+                ></p>
+              </div>
+              <input type="file" id="file-input" />
+              <div class="file-info" id="file-info"></div>
+            </label>
+            <button type="submit" class="btn-upload" id="upload-btn" disabled>
+              Hochladen
+            </button>
+          </form>
+        </div>
+
+        <div class="files-section">
+          <h2>📂 Geteilte Dateien</h2>
+          <div id="file-list" class="file-list">
+            <div class="empty-state">Lade Dateien...</div>
+          </div>
         </div>
       </div>
     </div>
@@ -78,23 +125,28 @@
           currentUser = data;
 
           const userStatus = document.getElementById("user-status");
-          const loginLink = document.getElementById("login-link");
           const uploadAsInfo = document.getElementById("upload-as-info");
 
           if (data.loggedIn) {
             userStatus.textContent = `👤 ${data.userId}`;
-            loginLink.textContent = "🚪 Abmelden";
-            loginLink.href = "/";
             uploadAsInfo.textContent = `Hochladen als: ${data.userId}`;
           } else {
             userStatus.textContent = "Anonym";
-            loginLink.textContent = "🔐 Login";
-            loginLink.href = "/";
             uploadAsInfo.textContent =
               "Hochladen als: anonymous (Login für Namensanzeige)";
           }
         } catch (error) {
           console.error("Error checking login status:", error);
+        }
+      }
+
+      async function logout() {
+        try {
+          await fetch("/api/logout", { method: "POST" });
+          window.location.href = "/";
+        } catch (error) {
+          console.error("Error during logout:", error);
+          window.location.href = "/";
         }
       }
 

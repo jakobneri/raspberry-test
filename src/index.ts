@@ -255,6 +255,14 @@ const server = http.createServer(async (req, res) => {
       return;
     }
 
+    // Reset scores
+    if (method === "DELETE" && url === "/api/scores") {
+      scoreService.resetScores();
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ success: true }));
+      return;
+    }
+
     // Approve user request
     if (method === "POST" && url === "/api/user-requests/approve") {
       try {

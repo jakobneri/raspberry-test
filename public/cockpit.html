@@ -37,25 +37,13 @@
             <span class="nav-link-icon">🎮</span>
             <span>Game</span>
           </a>
-          <a href="/game-admin" class="nav-link">
-            <span class="nav-link-icon">⚙️</span>
-            <span>Game Admin</span>
-          </a>
         </div>
 
         <div class="nav-section">
-          <div class="nav-section-title">System</div>
-          <a
-            href="#"
-            class="nav-link"
-            onclick="openSessionsModal(); return false;"
-          >
-            <span class="nav-link-icon">🔐</span>
-            <span>Sessions (<span id="session-count">0</span>)</span>
-          </a>
-          <a href="#" class="nav-link" onclick="openLogsModal(); return false;">
-            <span class="nav-link-icon">📋</span>
-            <span>Logs</span>
+          <div class="nav-section-title">Admin Pages</div>
+          <a href="/game-admin" class="nav-link">
+            <span class="nav-link-icon">⚙️</span>
+            <span>Game Admin</span>
           </a>
         </div>
       </nav>
@@ -469,6 +457,7 @@
         let updateInterval;
         let cpuChart, memChart, netChart, sysChart, speedtestChart;
         let speedtestFocusMode = "all";
+        let currentSessionCount = 0;
 
         async function fetchMetrics() {
           try {
@@ -700,8 +689,11 @@
             const response = await fetch("/api/sessions");
             if (response.ok) {
               const data = await response.json();
-              document.getElementById("session-count").textContent =
-                data.sessions.length;
+              currentSessionCount = data.sessions.length;
+              const countEl = document.getElementById("session-count-btn");
+              if (countEl) {
+                countEl.textContent = currentSessionCount;
+              }
               return data;
             }
           } catch (error) {
@@ -1274,11 +1266,17 @@
             <span class="info-label">⏱️ Uptime</span>
             <span class="info-value">${formatUptime(info.os.uptime)}</span>
           </div>
-          <div class="admin-buttons" style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #eee; display: flex; gap: 10px; justify-content: center;">
-              <button class="btn-admin btn-restart" onclick="restartServer()" style="flex: 1;">
+          <div class="admin-buttons" style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #eee; display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+              <button class="btn-admin" onclick="openSessionsModal()" style="background: #667eea; color: white;">
+                🔐 Sessions (<span id="session-count-btn">${currentSessionCount}</span>)
+              </button>
+              <button class="btn-admin" onclick="openLogsModal()" style="background: #667eea; color: white;">
+                📋 Logs
+              </button>
+              <button class="btn-admin btn-restart" onclick="restartServer()">
                 🔄 Neustart
               </button>
-              <button class="btn-admin btn-shutdown" onclick="shutdownServer()" style="flex: 1;">
+              <button class="btn-admin btn-shutdown" onclick="shutdownServer()">
                 ⛔ Beenden
               </button>
           </div>

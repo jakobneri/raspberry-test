@@ -1,0 +1,32 @@
+.difficulty-card {
+  background: white;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+  margin-bottom: 20px;
+}
+.difficulty-options {
+  display: flex;
+  gap: 15px;
+  margin-top: 15px;
+}
+.difficulty-btn {
+  flex: 1;
+  padding: 15px;
+  border: 2px solid #eee;
+  border-radius: 8px;
+  background: white;
+  cursor: pointer;
+  transition: all 0.3s;
+  font-weight: bold;
+  text-align: center;
+}
+.difficulty-btn:hover {
+  border-color: #667eea;
+  background: #f8f9fa;
+}
+.difficulty-btn.active {
+  border-color: #667eea;
+  background: #667eea;
+  color: white;
+}

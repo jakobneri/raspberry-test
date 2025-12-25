@@ -43,3 +43,8 @@ const saveScores = (): void => {
     JSON.stringify({ topScores: scores.slice(0, 10) }, null, 2)
   );
 };
+
+export const resetScores = (): void => {
+  scores = [];
+  saveScores();
+};
