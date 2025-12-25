@@ -15,12 +15,15 @@ export interface SpeedTestResult {
   timestamp: string;
 }
 
-export const runSpeedTest = async (): Promise<SpeedTestResult> => {
-  // console.log("[Speedtest] Starting speed test...");
+export const runSpeedTest = async (
+  silent: boolean = false
+): Promise<SpeedTestResult> => {
+  if (!silent) console.log("[Speedtest] Starting speed test...");
 
   // Try speedtest-cli with JSON output
   try {
-    // console.log("[Speedtest] Running speedtest with JSON output...");
+    if (!silent)
+      console.log("[Speedtest] Running speedtest with JSON output...");
     const { stdout } = await execAsync("speedtest --json", {
       timeout: 90000,
     });
@@ -34,9 +37,11 @@ export const runSpeedTest = async (): Promise<SpeedTestResult> => {
       ? Math.round((data.upload / 1000000) * 100) / 100
       : null;
 
-    // console.log(
-    //   `[Speedtest] Test complete - Ping: ${ping}ms, Download: ${download} Mbit/s, Upload: ${upload} Mbit/s`
-    // );
+    if (!silent) {
+      console.log(
+        `[Speedtest] Test complete - Ping: ${ping}ms, Download: ${download} Mbit/s, Upload: ${upload} Mbit/s`
+      );
+    }
     return {
       success: true,
       ping,
@@ -46,7 +51,8 @@ export const runSpeedTest = async (): Promise<SpeedTestResult> => {
       timestamp: new Date().toISOString(),
     };
   } catch (jsonError) {
-    console.log("[Speedtest] JSON mode failed, trying simple mode...");
+    if (!silent)
+      console.log("[Speedtest] JSON mode failed, trying simple mode...");
     console.error("[Speedtest] JSON error:", jsonError);
 
     // Fallback to simple output
@@ -70,9 +76,11 @@ export const runSpeedTest = async (): Promise<SpeedTestResult> => {
         }
       }
 
-      console.log(
-        `[Speedtest] Test complete - Ping: ${ping}ms, Download: ${download} Mbit/s, Upload: ${upload} Mbit/s`
-      );
+      if (!silent) {
+        console.log(
+          `[Speedtest] Test complete - Ping: ${ping}ms, Download: ${download} Mbit/s, Upload: ${upload} Mbit/s`
+        );
+      }
       return {
         success: true,
         ping,
@@ -82,9 +90,10 @@ export const runSpeedTest = async (): Promise<SpeedTestResult> => {
         timestamp: new Date().toISOString(),
       };
     } catch (simpleError) {
-      console.log(
-        "[Speedtest] Simple mode failed, falling back to ping only..."
-      );
+      if (!silent)
+        console.log(
+          "[Speedtest] Simple mode failed, falling back to ping only..."
+        );
       console.error("[Speedtest] Simple error:", simpleError);
 
       // Final fallback: ping only
@@ -97,7 +106,8 @@ export const runSpeedTest = async (): Promise<SpeedTestResult> => {
           throw new Error("Could not parse ping result");
         }
 
-        console.log(`[Speedtest] Ping test complete - ${avgPing}ms`);
+        if (!silent)
+          console.log(`[Speedtest] Ping test complete - ${avgPing}ms`);
         return {
           success: true,
           ping: Math.round(avgPing * 100) / 100,
@@ -138,7 +148,10 @@ export interface SpeedTestHistoryEntry {
 const MAX_HISTORY = 1000;
 const history: SpeedTestHistoryEntry[] = [];
 
-export const addSpeedTestResult = (result: SpeedTestResult): void => {
+export const addSpeedTestResult = (
+  result: SpeedTestResult,
+  silent: boolean = false
+): void => {
   if (result.success) {
     history.push({
       timestamp: result.timestamp,
@@ -152,9 +165,11 @@ export const addSpeedTestResult = (result: SpeedTestResult): void => {
       history.shift();
     }
 
-    console.log(
-      `[Speedtest] Added result to history. Total entries: ${history.length}`
-    );
+    if (!silent) {
+      console.log(
+        `[Speedtest] Added result to history. Total entries: ${history.length}`
+      );
+    }
   }
 };
 
@@ -177,16 +192,16 @@ let isRunning = false;
 
 const runScheduledSpeedTest = async () => {
   if (isRunning) {
-    console.log("[Speedtest] Test already running, skipping...");
+    // console.log("[Speedtest] Test already running, skipping...");
     return;
   }
 
   isRunning = true;
-  console.log("[Speedtest] Running scheduled speed test...");
+  // console.log("[Speedtest] Running scheduled speed test...");
 
   try {
-    const result = await runSpeedTest();
-    addSpeedTestResult(result);
+    const result = await runSpeedTest(true);
+    addSpeedTestResult(result, true);
   } catch (error) {
     console.error("[Speedtest] Error running test:", error);
   } finally {
