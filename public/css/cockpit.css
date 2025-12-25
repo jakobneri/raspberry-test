@@ -470,7 +470,7 @@ body {
   transform: translateX(-50%);
   font-size: 32px;
   font-weight: bold;
-  color: #333;
+  color: var(--text-primary);
 }
 
 .speedometer-label {
@@ -479,7 +479,7 @@ body {
   left: 50%;
   transform: translateX(-50%);
   font-size: 14px;
-  color: #888;
+  color: var(--text-secondary);
 }
 
 @keyframes rotate-needle {
@@ -510,13 +510,15 @@ body {
 }
 
 .modal-content {
-  background-color: white;
+  background-color: var(--card-bg);
+  color: var(--text-primary);
   margin: 50px auto;
   padding: 30px;
   border-radius: 12px;
   width: 90%;
   max-width: 800px;
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+  border: 1px solid var(--border-color);
 }
 
 .modal-header {
@@ -527,12 +529,12 @@ body {
 }
 
 .modal-header h2 {
-  color: #333;
+  color: var(--text-primary);
   margin: 0;
 }
 
 .close {
-  color: #aaa;
+  color: var(--text-secondary);
   font-size: 32px;
   font-weight: bold;
   cursor: pointer;
@@ -540,11 +542,11 @@ body {
 }
 
 .close:hover {
-  color: #000;
+  color: var(--text-primary);
 }
 
 .session-item {
-  background: #f9f9f9;
+  background: var(--bg-color);
   padding: 15px;
   border-radius: 8px;
   margin-bottom: 10px;

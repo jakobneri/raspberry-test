@@ -160,8 +160,20 @@ const server = http.createServer(async (req, res) => {
 
   // Get scores (public)
   if (method === "GET" && url === "/api/scores") {
+    const scores = scoreService.getTopScores(10);
+    const enrichedScores = scores.map((score) => {
+      const user = users.find((u) => u.id === score.userId);
+      return {
+        ...score,
+        user: user
+          ? user.email
+          : score.userId === "anonymous"
+          ? "Anonymous"
+          : score.userId,
+      };
+    });
     res.writeHead(200, { "Content-Type": "application/json" });
-    res.end(JSON.stringify(scoreService.getTopScores(10)));
+    res.end(JSON.stringify(enrichedScores));
     return;
   }
 

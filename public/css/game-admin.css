@@ -54,7 +54,7 @@
   background: var(--bg-color);
   padding: 10px;
   text-align: left;
-  color: var(--text-secondary);
+  color: var(--text-primary);
   font-weight: 600;
   border-bottom: 2px solid var(--accent-color);
 }

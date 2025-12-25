@@ -167,13 +167,14 @@
             <thead>
               <tr>
                 <th>Rang</th>
+                <th>Spieler</th>
                 <th>Score</th>
                 <th>Datum</th>
               </tr>
             </thead>
             <tbody id="scoreboard-body">
               <tr>
-                <td colspan="3" style="text-align: center; color: #999">
+                <td colspan="4" style="text-align: center; color: #999">
                   Lade Scoreboard...
                 </td>
               </tr>
@@ -207,7 +208,7 @@
 
         if (scores.length === 0) {
           tbody.innerHTML =
-            '<tr><td colspan="3" style="text-align: center; color: #999;">Noch keine Scores</td></tr>';
+            '<tr><td colspan="4" style="text-align: center; color: #999;">Noch keine Scores</td></tr>';
           return;
         }
 
@@ -219,6 +220,7 @@
             return `
             <tr>
               <td><span class="rank-medal">${medal}</span></td>
+              <td>${score.user || "Unknown"}</td>
               <td><span class="score-value">${score.score}</span></td>
               <td>${date.toLocaleDateString("de-DE")} ${date.toLocaleTimeString(
               "de-DE",
