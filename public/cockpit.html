@@ -332,6 +332,66 @@
       .btn-copy:hover {
         background: #5568d3;
       }
+      .wifi-network {
+        background: #fff;
+        border: 1px solid #ddd;
+        border-radius: 6px;
+        padding: 15px;
+        margin: 10px 0;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        transition: all 0.3s;
+      }
+      .wifi-network:hover {
+        border-color: #667eea;
+        box-shadow: 0 2px 8px rgba(102, 126, 234, 0.1);
+      }
+      .wifi-info {
+        flex: 1;
+      }
+      .wifi-ssid {
+        font-weight: 600;
+        color: #333;
+        margin-bottom: 5px;
+      }
+      .wifi-details {
+        font-size: 12px;
+        color: #888;
+      }
+      .wifi-connect-btn {
+        background: #667eea;
+        color: white;
+        border: none;
+        padding: 8px 16px;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 14px;
+      }
+      .wifi-connect-btn:hover {
+        background: #5568d3;
+      }
+      .wifi-connect-btn.connected {
+        background: #28a745;
+      }
+      .wifi-connect-form {
+        margin-top: 10px;
+        padding: 10px;
+        background: #f8f9ff;
+        border-radius: 6px;
+      }
+      .wifi-connect-form input {
+        width: 100%;
+        padding: 8px;
+        margin: 5px 0;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        font-size: 14px;
+      }
+      .wifi-connect-form button {
+        margin-top: 5px;
+        margin-right: 5px;
+      }
     </style>
   </head>
   <body>
@@ -444,10 +504,19 @@
           </div>
 
           <!-- Network Card -->
-          <div class="metric-card">
+          <div
+            class="metric-card"
+            style="cursor: pointer"
+            onclick="openWifiModal()"
+          >
             <div class="metric-header">
               <div class="metric-icon">🌐</div>
-              <div class="metric-title">Netzwerk</div>
+              <div class="metric-title">
+                Netzwerk
+                <span style="font-size: 12px; color: #999"
+                  >📡 Klicken für WiFi</span
+                >
+              </div>
             </div>
             <div class="metric-value" id="net-down">-- KB/s</div>
             <div class="metric-detail">
@@ -519,6 +588,32 @@
           <span class="close" onclick="closeSessionsModal()">&times;</span>
         </div>
         <div id="sessions-list"></div>
+      </div>
+    </div>
+
+    <!-- WiFi Modal -->
+    <div id="wifi-modal" class="modal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2>📡 WiFi Management</h2>
+          <span class="close" onclick="closeWifiModal()">&times;</span>
+        </div>
+        <div style="padding: 20px">
+          <button class="btn-admin" onclick="scanWifi()" id="scan-btn">
+            🔄 Scan Networks
+          </button>
+          <div
+            id="wifi-status"
+            style="
+              margin: 15px 0;
+              padding: 10px;
+              background: #f8f9ff;
+              border-radius: 6px;
+              font-size: 14px;
+            "
+          ></div>
+          <div id="wifi-list"></div>
+        </div>
       </div>
     </div>
 
@@ -805,11 +900,220 @@
 
       // Close modal when clicking outside
       window.onclick = function (event) {
-        const modal = document.getElementById("sessions-modal");
-        if (event.target === modal) {
+        const sessionsModal = document.getElementById("sessions-modal");
+        const wifiModal = document.getElementById("wifi-modal");
+        if (event.target === sessionsModal) {
           closeSessionsModal();
         }
+        if (event.target === wifiModal) {
+          closeWifiModal();
+        }
       };
+
+      async function openWifiModal() {
+        const modal = document.getElementById("wifi-modal");
+        modal.style.display = "block";
+        await fetchWifiStatus();
+        await scanWifi();
+      }
+
+      function closeWifiModal() {
+        document.getElementById("wifi-modal").style.display = "none";
+      }
+
+      async function fetchWifiStatus() {
+        try {
+          const response = await fetch("/api/wifi/status");
+          if (response.ok) {
+            const data = await response.json();
+            const statusDiv = document.getElementById("wifi-status");
+            if (data.connected) {
+              statusDiv.innerHTML = `
+                <strong>✅ Connected</strong><br>
+                SSID: ${data.ssid || "N/A"}<br>
+                Signal: ${data.signal || "N/A"}%
+              `;
+            } else {
+              statusDiv.innerHTML = `<strong>❌ Not Connected</strong>`;
+            }
+          }
+        } catch (error) {
+          console.error("Error fetching WiFi status:", error);
+        }
+      }
+
+      async function scanWifi() {
+        const scanBtn = document.getElementById("scan-btn");
+        const wifiList = document.getElementById("wifi-list");
+
+        scanBtn.disabled = true;
+        scanBtn.textContent = "🔄 Scanning...";
+        wifiList.innerHTML =
+          "<p style='text-align:center;padding:20px;'>Scanning for networks...</p>";
+
+        try {
+          const response = await fetch("/api/wifi/scan");
+          if (response.ok) {
+            const networks = await response.json();
+            displayWifiNetworks(networks);
+          } else {
+            wifiList.innerHTML =
+              "<p style='text-align:center;padding:20px;color:#f5576c;'>Failed to scan networks</p>";
+          }
+        } catch (error) {
+          console.error("Error scanning WiFi:", error);
+          wifiList.innerHTML =
+            "<p style='text-align:center;padding:20px;color:#f5576c;'>Error: " +
+            error.message +
+            "</p>";
+        } finally {
+          scanBtn.disabled = false;
+          scanBtn.textContent = "🔄 Scan Networks";
+        }
+      }
+
+      function displayWifiNetworks(networks) {
+        const wifiList = document.getElementById("wifi-list");
+
+        if (networks.length === 0) {
+          wifiList.innerHTML =
+            "<p style='text-align:center;padding:20px;'>No networks found</p>";
+          return;
+        }
+
+        wifiList.innerHTML = networks
+          .map((network, index) => {
+            const isConnected = network.connected;
+            const signalBars =
+              network.signal > 75
+                ? "📶"
+                : network.signal > 50
+                ? "📶"
+                : network.signal > 25
+                ? "📡"
+                : "📡";
+            const security = network.security ? "🔒" : "🔓";
+
+            return `
+            <div class="wifi-network" id="network-${index}">
+              <div class="wifi-info">
+                <div class="wifi-ssid">${signalBars} ${
+              network.ssid
+            } ${security}</div>
+                <div class="wifi-details">
+                  Signal: ${network.signal}% | ${
+              network.security ? "Secured" : "Open"
+            }
+                  ${
+                    isConnected
+                      ? ' | <strong style="color:#28a745;">Connected</strong>'
+                      : ""
+                  }
+                </div>
+              </div>
+              <button 
+                class="wifi-connect-btn ${isConnected ? "connected" : ""}" 
+                onclick="showConnectForm(${index}, '${network.ssid}', ${
+              network.security
+            })"
+                ${isConnected ? "disabled" : ""}
+              >
+                ${isConnected ? "✓ Connected" : "Connect"}
+              </button>
+            </div>
+            <div id="connect-form-${index}" style="display:none;"></div>
+          `;
+          })
+          .join("");
+      }
+
+      function showConnectForm(index, ssid, requiresPassword) {
+        const formDiv = document.getElementById(`connect-form-${index}`);
+
+        if (formDiv.style.display === "block") {
+          formDiv.style.display = "none";
+          return;
+        }
+
+        // Hide all other forms
+        document.querySelectorAll('[id^="connect-form-"]').forEach((div) => {
+          div.style.display = "none";
+        });
+
+        formDiv.style.display = "block";
+        formDiv.innerHTML = `
+          <div class="wifi-connect-form">
+            <strong>Connect to: ${ssid}</strong>
+            ${
+              requiresPassword
+                ? `
+              <input 
+                type="password" 
+                id="wifi-password-${index}" 
+                placeholder="Enter password"
+                autocomplete="off"
+              />
+            `
+                : "<p>This network is open (no password required)</p>"
+            }
+            <div>
+              <button class="wifi-connect-btn" onclick="connectToWifi('${ssid}', ${index}, ${requiresPassword})">
+                Connect
+              </button>
+              <button class="btn-copy" onclick="showConnectForm(${index}, '${ssid}', ${requiresPassword})">
+                Cancel
+              </button>
+            </div>
+            <div id="connect-status-${index}" style="margin-top:10px;font-size:12px;"></div>
+          </div>
+        `;
+      }
+
+      async function connectToWifi(ssid, index, requiresPassword) {
+        const statusDiv = document.getElementById(`connect-status-${index}`);
+        const password = requiresPassword
+          ? document.getElementById(`wifi-password-${index}`).value
+          : "";
+
+        if (requiresPassword && !password) {
+          statusDiv.innerHTML =
+            '<span style="color:#f5576c;">Please enter a password</span>';
+          return;
+        }
+
+        statusDiv.innerHTML =
+          '<span style="color:#667eea;">Connecting...</span>';
+
+        try {
+          const response = await fetch("/api/wifi/connect", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ ssid, password }),
+          });
+
+          const result = await response.json();
+
+          if (response.ok && result.success) {
+            statusDiv.innerHTML =
+              '<span style="color:#28a745;">✓ Connected successfully!</span>';
+            setTimeout(() => {
+              fetchWifiStatus();
+              scanWifi();
+            }, 2000);
+          } else {
+            statusDiv.innerHTML =
+              '<span style="color:#f5576c;">✗ ' +
+              (result.message || "Connection failed") +
+              "</span>";
+          }
+        } catch (error) {
+          console.error("Error connecting to WiFi:", error);
+          statusDiv.innerHTML =
+            '<span style="color:#f5576c;">✗ Error: ' +
+            error.message +
+            "</span>";
+        }
+      }
 
       async function fetchScoreboard() {
         try {

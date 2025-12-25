@@ -8,7 +8,11 @@ import {
   unlinkSync,
 } from "node:fs";
 import { join, basename } from "node:path";
+import { exec } from "node:child_process";
+import { promisify } from "node:util";
 import si from "systeminformation";
+
+const execAsync = promisify(exec);
 
 // src/services/jwt.service.ts
 import { SignJWT, jwtVerify } from "jose";
@@ -702,6 +706,136 @@ var server = http.createServer(async (req, res) => {
       return;
     } catch (error) {
       res.writeHead(404).end("File not found");
+      return;
+    }
+  }
+  if (method === "GET" && url === "/api/wifi/status") {
+    const cookieToken = (req.headers.cookie || "").match(/jwt=([^;]+)/)?.[1];
+    if (!cookieToken) {
+      res.writeHead(401).end("Unauthorized");
+      return;
+    }
+    try {
+      await verifyToken(cookieToken, userArray);
+      updateSessionActivity(cookieToken);
+
+      const [wifiInfo] = await si.wifiNetworks();
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(
+        JSON.stringify({
+          connected: wifiInfo ? true : false,
+          ssid: wifiInfo?.ssid || null,
+          signal: wifiInfo?.signalLevel || null,
+        })
+      );
+      return;
+    } catch (error) {
+      res.writeHead(500).end("Error getting WiFi status");
+      return;
+    }
+  }
+  if (method === "GET" && url === "/api/wifi/scan") {
+    const cookieToken = (req.headers.cookie || "").match(/jwt=([^;]+)/)?.[1];
+    if (!cookieToken) {
+      res.writeHead(401).end("Unauthorized");
+      return;
+    }
+    try {
+      await verifyToken(cookieToken, userArray);
+      updateSessionActivity(cookieToken);
+
+      // Try nmcli (NetworkManager - common on Raspberry Pi OS)
+      try {
+        const { stdout } = await execAsync(
+          "nmcli -t -f SSID,SIGNAL,SECURITY,ACTIVE device wifi list"
+        );
+        const networks = stdout
+          .trim()
+          .split("\\n")
+          .map((line) => {
+            const [ssid, signal, security, active] = line.split(":");
+            return {
+              ssid: ssid || "Hidden Network",
+              signal: parseInt(signal) || 0,
+              security: security && security !== "--" && security !== "",
+              connected: active === "yes",
+            };
+          })
+          .filter((n) => n.ssid && n.ssid !== "Hidden Network");
+
+        // Remove duplicates and sort by signal strength
+        const uniqueNetworks = Array.from(
+          new Map(networks.map((n) => [n.ssid, n])).values()
+        ).sort((a, b) => b.signal - a.signal);
+
+        res.writeHead(200, { "Content-Type": "application/json" });
+        res.end(JSON.stringify(uniqueNetworks));
+        return;
+      } catch (nmcliError) {
+        // Fallback to systeminformation
+        const networks = await si.wifiNetworks();
+        const formatted = networks.map((n) => ({
+          ssid: n.ssid,
+          signal: n.signalLevel || 0,
+          security: n.security && n.security.length > 0,
+          connected: false,
+        }));
+
+        res.writeHead(200, { "Content-Type": "application/json" });
+        res.end(JSON.stringify(formatted));
+        return;
+      }
+    } catch (error) {
+      console.error("[WiFi Scan Error]", error);
+      res.writeHead(500).end("Error scanning WiFi networks");
+      return;
+    }
+  }
+  if (method === "POST" && url === "/api/wifi/connect") {
+    const cookieToken = (req.headers.cookie || "").match(/jwt=([^;]+)/)?.[1];
+    if (!cookieToken) {
+      res.writeHead(401).end("Unauthorized");
+      return;
+    }
+    try {
+      await verifyToken(cookieToken, userArray);
+      updateSessionActivity(cookieToken);
+
+      const body = await getReqBody(req);
+      const { ssid, password } = JSON.parse(body || "{}");
+
+      if (!ssid) {
+        res.writeHead(400).end("SSID required");
+        return;
+      }
+
+      // Use nmcli to connect
+      try {
+        const connectCmd = password
+          ? `nmcli device wifi connect "${ssid}" password "${password}"`
+          : `nmcli device wifi connect "${ssid}"`;
+
+        await execAsync(connectCmd);
+
+        res.writeHead(200, { "Content-Type": "application/json" });
+        res.end(
+          JSON.stringify({ success: true, message: "Connected successfully" })
+        );
+        return;
+      } catch (connectError) {
+        console.error("[WiFi Connect Error]", connectError);
+        res.writeHead(200, { "Content-Type": "application/json" });
+        res.end(
+          JSON.stringify({
+            success: false,
+            message: connectError.message || "Connection failed",
+          })
+        );
+        return;
+      }
+    } catch (error) {
+      console.error("[WiFi Connect Error]", error);
+      res.writeHead(500).end("Error connecting to WiFi");
       return;
     }
   }
