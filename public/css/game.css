@@ -1,3 +1,14 @@
+:root {
+  --bg-color: #1a1a1a;
+  --card-bg: #2d2d2d;
+  --text-primary: #e0e0e0;
+  --text-secondary: #a0a0a0;
+  --border-color: #404040;
+  --accent-color: #667eea;
+  --accent-hover: #5a67d8;
+  --canvas-bg: #333333;
+}
+
 * {
   margin: 0;
   padding: 0;
@@ -6,22 +17,24 @@
 
 body {
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: var(--bg-color);
   min-height: 100vh;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   padding: 20px;
+  color: var(--text-primary);
 }
 
 .game-container {
-  background: white;
+  background: var(--card-bg);
   border-radius: 12px;
   padding: 20px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
   max-width: 800px;
   width: 100%;
+  border: 1px solid var(--border-color);
 }
 
 .header {
@@ -32,21 +45,21 @@ body {
 }
 
 h1 {
-  color: #333;
+  color: var(--text-primary);
   font-size: 24px;
 }
 
 .score-display {
   font-size: 20px;
   font-weight: bold;
-  color: #667eea;
+  color: var(--accent-color);
 }
 
 #gameCanvas {
   width: 100%;
-  border: 3px solid #667eea;
+  border: 3px solid var(--accent-color);
   border-radius: 8px;
-  background: #f5f5f5;
+  background: var(--canvas-bg);
   display: block;
   cursor: pointer;
 }
@@ -54,7 +67,7 @@ h1 {
 .controls {
   text-align: center;
   margin-top: 15px;
-  color: #666;
+  color: var(--text-secondary);
   font-size: 14px;
 }
 
@@ -65,19 +78,20 @@ h1 {
   left: 0;
   width: 100%;
   height: 100%;
-  background: rgba(0, 0, 0, 0.8);
+  background: rgba(0, 0, 0, 0.85);
   z-index: 1000;
   align-items: center;
   justify-content: center;
 }
 
 .game-over-content {
-  background: white;
+  background: var(--card-bg);
   padding: 40px;
   border-radius: 12px;
   text-align: center;
   max-width: 500px;
   width: 90%;
+  border: 1px solid var(--border-color);
 }
 
 .game-over-content h2 {
@@ -89,7 +103,7 @@ h1 {
 .final-score {
   font-size: 48px;
   font-weight: bold;
-  color: #667eea;
+  color: var(--accent-color);
   margin: 20px 0;
 }
 

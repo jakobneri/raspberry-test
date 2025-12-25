@@ -16,21 +16,24 @@ body {
   margin: 0 auto;
 }
 
+/* Note: This file is used in conjunction with cockpit.css which defines the dark theme variables */
+
 .header {
-  background: white;
+  background: var(--card-bg);
   padding: 20px;
   border-radius: 12px;
   margin-bottom: 20px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
   display: flex;
   justify-content: space-between;
   align-items: center;
   flex-wrap: wrap;
   gap: 10px;
+  border: 1px solid var(--border-color);
 }
 
 .header h1 {
-  color: #333;
+  color: var(--text-primary);
   font-size: 24px;
 }
 
@@ -40,29 +43,30 @@ body {
 }
 
 .header a {
-  color: #667eea;
+  color: var(--accent-color);
   text-decoration: none;
   padding: 8px 16px;
-  border: 2px solid #667eea;
+  border: 2px solid var(--accent-color);
   border-radius: 6px;
   transition: all 0.3s;
 }
 
 .header a:hover {
-  background: #667eea;
+  background: var(--accent-color);
   color: white;
 }
 
 .upload-section {
-  background: white;
+  background: var(--card-bg);
   padding: 30px;
   border-radius: 12px;
   margin-bottom: 20px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+  border: 1px solid var(--border-color);
 }
 
 .upload-section h2 {
-  color: #333;
+  color: var(--text-primary);
   margin-bottom: 20px;
   font-size: 20px;
 }
@@ -74,27 +78,27 @@ body {
 }
 
 .file-input-wrapper {
-  border: 2px dashed #667eea;
+  border: 2px dashed var(--accent-color);
   border-radius: 8px;
   padding: 30px;
   text-align: center;
   cursor: pointer;
   transition: all 0.3s;
-  background: #f8f9ff;
+  background: rgba(102, 126, 234, 0.05);
 }
 
 .file-input-wrapper:hover {
-  border-color: #764ba2;
-  background: #f0f1ff;
+  border-color: var(--accent-hover);
+  background: rgba(102, 126, 234, 0.1);
 }
 
-.file-input-wrapper input[type=file] {
+.file-input-wrapper input[type="file"] {
   display: none;
 }
 
 .file-info {
   margin-top: 10px;
-  color: #666;
+  color: var(--text-secondary);
   font-size: 14px;
 }
 
@@ -120,14 +124,15 @@ body {
 }
 
 .files-section {
-  background: white;
+  background: var(--card-bg);
   padding: 30px;
   border-radius: 12px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+  border: 1px solid var(--border-color);
 }
 
 .files-section h2 {
-  color: #333;
+  color: var(--text-primary);
   margin-bottom: 20px;
   font-size: 20px;
 }
@@ -143,9 +148,9 @@ body {
   justify-content: space-between;
   align-items: center;
   padding: 15px;
-  background: #f8f9ff;
+  background: var(--bg-color);
   border-radius: 8px;
-  border: 1px solid #e0e0e0;
+  border: 1px solid var(--border-color);
 }
 
 .file-info-text {
@@ -154,13 +159,13 @@ body {
 
 .file-name {
   font-weight: 600;
-  color: #333;
+  color: var(--text-primary);
   margin-bottom: 5px;
 }
 
 .file-meta {
   font-size: 12px;
-  color: #888;
+  color: var(--text-secondary);
 }
 
 .file-actions {
@@ -180,27 +185,27 @@ body {
 }
 
 .btn-download {
-  background: #667eea;
+  background: var(--accent-color);
   color: white;
 }
 
 .btn-download:hover {
-  background: #5568d3;
+  background: var(--accent-hover);
 }
 
 .btn-delete {
-  background: #ff4757;
+  background: var(--danger-color);
   color: white;
 }
 
 .btn-delete:hover {
-  background: #ee5a6f;
+  background: var(--danger-hover);
 }
 
 .empty-state {
   text-align: center;
   padding: 40px;
-  color: #999;
+  color: var(--text-secondary);
 }
 
 .message {
@@ -211,15 +216,15 @@ body {
 }
 
 .message.success {
-  background: #d4edda;
-  color: #155724;
-  border: 1px solid #c3e6cb;
+  background: rgba(72, 187, 120, 0.2);
+  color: #48bb78;
+  border: 1px solid #48bb78;
 }
 
 .message.error {
-  background: #f8d7da;
-  color: #721c24;
-  border: 1px solid #f5c6cb;
+  background: rgba(245, 87, 108, 0.2);
+  color: #f5576c;
+  border: 1px solid #f5576c;
 }
 
 /*# sourceMappingURL=files.css.map */

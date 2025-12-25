@@ -1,9 +1,12 @@
+/* Note: This file is used in conjunction with cockpit.css which defines the dark theme variables */
+
 .difficulty-card {
-  background: white;
+  background: var(--card-bg);
   border-radius: 12px;
   padding: 20px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
   margin-bottom: 20px;
+  border: 1px solid var(--border-color);
 }
 .difficulty-options {
   display: flex;
@@ -13,20 +16,21 @@
 .difficulty-btn {
   flex: 1;
   padding: 15px;
-  border: 2px solid #eee;
+  border: 2px solid var(--border-color);
   border-radius: 8px;
-  background: white;
+  background: var(--bg-color);
   cursor: pointer;
   transition: all 0.3s;
   font-weight: bold;
   text-align: center;
+  color: var(--text-primary);
 }
 .difficulty-btn:hover {
-  border-color: #667eea;
-  background: #f8f9fa;
+  border-color: var(--accent-color);
+  background: var(--nav-hover);
 }
 .difficulty-btn.active {
-  border-color: #667eea;
-  background: #667eea;
+  border-color: var(--accent-color);
+  background: var(--accent-color);
   color: white;
 }
