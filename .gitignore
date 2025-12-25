@@ -1,6 +1,10 @@
 # Environment configuration
 env.json
 
+# Shared files (user uploads)
+shared-files/*
+!shared-files/.gitkeep
+
 # Dependencies
 node_modules/
 package-lock.json

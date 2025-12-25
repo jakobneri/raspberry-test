@@ -1,6 +1,13 @@
 // src/index.ts
 import http from "node:http";
-import { readFileSync as readFileSync2 } from "node:fs";
+import {
+  readFileSync as readFileSync2,
+  writeFileSync,
+  readdirSync,
+  statSync,
+  unlinkSync,
+} from "node:fs";
+import { join, basename } from "node:path";
 import si from "systeminformation";
 
 // src/services/jwt.service.ts
@@ -118,8 +125,26 @@ if (result) {
 // src/index.ts
 var PORT = 3e3;
 
-// Scoreboard storage
+// Scoreboard storage - load from scores.json
+var SCORES_FILE = "scores.json";
 var scores = [];
+try {
+  const scoresData = JSON.parse(readFileSync2(SCORES_FILE, "utf8"));
+  scores = scoresData.topScores || [];
+} catch (err) {
+  console.log("[Scores] No existing scores file, starting fresh");
+  scores = [];
+}
+
+function saveScores() {
+  writeFileSync(
+    SCORES_FILE,
+    JSON.stringify({ topScores: scores.slice(0, 10) }, null, 2)
+  );
+}
+
+// File sharing directory
+var SHARED_FILES_DIR = "shared-files";
 
 // Active sessions storage
 var activeSessions = [];
@@ -224,6 +249,7 @@ var server = http.createServer(async (req, res) => {
     }
     try {
       await verifyToken(cookieToken, userArray);
+      updateSessionActivity(cookieToken);
       const body = readFileSync2("public/cockpit.html", "utf8");
       res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
       res.end(body);
@@ -324,27 +350,48 @@ var server = http.createServer(async (req, res) => {
     }
   }
   if (method === "GET" && url === "/game") {
-    // Public route - no authentication required
+    // Public route - no authentication required, but track session if logged in
+    const cookieToken = (req.headers.cookie || "").match(/jwt=([^;]+)/)?.[1];
+    if (cookieToken) {
+      try {
+        await verifyToken(cookieToken, userArray);
+        updateSessionActivity(cookieToken);
+      } catch {}
+    }
     const body = readFileSync2("public/game.html", "utf8");
     res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
     res.end(body);
     return;
   }
   if (method === "POST" && url === "/api/scores") {
-    // Public route - anyone can submit scores
+    // Public route - anyone can submit scores, use userId if logged in
+    const cookieToken = (req.headers.cookie || "").match(/jwt=([^;]+)/)?.[1];
+    let userId = "anonymous";
+
+    if (cookieToken) {
+      try {
+        const payload = await verifyToken(cookieToken, userArray);
+        updateSessionActivity(cookieToken);
+        userId = payload[propUserId];
+      } catch {}
+    }
+
     try {
       const body = await getReqBody(req);
       const data = JSON.parse(body || "{}");
 
       scores.push({
         score: data.score || 0,
-        userId: "anonymous",
+        userId: userId,
         timestamp: new Date().toISOString(),
       });
 
       // Keep only top 100 scores
       scores.sort((a, b) => b.score - a.score);
       scores = scores.slice(0, 100);
+
+      // Save top 10 to file
+      saveScores();
 
       res.writeHead(200, { "Content-Type": "application/json" });
       res.end(JSON.stringify({ success: true }));
@@ -358,6 +405,23 @@ var server = http.createServer(async (req, res) => {
     // Public route - anyone can view scores
     res.writeHead(200, { "Content-Type": "application/json" });
     res.end(JSON.stringify(scores.slice(0, 10)));
+    return;
+  }
+  if (method === "GET" && url === "/api/whoami") {
+    // Public endpoint to check if user is logged in
+    const cookieToken = (req.headers.cookie || "").match(/jwt=([^;]+)/)?.[1];
+    if (cookieToken) {
+      try {
+        const payload = await verifyToken(cookieToken, userArray);
+        res.writeHead(200, { "Content-Type": "application/json" });
+        res.end(
+          JSON.stringify({ loggedIn: true, userId: payload[propUserId] })
+        );
+        return;
+      } catch {}
+    }
+    res.writeHead(200, { "Content-Type": "application/json" });
+    res.end(JSON.stringify({ loggedIn: false, userId: null }));
     return;
   }
   if (method === "GET" && url === "/api/sessions") {
@@ -471,6 +535,173 @@ var server = http.createServer(async (req, res) => {
       return;
     } catch (error) {
       res.writeHead(401).end("Unauthorized");
+      return;
+    }
+  }
+  if (method === "GET" && url === "/files") {
+    // Public route - no authentication required
+    const cookieToken = (req.headers.cookie || "").match(/jwt=([^;]+)/)?.[1];
+    if (cookieToken) {
+      try {
+        await verifyToken(cookieToken, userArray);
+        updateSessionActivity(cookieToken);
+      } catch {}
+    }
+    const body = readFileSync2("public/files.html", "utf8");
+    res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
+    res.end(body);
+    return;
+  }
+  if (method === "GET" && url === "/api/files/list") {
+    // Public route - anyone can view files
+    const cookieToken = (req.headers.cookie || "").match(/jwt=([^;]+)/)?.[1];
+    if (cookieToken) {
+      try {
+        await verifyToken(cookieToken, userArray);
+        updateSessionActivity(cookieToken);
+      } catch {}
+    }
+
+    const files = readdirSync(SHARED_FILES_DIR)
+      .map((filename) => {
+        const filePath = join(SHARED_FILES_DIR, filename);
+        const stats = statSync(filePath);
+        const metaPath = join(SHARED_FILES_DIR, `.${filename}.meta`);
+        let uploadedBy = "anonymous";
+        let uploadedAt = stats.mtime.toISOString();
+
+        try {
+          const meta = JSON.parse(readFileSync2(metaPath, "utf8"));
+          uploadedBy = meta.uploadedBy || "anonymous";
+          uploadedAt = meta.uploadedAt || uploadedAt;
+        } catch {}
+
+        return {
+          name: filename,
+          size: stats.size,
+          uploadedBy,
+          uploadedAt,
+        };
+      })
+      .filter((f) => !f.name.startsWith("."));
+
+    res.writeHead(200, { "Content-Type": "application/json" });
+    res.end(JSON.stringify(files));
+    return;
+  }
+  if (method === "POST" && url === "/api/files/upload") {
+    // Public route - anyone can upload
+    const cookieToken = (req.headers.cookie || "").match(/jwt=([^;]+)/)?.[1];
+    let userId = "anonymous";
+
+    if (cookieToken) {
+      try {
+        const payload = await verifyToken(cookieToken, userArray);
+        updateSessionActivity(cookieToken);
+        userId = payload[propUserId];
+      } catch {}
+    }
+
+    try {
+      const boundary = req.headers["content-type"]?.split("boundary=")[1];
+      if (!boundary) {
+        res.writeHead(400).end("No boundary");
+        return;
+      }
+
+      const chunks = [];
+      for await (const chunk of req) {
+        chunks.push(chunk);
+      }
+      const buffer = Buffer.concat(chunks);
+      const parts = buffer.toString("binary").split(`--${boundary}`);
+
+      for (const part of parts) {
+        const filenameMatch = part.match(/filename="([^"]+)"/);
+        if (filenameMatch) {
+          const filename = filenameMatch[1];
+          const dataStart = part.indexOf("\r\n\r\n") + 4;
+          const dataEnd = part.lastIndexOf("\r\n");
+          const fileData = Buffer.from(
+            part.substring(dataStart, dataEnd),
+            "binary"
+          );
+
+          const filePath = join(SHARED_FILES_DIR, filename);
+          writeFileSync(filePath, fileData);
+
+          const metaPath = join(SHARED_FILES_DIR, `.${filename}.meta`);
+          writeFileSync(
+            metaPath,
+            JSON.stringify({
+              uploadedBy: userId,
+              uploadedAt: new Date().toISOString(),
+            })
+          );
+
+          res.writeHead(200, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({ success: true, filename }));
+          return;
+        }
+      }
+
+      res.writeHead(400).end("No file found");
+      return;
+    } catch (error) {
+      console.error("[Upload Error]", error);
+      res.writeHead(500).end("Upload failed");
+      return;
+    }
+  }
+  if (method === "GET" && url.startsWith("/api/files/download/")) {
+    // Public route - anyone can download
+    const cookieToken = (req.headers.cookie || "").match(/jwt=([^;]+)/)?.[1];
+    if (cookieToken) {
+      try {
+        await verifyToken(cookieToken, userArray);
+        updateSessionActivity(cookieToken);
+      } catch {}
+    }
+    try {
+      const filename = decodeURIComponent(url.split("/api/files/download/")[1]);
+      const filePath = join(SHARED_FILES_DIR, basename(filename));
+      const fileData = readFileSync2(filePath);
+
+      res.writeHead(200, {
+        "Content-Type": "application/octet-stream",
+        "Content-Disposition": `attachment; filename="${filename}"`,
+      });
+      res.end(fileData);
+      return;
+    } catch (error) {
+      res.writeHead(404).end("File not found");
+      return;
+    }
+  }
+  if (method === "DELETE" && url.startsWith("/api/files/delete/")) {
+    // Public route - anyone can delete (consider restricting this in production)
+    const cookieToken = (req.headers.cookie || "").match(/jwt=([^;]+)/)?.[1];
+    if (cookieToken) {
+      try {
+        await verifyToken(cookieToken, userArray);
+        updateSessionActivity(cookieToken);
+      } catch {}
+    }
+    try {
+      const filename = decodeURIComponent(url.split("/api/files/delete/")[1]);
+      const filePath = join(SHARED_FILES_DIR, basename(filename));
+      const metaPath = join(SHARED_FILES_DIR, `.${basename(filename)}.meta`);
+
+      unlinkSync(filePath);
+      try {
+        unlinkSync(metaPath);
+      } catch {}
+
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ success: true }));
+      return;
+    } catch (error) {
+      res.writeHead(404).end("File not found");
       return;
     }
   }

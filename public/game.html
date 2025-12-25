@@ -156,10 +156,16 @@
     <div class="game-container">
       <div class="header">
         <h1>🥧 Pi Runner</h1>
-        <div class="score-display">Score: <span id="currentScore">0</span></div>
+        <div class="score-display">
+          <div>Score: <span id="currentScore">0</span></div>
+          <div id="player-info" style="font-size: 12px; margin-top: 5px"></div>
+        </div>
       </div>
       <canvas id="gameCanvas" width="760" height="200"></canvas>
-      <div class="controls">Press SPACE or click to jump! 🚀</div>
+      <div class="controls">
+        Press SPACE or click to jump! 🚀
+        <span id="login-hint" style="margin-left: 20px"></span>
+      </div>
     </div>
 
     <div class="game-over-screen" id="gameOverScreen">
@@ -190,6 +196,30 @@
       let gameSpeed = 6;
       let gravity = 0.6;
       let difficultyMultiplier = 1;
+      let currentUser = null;
+
+      // Check login status
+      async function checkLoginStatus() {
+        try {
+          const response = await fetch("/api/whoami");
+          const data = await response.json();
+          currentUser = data;
+
+          const playerInfo = document.getElementById("player-info");
+          const loginHint = document.getElementById("login-hint");
+
+          if (data.loggedIn) {
+            playerInfo.textContent = `Spieler: ${data.userId}`;
+            loginHint.innerHTML = "";
+          } else {
+            playerInfo.textContent = "Spieler: Anonymous";
+            loginHint.innerHTML =
+              '<a href="/" style="color: #667eea;">Login</a> für Namensanzeige';
+          }
+        } catch (error) {
+          console.error("Error checking login status:", error);
+        }
+      }
 
       // Player (Raspberry Pi)
       const player = {
@@ -454,6 +484,9 @@
           jump();
         }
       });
+
+      // Check login status on page load
+      checkLoginStatus();
 
       // Draw initial state
       drawBackground();

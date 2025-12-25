@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="de">
+  <head>
+    <meta charset="UTF-8" />
+    <title>File Sharing - Raspberry Pi</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+          sans-serif;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        min-height: 100vh;
+        padding: 20px;
+      }
+      .container {
+        max-width: 1000px;
+        margin: 0 auto;
+      }
+      .header {
+        background: white;
+        padding: 20px;
+        border-radius: 12px;
+        margin-bottom: 20px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 10px;
+      }
+      .header h1 {
+        color: #333;
+        font-size: 24px;
+      }
+      .header-buttons {
+        display: flex;
+        gap: 10px;
+      }
+      .header a {
+        color: #667eea;
+        text-decoration: none;
+        padding: 8px 16px;
+        border: 2px solid #667eea;
+        border-radius: 6px;
+        transition: all 0.3s;
+      }
+      .header a:hover {
+        background: #667eea;
+        color: white;
+      }
+      .upload-section {
+        background: white;
+        padding: 30px;
+        border-radius: 12px;
+        margin-bottom: 20px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      }
+      .upload-section h2 {
+        color: #333;
+        margin-bottom: 20px;
+        font-size: 20px;
+      }
+      .upload-form {
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+      }
+      .file-input-wrapper {
+        border: 2px dashed #667eea;
+        border-radius: 8px;
+        padding: 30px;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.3s;
+        background: #f8f9ff;
+      }
+      .file-input-wrapper:hover {
+        border-color: #764ba2;
+        background: #f0f1ff;
+      }
+      .file-input-wrapper input[type="file"] {
+        display: none;
+      }
+      .file-info {
+        margin-top: 10px;
+        color: #666;
+        font-size: 14px;
+      }
+      .btn-upload {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border: none;
+        padding: 12px 24px;
+        border-radius: 6px;
+        font-size: 16px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: transform 0.2s;
+      }
+      .btn-upload:hover {
+        transform: translateY(-2px);
+      }
+      .btn-upload:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+      .files-section {
+        background: white;
+        padding: 30px;
+        border-radius: 12px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      }
+      .files-section h2 {
+        color: #333;
+        margin-bottom: 20px;
+        font-size: 20px;
+      }
+      .file-list {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+      .file-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 15px;
+        background: #f8f9ff;
+        border-radius: 8px;
+        border: 1px solid #e0e0e0;
+      }
+      .file-info-text {
+        flex: 1;
+      }
+      .file-name {
+        font-weight: 600;
+        color: #333;
+        margin-bottom: 5px;
+      }
+      .file-meta {
+        font-size: 12px;
+        color: #888;
+      }
+      .file-actions {
+        display: flex;
+        gap: 10px;
+      }
+      .btn-download,
+      .btn-delete {
+        padding: 8px 16px;
+        border-radius: 6px;
+        border: none;
+        cursor: pointer;
+        font-size: 14px;
+        font-weight: 500;
+        transition: all 0.3s;
+      }
+      .btn-download {
+        background: #667eea;
+        color: white;
+      }
+      .btn-download:hover {
+        background: #5568d3;
+      }
+      .btn-delete {
+        background: #ff4757;
+        color: white;
+      }
+      .btn-delete:hover {
+        background: #ee5a6f;
+      }
+      .empty-state {
+        text-align: center;
+        padding: 40px;
+        color: #999;
+      }
+      .message {
+        padding: 12px 20px;
+        border-radius: 6px;
+        margin-bottom: 15px;
+        font-size: 14px;
+      }
+      .message.success {
+        background: #d4edda;
+        color: #155724;
+        border: 1px solid #c3e6cb;
+      }
+      .message.error {
+        background: #f8d7da;
+        color: #721c24;
+        border: 1px solid #f5c6cb;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="header">
+        <h1>📁 File Sharing</h1>
+        <div class="header-buttons">
+          <span
+            id="user-status"
+            style="margin-right: 10px; color: white; font-size: 14px"
+          ></span>
+          <a href="/game">🎮 Spiel</a>
+          <a href="/" id="login-link">🔐 Login</a>
+        </div>
+      </div>
+
+      <div class="upload-section">
+        <h2>📤 Datei hochladen</h2>
+        <div id="message-container"></div>
+        <form class="upload-form" id="upload-form">
+          <label class="file-input-wrapper" for="file-input">
+            <div>
+              <span style="font-size: 48px">📎</span>
+              <p style="margin-top: 10px; font-weight: 600; color: #667eea">
+                Klicken Sie hier, um eine Datei auszuwählen
+              </p>
+              <p style="margin-top: 5px; font-size: 14px; color: #999">
+                oder ziehen Sie eine Datei hierher
+              </p>
+              <p
+                id="upload-as-info"
+                style="margin-top: 10px; font-size: 12px; color: #666"
+              ></p>
+            </div>
+            <input type="file" id="file-input" />
+            <div class="file-info" id="file-info"></div>
+          </label>
+          <button type="submit" class="btn-upload" id="upload-btn" disabled>
+            Hochladen
+          </button>
+        </form>
+      </div>
+
+      <div class="files-section">
+        <h2>📂 Geteilte Dateien</h2>
+        <div id="file-list" class="file-list">
+          <div class="empty-state">Lade Dateien...</div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      let selectedFile = null;
+      let currentUser = null;
+
+      const fileInput = document.getElementById("file-input");
+      const fileInfo = document.getElementById("file-info");
+      const uploadBtn = document.getElementById("upload-btn");
+      const uploadForm = document.getElementById("upload-form");
+      const messageContainer = document.getElementById("message-container");
+
+      // Check login status
+      async function checkLoginStatus() {
+        try {
+          const response = await fetch("/api/whoami");
+          const data = await response.json();
+          currentUser = data;
+
+          const userStatus = document.getElementById("user-status");
+          const loginLink = document.getElementById("login-link");
+          const uploadAsInfo = document.getElementById("upload-as-info");
+
+          if (data.loggedIn) {
+            userStatus.textContent = `👤 ${data.userId}`;
+            loginLink.textContent = "🚪 Abmelden";
+            loginLink.href = "/";
+            uploadAsInfo.textContent = `Hochladen als: ${data.userId}`;
+          } else {
+            userStatus.textContent = "Anonym";
+            loginLink.textContent = "🔐 Login";
+            loginLink.href = "/";
+            uploadAsInfo.textContent =
+              "Hochladen als: anonymous (Login für Namensanzeige)";
+          }
+        } catch (error) {
+          console.error("Error checking login status:", error);
+        }
+      }
+
+      fileInput.addEventListener("change", (e) => {
+        selectedFile = e.target.files[0];
+        if (selectedFile) {
+          const size = (selectedFile.size / 1024 / 1024).toFixed(2);
+          fileInfo.textContent = `Ausgewählt: ${selectedFile.name} (${size} MB)`;
+          uploadBtn.disabled = false;
+        } else {
+          fileInfo.textContent = "";
+          uploadBtn.disabled = true;
+        }
+      });
+
+      uploadForm.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        if (!selectedFile) return;
+
+        const formData = new FormData();
+        formData.append("file", selectedFile);
+
+        uploadBtn.disabled = true;
+        uploadBtn.textContent = "Wird hochgeladen...";
+
+        try {
+          const response = await fetch("/api/files/upload", {
+            method: "POST",
+            body: formData,
+          });
+
+          if (response.ok) {
+            showMessage("Datei erfolgreich hochgeladen!", "success");
+            fileInput.value = "";
+            selectedFile = null;
+            fileInfo.textContent = "";
+            uploadBtn.textContent = "Hochladen";
+            loadFiles();
+          } else {
+            const error = await response.text();
+            showMessage("Fehler beim Hochladen: " + error, "error");
+            uploadBtn.disabled = false;
+            uploadBtn.textContent = "Hochladen";
+          }
+        } catch (error) {
+          showMessage("Fehler: " + error.message, "error");
+          uploadBtn.disabled = false;
+          uploadBtn.textContent = "Hochladen";
+        }
+      });
+
+      function showMessage(text, type) {
+        messageContainer.innerHTML = `<div class="message ${type}">${text}</div>`;
+        setTimeout(() => {
+          messageContainer.innerHTML = "";
+        }, 5000);
+      }
+
+      async function loadFiles() {
+        try {
+          const response = await fetch("/api/files/list");
+
+          if (!response.ok) {
+            throw new Error("Fehler beim Laden der Dateien");
+          }
+
+          const files = await response.json();
+          displayFiles(files);
+        } catch (error) {
+          console.error("Error loading files:", error);
+          document.getElementById("file-list").innerHTML =
+            '<div class="empty-state">Fehler beim Laden der Dateien</div>';
+        }
+      }
+
+      function displayFiles(files) {
+        const fileList = document.getElementById("file-list");
+
+        if (files.length === 0) {
+          fileList.innerHTML =
+            '<div class="empty-state">Keine Dateien vorhanden</div>';
+          return;
+        }
+
+        fileList.innerHTML = files
+          .map((file) => {
+            const date = new Date(file.uploadedAt);
+            const size = (file.size / 1024 / 1024).toFixed(2);
+            return `
+            <div class="file-item">
+              <div class="file-info-text">
+                <div class="file-name">📄 ${file.name}</div>
+                <div class="file-meta">
+                  ${size} MB • Hochgeladen von ${
+              file.uploadedBy
+            } • ${date.toLocaleDateString("de-DE")} ${date.toLocaleTimeString(
+              "de-DE"
+            )}
+                </div>
+              </div>
+              <div class="file-actions">
+                <button class="btn-download" onclick="downloadFile('${
+                  file.name
+                }')">
+                  ⬇️ Download
+                </button>
+                <button class="btn-delete" onclick="deleteFile('${file.name}')">
+                  🗑️ Löschen
+                </button>
+              </div>
+            </div>
+          `;
+          })
+          .join("");
+      }
+
+      async function downloadFile(filename) {
+        window.location.href = `/api/files/download/${encodeURIComponent(
+          filename
+        )}`;
+      }
+
+      async function deleteFile(filename) {
+        if (!confirm(`Möchten Sie "${filename}" wirklich löschen?`)) {
+          return;
+        }
+
+        try {
+          const response = await fetch(
+            `/api/files/delete/${encodeURIComponent(filename)}`,
+            {
+              method: "DELETE",
+            }
+          );
+
+          if (response.ok) {
+            showMessage("Datei gelöscht", "success");
+            loadFiles();
+          } else {
+            const error = await response.text();
+            showMessage("Fehler beim Löschen: " + error, "error");
+          }
+        } catch (error) {
+          showMessage("Fehler: " + error.message, "error");
+        }
+      }
+
+      // Drag and drop
+      const wrapper = document.querySelector(".file-input-wrapper");
+
+      wrapper.addEventListener("dragover", (e) => {
+        e.preventDefault();
+        wrapper.style.borderColor = "#764ba2";
+        wrapper.style.background = "#f0f1ff";
+      });
+
+      wrapper.addEventListener("dragleave", () => {
+        wrapper.style.borderColor = "#667eea";
+        wrapper.style.background = "#f8f9ff";
+      });
+
+      wrapper.addEventListener("drop", (e) => {
+        e.preventDefault();
+        wrapper.style.borderColor = "#667eea";
+        wrapper.style.background = "#f8f9ff";
+
+        if (e.dataTransfer.files.length > 0) {
+          fileInput.files = e.dataTransfer.files;
+          selectedFile = e.dataTransfer.files[0];
+          const size = (selectedFile.size / 1024 / 1024).toFixed(2);
+          fileInfo.textContent = `Ausgewählt: ${selectedFile.name} (${size} MB)`;
+          uploadBtn.disabled = false;
+        }
+      });
+
+      // Load files and check login status on page load
+      checkLoginStatus();
+      loadFiles();
+
+      // Refresh file list every 10 seconds
+      setInterval(loadFiles, 10000);
+    </script>
+  </body>
+</html>
