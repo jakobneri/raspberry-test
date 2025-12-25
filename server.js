@@ -149,6 +149,22 @@ function updateSessionActivity(token) {
   const session = activeSessions.find((s) => s.token === token);
   if (session) {
     session.lastActivity = new Date().toISOString();
+  } else {
+    // Session doesn't exist (e.g., after server restart with existing JWT)
+    // Extract userId from token and create a new session
+    try {
+      const decoded = JSON.parse(
+        Buffer.from(token.split(".")[1], "base64").toString()
+      );
+      if (decoded && decoded.userId) {
+        addSession(decoded.userId, token);
+      }
+    } catch (err) {
+      console.error(
+        "[Session] Failed to create session from token:",
+        err.message
+      );
+    }
   }
 }
 
