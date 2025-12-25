@@ -253,7 +253,6 @@ var server = http.createServer(async (req, res) => {
     return;
   }
   if (method === "GET" && url === "/cockpit") {
-    console.log(req.headers.cookie);
     const cookieToken = (req.headers.cookie || "").match(/jwt=([^;]+)/)?.[1];
     if (!cookieToken) {
       res.writeHead(302, { Location: "/" }).end();
