@@ -227,6 +227,14 @@ const server = http.createServer(async (req, res) => {
       return;
     }
 
+    // Network details
+    if (method === "GET" && url === "/api/network/details") {
+      const details = await metricsService.getNetworkDetails();
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(JSON.stringify(details));
+      return;
+    }
+
     // Speedtest
     if (method === "POST" && url === "/api/speedtest") {
       try {

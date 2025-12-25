@@ -1180,85 +1180,24 @@
           <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 10px;">
             <div><strong>Interface:</strong> ${data.interface}</div>
             <div><strong>IP Address:</strong> ${data.ipAddress}</div>
-            <div><strong>MAC Address:</strong> ${data.macAddress}</div>
-            <div><strong>Gateway:</strong> ${data.gateway}</div>
             ${
-              data.speed
-                ? `<div><strong>Link Speed:</strong> ${data.speed} Mbps</div>`
+              data.ipv6Address !== "N/A"
+                ? `<div><strong>IPv6:</strong> ${data.ipv6Address}</div>`
                 : ""
             }
-            <div><strong>MTU:</strong> ${data.mtu}</div>
-            <div><strong>DHCP:</strong> ${data.dhcp ? "Yes" : "No"}</div>
+            <div><strong>MAC Address:</strong> ${data.macAddress}</div>
             ${
-              data.duplex !== "N/A"
-                ? `<div><strong>Duplex:</strong> ${data.duplex}</div>`
+              data.speed !== "Unknown"
+                ? `<div><strong>Link Speed:</strong> ${data.speed}</div>`
+                : ""
+            }
+            ${
+              data.ssid !== "N/A"
+                ? `<div><strong>WiFi SSID:</strong> ${data.ssid}</div>`
                 : ""
             }
           </div>
         `;
-
-        if (data.wifi) {
-          html += `
-            <hr style="margin: 15px 0; border: none; border-top: 1px solid #e0e0e0;">
-            <div><strong style="color: #667eea;">WiFi Details:</strong></div>
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 10px; margin-top: 10px;">
-              <div><strong>SSID:</strong> ${data.wifi.ssid}</div>
-              <div><strong>Signal:</strong> ${data.wifi.signalLevel}%</div>
-              <div><strong>Channel:</strong> ${data.wifi.channel}</div>
-              <div><strong>Frequency:</strong> ${data.wifi.frequency} GHz</div>
-              ${
-                data.wifi.txRate !== "N/A"
-                  ? `<div><strong>TX Rate:</strong> ${data.wifi.txRate} Mbps</div>`
-                  : ""
-              }
-              <div><strong>BSSID:</strong> ${data.wifi.bssid}</div>
-              <div><strong>Security:</strong> ${
-                Array.isArray(data.wifi.security)
-                  ? data.wifi.security.join(", ")
-                  : data.wifi.security
-              }</div>
-            </div>
-          `;
-        }
-
-        if (data.stats) {
-          html += `
-            <hr style="margin: 15px 0; border: none; border-top: 1px solid #e0e0e0;">
-            <div><strong style="color: #667eea;">Traffic Statistics:</strong></div>
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 10px; margin-top: 10px;">
-              <div><strong>Download:</strong> ${data.stats.rxSec} KB/s</div>
-              <div><strong>Upload:</strong> ${data.stats.txSec} KB/s</div>
-              <div><strong>Total RX:</strong> ${(
-                data.stats.rxBytes /
-                1024 /
-                1024 /
-                1024
-              ).toFixed(2)} GB</div>
-              <div><strong>Total TX:</strong> ${(
-                data.stats.txBytes /
-                1024 /
-                1024 /
-                1024
-              ).toFixed(2)} GB</div>
-              <div><strong>RX Errors:</strong> ${data.stats.rxErrors}</div>
-              <div><strong>TX Errors:</strong> ${data.stats.txErrors}</div>
-              <div><strong>RX Dropped:</strong> ${data.stats.rxDropped}</div>
-              <div><strong>TX Dropped:</strong> ${data.stats.txDropped}</div>
-            </div>
-          `;
-        }
-
-        if (data.connections) {
-          html += `
-            <hr style="margin: 15px 0; border: none; border-top: 1px solid #e0e0e0;">
-            <div><strong style="color: #667eea;">Network Connections:</strong></div>
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 10px; margin-top: 10px;">
-              <div><strong>Established:</strong> ${data.connections.established}</div>
-              <div><strong>Listening:</strong> ${data.connections.listening}</div>
-              <div><strong>Total:</strong> ${data.connections.total}</div>
-            </div>
-          `;
-        }
 
         detailsDiv.innerHTML = html;
       }

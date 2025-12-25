@@ -139,3 +139,31 @@ export const getSystemInfo = async () => {
     },
   };
 };
+
+export const getNetworkDetails = async () => {
+  const [networkInterfaces, networkStats, wifiInfo] = await Promise.all([
+    si.networkInterfaces(),
+    si.networkStats(),
+    si.wifiNetworks(),
+  ]);
+
+  const activeInterface = networkStats.length > 0 ? networkStats[0] : null;
+  const interfaceDetails = networkInterfaces.find(
+    (iface) => iface.iface === activeInterface?.iface
+  );
+
+  const isWifi = interfaceDetails?.type === "wireless" || wifiInfo.length > 0;
+
+  return {
+    connectionType: isWifi ? "WiFi" : "Ethernet",
+    connected: activeInterface ? true : false,
+    interface: activeInterface?.iface || "N/A",
+    ipAddress: interfaceDetails?.ip4 || "N/A",
+    ipv6Address: interfaceDetails?.ip6 || "N/A",
+    macAddress: interfaceDetails?.mac || "N/A",
+    speed: interfaceDetails?.speed
+      ? `${interfaceDetails.speed} Mbps`
+      : "Unknown",
+    ssid: isWifi && wifiInfo.length > 0 ? wifiInfo[0].ssid : "N/A",
+  };
+};
