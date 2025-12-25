@@ -12,6 +12,10 @@ shared-files/*
 node_modules/
 package-lock.json
 
+# Build output
+dist/
+*.js.map
+
 # Logs
 *.log
 npm-debug.log*

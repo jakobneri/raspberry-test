@@ -1,0 +1,39 @@
+import { SignJWT, jwtVerify, type JWTPayload } from "jose";
+import { JWT_SECRET } from "../../env.json";
+import type { User } from "./user.service.js";
+
+// userid claim key
+const propUserId = "urn:app:userid";
+const secret = new TextEncoder().encode(JWT_SECRET);
+
+export const createToken = (userId: string) => {
+  console.log(`[JWT] Token Created: ${userId}`);
+  return new SignJWT({ [propUserId]: userId })
+    .setProtectedHeader({ alg: "HS256" })
+    .setIssuedAt()
+    .setExpirationTime("15m")
+    .sign(secret);
+};
+
+export const verifyToken = async (jwt: string, users: User[]) => {
+  const { payload } = await jwtVerify<JWTPayload>(jwt, secret);
+
+  const userId = payload[propUserId];
+  if (!userId || typeof userId !== "string") {
+    throw new Error("[JWT] Invalid token: missing or invalid userid.");
+  }
+
+  let userExists = false;
+  for (const user of users) {
+    if (user.id === userId) {
+      userExists = true;
+      break;
+    }
+  }
+  if (!userExists) {
+    throw new Error(`[JWT] Invalid token: user '${userId}' not found.`);
+  }
+
+  console.log(`[JWT] '${userId}' verified.`);
+  return payload;
+};
