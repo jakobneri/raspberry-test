@@ -44,6 +44,23 @@ const server = http.createServer(async (req, res) => {
 
   // ========== PUBLIC ROUTES ==========
 
+  // Serve CSS files
+  if (method === "GET" && url.startsWith("/css/")) {
+    try {
+      if (url.includes("..")) {
+        res.writeHead(403).end("Forbidden");
+        return;
+      }
+      const body = readFileSync("public" + url, "utf8");
+      res.writeHead(200, { "Content-Type": "text/css" });
+      res.end(body);
+      return;
+    } catch (error) {
+      res.writeHead(404).end("Not found");
+      return;
+    }
+  }
+
   // Login page
   if (method === "GET" && url === "/") {
     const body = readFileSync("public/login.html", "utf8");
