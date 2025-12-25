@@ -25,7 +25,7 @@ var JWT_SECRET =
 var propUserId = "urn:app:userid";
 var secret = new TextEncoder().encode(JWT_SECRET);
 var createToken = (userId) => {
-  console.log(`[JWT] Token created for user: ${userId}`);
+  console.log(`[AUTH] Token created for user: ${userId}`);
   return new SignJWT({ [propUserId]: userId })
     .setProtectedHeader({ alg: "HS256" })
     .setIssuedAt()
@@ -56,9 +56,9 @@ var verifyToken = async (jwt, users) => {
     }
   }
   if (!userExists) {
+    console.log(`[AUTH] Token verification failed: user '${userId}' not found`);
     throw new Error(`[JWT] Invalid token: user '${userId}' not found.`);
   }
-  console.log(`[JWT] '${userId}' verified.`);
 
   // Cache the verified token
   tokenCache.set(jwt, {
@@ -166,11 +166,19 @@ function addSession(userId, token) {
     lastActivity: new Date().toISOString(),
   };
   activeSessions.push(session);
+  console.log(
+    `[SESSION] New session created for user: ${userId} (ID: ${session.id})`
+  );
   // Clean old sessions (older than 15 minutes)
   const fifteenMinutesAgo = Date.now() - 15 * 60 * 1000;
+  const beforeCount = activeSessions.length;
   activeSessions = activeSessions.filter(
     (s) => new Date(s.lastActivity).getTime() > fifteenMinutesAgo
   );
+  const cleanedCount = beforeCount - activeSessions.length;
+  if (cleanedCount > 0) {
+    console.log(`[SESSION] Cleaned ${cleanedCount} expired session(s)`);
+  }
   return session;
 }
 
@@ -234,11 +242,13 @@ var server = http.createServer(async (req, res) => {
       }
     }
     if (!user || !user.email) {
+      console.log(`[AUTH] Failed login attempt for email: ${email}`);
       const body = readFileSync2("public/login.html", "utf8");
       res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
       res.end(body);
       return;
     }
+    console.log(`[AUTH] Successful login for user: ${user.id} (${email})`);
     const token = await createToken(user.id);
     addSession(user.id, token);
     res.setHeader("Set-Cookie", `jwt=${token}; HttpOnly; Path=/; Max-Age=900`);
@@ -448,6 +458,50 @@ var server = http.createServer(async (req, res) => {
       return;
     }
   }
+  if (method === "POST" && url === "/api/admin/update") {
+    const cookieToken = (req.headers.cookie || "").match(/jwt=([^;]+)/)?.[1];
+    if (!cookieToken) {
+      res.writeHead(401).end("Unauthorized");
+      return;
+    }
+    try {
+      const payload = await verifyToken(cookieToken, userArray);
+      updateSessionActivity(cookieToken);
+      console.log(
+        `[ADMIN] Server update requested by user: ${payload[propUserId]}`
+      );
+
+      // Try to run git pull
+      try {
+        const { stdout, stderr } = await execAsync("git pull");
+        console.log(`[ADMIN] Git pull output: ${stdout}`);
+        if (stderr) {
+          console.log(`[ADMIN] Git pull stderr: ${stderr}`);
+        }
+        res.writeHead(200, { "Content-Type": "application/json" });
+        res.end(
+          JSON.stringify({
+            success: true,
+            message: "Server aktualisiert. Bitte Server neu starten.",
+            output: stdout,
+          })
+        );
+      } catch (gitError) {
+        console.error(`[ADMIN] Git pull failed:`, gitError.message);
+        res.writeHead(200, { "Content-Type": "application/json" });
+        res.end(
+          JSON.stringify({
+            success: false,
+            message: "Git pull fehlgeschlagen: " + gitError.message,
+          })
+        );
+      }
+      return;
+    } catch (error) {
+      res.writeHead(401).end("Unauthorized");
+      return;
+    }
+  }
   if (method === "POST" && url === "/api/admin/restart") {
     const cookieToken = (req.headers.cookie || "").match(/jwt=([^;]+)/)?.[1];
     if (!cookieToken) {
@@ -455,14 +509,18 @@ var server = http.createServer(async (req, res) => {
       return;
     }
     try {
-      await verifyToken(cookieToken, userArray);
+      const payload = await verifyToken(cookieToken, userArray);
       updateSessionActivity(cookieToken);
+      console.log(
+        `[ADMIN] Server restart requested by user: ${payload[propUserId]}`
+      );
       res.writeHead(200, { "Content-Type": "application/json" });
       res.end(
         JSON.stringify({ success: true, message: "Server restarting..." })
       );
 
       setTimeout(() => {
+        console.log("[ADMIN] Server restarting now...");
         process.exit(42);
       }, 500);
       return;
@@ -478,14 +536,18 @@ var server = http.createServer(async (req, res) => {
       return;
     }
     try {
-      await verifyToken(cookieToken, userArray);
+      const payload = await verifyToken(cookieToken, userArray);
       updateSessionActivity(cookieToken);
+      console.log(
+        `[ADMIN] Server shutdown requested by user: ${payload[propUserId]}`
+      );
       res.writeHead(200, { "Content-Type": "application/json" });
       res.end(
         JSON.stringify({ success: true, message: "Server shutting down..." })
       );
 
       setTimeout(() => {
+        console.log("[ADMIN] Server shutting down now...");
         process.exit(0);
       }, 500);
       return;
@@ -903,6 +965,10 @@ var server = http.createServer(async (req, res) => {
   if (method === "POST" && url === "/api/logout") {
     const cookieToken = (req.headers.cookie || "").match(/jwt=([^;]+)/)?.[1];
     if (cookieToken) {
+      try {
+        const payload = await verifyToken(cookieToken, userArray);
+        console.log(`[AUTH] User logged out: ${payload[propUserId]}`);
+      } catch {}
       // Remove session
       activeSessions = activeSessions.filter((s) => s.token !== cookieToken);
       // Clear token from cache

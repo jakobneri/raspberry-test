@@ -654,6 +654,9 @@
         <div class="admin-section">
           <h2>⚙️ Administration</h2>
           <div class="admin-buttons">
+            <button class="btn-admin" onclick="updateServer()">
+              🔄 Server Aktualisieren
+            </button>
             <button class="btn-admin btn-restart" onclick="restartServer()">
               🔄 Server Neustarten
             </button>
@@ -1226,7 +1229,8 @@
 
         btn.disabled = true;
         btn.textContent = "⏳ Running Speed Test...";
-        resultsDiv.innerHTML = '<p style="text-align: center; color: #667eea;">⏳ Testing connection speed... This may take up to 60 seconds</p>';
+        resultsDiv.innerHTML =
+          '<p style="text-align: center; color: #667eea;">⏳ Testing connection speed... This may take up to 60 seconds</p>';
 
         try {
           const response = await fetch("/api/network/speedtest", {
@@ -1287,30 +1291,6 @@
             '<p style="color: #f5576c; text-align: center;">Error running speed test</p>';
         } finally {
           btn.disabled = false;
-          btn.textContent = "▶️ Run Speed Test";
-        }
-      }
-
-              if (data.message) {
-                html += `<p style="margin-top: 15px; font-size: 12px; color: #888; text-align: center;">${data.message}</p>`;
-              }
-
-              html += `<p style="margin-top: 10px; font-size: 11px; color: #aaa; text-align: center;">Tested at: ${new Date(
-                data.timestamp
-              ).toLocaleString()}</p>`;
-
-              resultsDiv.innerHTML = html;
-            } else {
-              resultsDiv.innerHTML = `<p style="color: #f5576c; text-align: center;">${data.message}</p>`;
-            }
-          }
-        } catch (error) {
-          console.error("Error running speedtest:", error);
-          resultsDiv.innerHTML =
-            '<p style="color: #f5576c; text-align: center;">Error running speed test</p>';
-        } finally {
-          btn.disabled = false;
-          btn.classList.remove("speedtest-running");
           btn.textContent = "▶️ Run Speed Test";
         }
       }
@@ -1625,6 +1605,31 @@
         } catch (error) {
           console.error("Error during logout:", error);
           window.location.href = "/";
+        }
+      }
+
+      async function updateServer() {
+        if (
+          !confirm("Möchten Sie den Server wirklich aktualisieren (git pull)?")
+        ) {
+          return;
+        }
+
+        try {
+          const response = await fetch("/api/admin/update", {
+            method: "POST",
+          });
+          if (response.ok) {
+            const result = await response.json();
+            alert(
+              result.message || "Server wurde aktualisiert. Bitte neu starten."
+            );
+          } else {
+            alert("Fehler beim Aktualisieren");
+          }
+        } catch (error) {
+          console.error("Error updating server:", error);
+          alert("Fehler beim Aktualisieren");
         }
       }
 
