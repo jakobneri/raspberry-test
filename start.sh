@@ -90,51 +90,99 @@ start_server() {
     done
 }
 
-# Main menu
+# Function to show menu with arrow key selection
 show_menu() {
-    echo ""
-    echo -e "${YELLOW}What would you like to do?${NC}"
-    echo ""
-    echo "  1) Pull updates and start server"
-    echo "  2) Just start server (no update)"
-    echo "  3) Only pull updates (don't start)"
-    echo "  4) Exit"
-    echo ""
-    echo -n "Enter your choice [1-4]: "
+    local selected=0
+    local options=(
+        "Pull updates and start server"
+        "Just start server (no update)"
+        "Only pull updates (don't start)"
+        "Exit"
+    )
+    
+    while true; do
+        clear
+        echo -e "${BLUE}╔════════════════════════════════════════${NC}"
+        echo -e "${BLUE}║  🥧 Raspberry Pi Server Manager 🥧   ║${NC}"
+        echo -e "${BLUE}╔════════════════════════════════════════${NC}"
+        echo ""
+        echo -e "${YELLOW}What would you like to do?${NC}"
+        echo ""
+        
+        for i in "${!options[@]}"; do
+            if [ $i -eq $selected ]; then
+                echo -e "${GREEN}▶ ${options[$i]}${NC}"
+            else
+                echo -e "  ${options[$i]}"
+            fi
+        done
+        
+        echo ""
+        echo -e "${BLUE}Use ↑↓ arrow keys to navigate, Enter to select${NC}"
+        
+        # Read arrow keys
+        read -rsn1 key
+        if [[ $key == $'\x1b' ]]; then
+            read -rsn2 key
+            case $key in
+                '[A') # Up arrow
+                    ((selected--))
+                    if [ $selected -lt 0 ]; then
+                        selected=$((${#options[@]} - 1))
+                    fi
+                    ;;
+                '[B') # Down arrow
+                    ((selected++))
+                    if [ $selected -ge ${#options[@]} ]; then
+                        selected=0
+                    fi
+                    ;;
+            esac
+        elif [[ $key == "" ]]; then
+            # Enter key pressed
+            return $selected
+        fi
+    done
 }
 
 # Main loop
 while true; do
     show_menu
-    read choice
+    choice=$?
     
+    clear
     case $choice in
-        1)
+        0)
+            echo -e "${BLUE}╔════════════════════════════════════════${NC}"
+            echo -e "${BLUE}║  🥧 Raspberry Pi Server Manager 🥧   ║${NC}"
+            echo -e "${BLUE}╔════════════════════════════════════════${NC}"
             echo ""
             pull_updates
             start_server
             break
             ;;
-        2)
+        1)
+            echo -e "${BLUE}╔════════════════════════════════════════${NC}"
+            echo -e "${BLUE}║  🥧 Raspberry Pi Server Manager 🥧   ║${NC}"
+            echo -e "${BLUE}╔════════════════════════════════════════${NC}"
             echo ""
             echo -e "${BLUE}Skipping updates...${NC}"
             start_server
             break
             ;;
-        3)
+        2)
+            echo -e "${BLUE}╔════════════════════════════════════════${NC}"
+            echo -e "${BLUE}║  🥧 Raspberry Pi Server Manager 🥧   ║${NC}"
+            echo -e "${BLUE}╔════════════════════════════════════════${NC}"
             echo ""
             pull_updates
             echo -e "${GREEN}Done! Exiting...${NC}"
             break
             ;;
-        4)
+        3)
             echo ""
             echo -e "${GREEN}Goodbye! 👋${NC}"
             exit 0
-            ;;
-        *)
-            echo ""
-            echo -e "${RED}Invalid option. Please choose 1-4.${NC}"
             ;;
     esac
 done

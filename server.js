@@ -166,9 +166,7 @@ function addSession(userId, token) {
     lastActivity: new Date().toISOString(),
   };
   activeSessions.push(session);
-  console.log(
-    `[SESSION] New session created for user: ${userId} (ID: ${session.id})`
-  );
+  console.log(`[SESSION] New session created for user: ${userId}`);
   // Clean old sessions (older than 15 minutes)
   const fifteenMinutesAgo = Date.now() - 15 * 60 * 1000;
   const beforeCount = activeSessions.length;
