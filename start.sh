@@ -11,9 +11,13 @@ NC='\033[0m' # No Color
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 cd "$SCRIPT_DIR"
 
-echo -e "${BLUE}========================================${NC}"
-echo -e "${BLUE}    Raspberry Pi Server Manager    ${NC}"
-echo -e "${BLUE}========================================${NC}"
+echo ""
+echo -e "${BLUE}  ___  _   _____ __  __ _   _____ _   _ ${NC}"
+echo -e "${BLUE} | _ \\/_\\ / __| \\/ | | | | |_ _| | | |${NC}"
+echo -e "${BLUE} |   / _ \\\\__ \\ |\\/| | | | |  | |  |_|${NC}"
+echo -e "${BLUE} |_|_/_/ \\_\\___/_|  |_| |_| |_|  (_)${NC}"
+echo ""
+echo -e "${GREEN}        Server Manager v1.0${NC}"
 echo ""
 
 # Function to check and install speedtest-cli
