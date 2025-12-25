@@ -1,0 +1,562 @@
+<!DOCTYPE html>
+<html lang="de">
+  <head>
+    <meta charset="UTF-8" />
+    <title>User Management - Pi Cockpit</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+          sans-serif;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        min-height: 100vh;
+        display: flex;
+        overflow-x: hidden;
+      }
+
+      /* Sidebar styles (same as cockpit) */
+      .sidebar {
+        width: 250px;
+        background: white;
+        box-shadow: 2px 0 6px rgba(0, 0, 0, 0.1);
+        display: flex;
+        flex-direction: column;
+        position: fixed;
+        left: 0;
+        top: 0;
+        bottom: 0;
+        z-index: 1000;
+      }
+
+      .sidebar-header {
+        padding: 20px;
+        border-bottom: 2px solid #f0f0f0;
+      }
+
+      .sidebar-header h1 {
+        color: #333;
+        font-size: 20px;
+        margin-bottom: 5px;
+      }
+
+      .sidebar-header .subtitle {
+        color: #888;
+        font-size: 14px;
+      }
+
+      .sidebar-nav {
+        flex: 1;
+        padding: 20px 0;
+        overflow-y: auto;
+      }
+
+      .nav-section {
+        margin-bottom: 25px;
+      }
+
+      .nav-section-title {
+        color: #888;
+        font-size: 12px;
+        font-weight: 600;
+        text-transform: uppercase;
+        padding: 0 20px;
+        margin-bottom: 10px;
+      }
+
+      .nav-link {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 12px 20px;
+        color: #555;
+        text-decoration: none;
+        transition: all 0.3s;
+        border-left: 3px solid transparent;
+      }
+
+      .nav-link:hover {
+        background: #f5f5f5;
+        color: #667eea;
+        border-left-color: #667eea;
+      }
+
+      .nav-link.active {
+        background: #f0f4ff;
+        color: #667eea;
+        border-left-color: #667eea;
+        font-weight: 600;
+      }
+
+      .nav-link-icon {
+        font-size: 20px;
+        width: 24px;
+        text-align: center;
+      }
+
+      .sidebar-footer {
+        padding: 15px 20px;
+        border-top: 2px solid #f0f0f0;
+      }
+
+      .logout-btn {
+        width: 100%;
+        padding: 10px;
+        background: #f5576c;
+        color: white;
+        border: none;
+        border-radius: 6px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background 0.3s;
+      }
+
+      .logout-btn:hover {
+        background: #e04555;
+      }
+
+      /* Main content */
+      .main-content {
+        margin-left: 250px;
+        flex: 1;
+        padding: 20px;
+        width: calc(100% - 250px);
+      }
+
+      .container {
+        max-width: 1400px;
+        margin: 0 auto;
+      }
+
+      .page-header {
+        background: white;
+        padding: 20px;
+        border-radius: 12px;
+        margin-bottom: 20px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      }
+
+      .page-header h2 {
+        color: #333;
+        font-size: 24px;
+        margin-bottom: 5px;
+      }
+
+      .page-header p {
+        color: #888;
+        font-size: 14px;
+      }
+
+      .section {
+        background: white;
+        padding: 20px;
+        border-radius: 12px;
+        margin-bottom: 20px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      }
+
+      .section-title {
+        font-size: 18px;
+        color: #333;
+        margin-bottom: 15px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+
+      .badge {
+        background: #667eea;
+        color: white;
+        padding: 4px 12px;
+        border-radius: 12px;
+        font-size: 12px;
+        font-weight: 600;
+      }
+
+      .badge.warning {
+        background: #f5576c;
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+      }
+
+      th {
+        background: #f5f5f5;
+        padding: 12px;
+        text-align: left;
+        font-weight: 600;
+        color: #555;
+        border-bottom: 2px solid #e0e0e0;
+      }
+
+      td {
+        padding: 12px;
+        border-bottom: 1px solid #f0f0f0;
+        color: #333;
+      }
+
+      tr:hover {
+        background: #f9f9f9;
+      }
+
+      button {
+        padding: 8px 16px;
+        border: none;
+        border-radius: 6px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s;
+      }
+
+      .btn-approve {
+        background: #28a745;
+        color: white;
+      }
+
+      .btn-approve:hover {
+        background: #218838;
+      }
+
+      .btn-reject {
+        background: #f5576c;
+        color: white;
+      }
+
+      .btn-reject:hover {
+        background: #e04555;
+      }
+
+      .btn-delete {
+        background: #dc3545;
+        color: white;
+      }
+
+      .btn-delete:hover {
+        background: #c82333;
+      }
+
+      .empty-state {
+        text-align: center;
+        padding: 40px;
+        color: #888;
+      }
+
+      .empty-state-icon {
+        font-size: 48px;
+        margin-bottom: 10px;
+      }
+
+      .message {
+        padding: 12px;
+        border-radius: 6px;
+        margin-bottom: 15px;
+        display: none;
+      }
+
+      .message.success {
+        background: #d4edda;
+        color: #155724;
+        border: 1px solid #c3e6cb;
+        display: block;
+      }
+
+      .message.error {
+        background: #f8d7da;
+        color: #721c24;
+        border: 1px solid #f5c6cb;
+        display: block;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Left Sidebar -->
+    <div class="sidebar">
+      <div class="sidebar-header">
+        <h1>🥧 Pi Cockpit</h1>
+        <div class="subtitle">Raspberry Pi Server</div>
+      </div>
+
+      <nav class="sidebar-nav">
+        <div class="nav-section">
+          <div class="nav-section-title">Main</div>
+          <a href="/cockpit" class="nav-link">
+            <span class="nav-link-icon">📊</span>
+            <span>Dashboard</span>
+          </a>
+          <a href="/users" class="nav-link active">
+            <span class="nav-link-icon">👥</span>
+            <span>User Management</span>
+          </a>
+        </div>
+
+        <div class="nav-section">
+          <div class="nav-section-title">Pages</div>
+          <a href="/files" class="nav-link">
+            <span class="nav-link-icon">📁</span>
+            <span>Files</span>
+          </a>
+          <a href="/game" class="nav-link">
+            <span class="nav-link-icon">🎮</span>
+            <span>Game</span>
+          </a>
+        </div>
+      </nav>
+
+      <div class="sidebar-footer">
+        <button class="logout-btn" onclick="logout()">🚪 Logout</button>
+      </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content">
+      <div class="container">
+        <div class="page-header">
+          <h2>👥 User Management</h2>
+          <p>Manage users and access requests</p>
+        </div>
+
+        <div id="message" class="message"></div>
+
+        <!-- Pending Requests Section -->
+        <div class="section">
+          <div class="section-title">
+            📬 Pending Access Requests
+            <span class="badge warning" id="requests-badge">0</span>
+          </div>
+
+          <div id="requests-container">
+            <table id="requests-table" style="display: none">
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Email</th>
+                  <th>Requested</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="requests-body"></tbody>
+            </table>
+            <div id="requests-empty" class="empty-state">
+              <div class="empty-state-icon">✅</div>
+              <div>No pending requests</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Current Users Section -->
+        <div class="section">
+          <div class="section-title">
+            👤 Current Users
+            <span class="badge" id="users-badge">0</span>
+          </div>
+
+          <table>
+            <thead>
+              <tr>
+                <th>User ID</th>
+                <th>Email</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="users-body"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      async function loadRequests() {
+        try {
+          const response = await fetch("/api/user-requests");
+          if (response.ok) {
+            const requests = await response.json();
+            updateRequestsTable(requests);
+          }
+        } catch (error) {
+          console.error("Error loading requests:", error);
+        }
+      }
+
+      async function loadUsers() {
+        try {
+          const response = await fetch("/api/users");
+          if (response.ok) {
+            const users = await response.json();
+            updateUsersTable(users);
+          }
+        } catch (error) {
+          console.error("Error loading users:", error);
+        }
+      }
+
+      function updateRequestsTable(requests) {
+        const badge = document.getElementById("requests-badge");
+        const table = document.getElementById("requests-table");
+        const empty = document.getElementById("requests-empty");
+        const tbody = document.getElementById("requests-body");
+
+        badge.textContent = requests.length;
+
+        if (requests.length === 0) {
+          table.style.display = "none";
+          empty.style.display = "block";
+          return;
+        }
+
+        table.style.display = "table";
+        empty.style.display = "none";
+
+        tbody.innerHTML = requests
+          .map(
+            (req) => `
+          <tr>
+            <td>${escapeHtml(req.name)}</td>
+            <td>${escapeHtml(req.email)}</td>
+            <td>${new Date(req.requestedAt).toLocaleString("de-DE")}</td>
+            <td>
+              <button class="btn-approve" onclick="approveRequest('${req.id}')">
+                ✓ Approve
+              </button>
+              <button class="btn-reject" onclick="rejectRequest('${req.id}')">
+                ✗ Reject
+              </button>
+            </td>
+          </tr>
+        `
+          )
+          .join("");
+      }
+
+      function updateUsersTable(users) {
+        const badge = document.getElementById("users-badge");
+        const tbody = document.getElementById("users-body");
+
+        badge.textContent = users.length;
+
+        tbody.innerHTML = users
+          .map(
+            (user) => `
+          <tr>
+            <td>${escapeHtml(user.id)}</td>
+            <td>${escapeHtml(user.email)}</td>
+            <td>
+              <button class="btn-delete" onclick="deleteUser('${user.id}')">
+                🗑️ Delete
+              </button>
+            </td>
+          </tr>
+        `
+          )
+          .join("");
+      }
+
+      async function approveRequest(requestId) {
+        if (!confirm("Approve this access request?")) return;
+
+        try {
+          const response = await fetch("/api/user-requests/approve", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ requestId }),
+          });
+
+          const result = await response.json();
+          showMessage(result.success, result.message);
+
+          if (result.success) {
+            loadRequests();
+            loadUsers();
+          }
+        } catch (error) {
+          showMessage(false, "Failed to approve request");
+        }
+      }
+
+      async function rejectRequest(requestId) {
+        if (!confirm("Reject this access request?")) return;
+
+        try {
+          const response = await fetch("/api/user-requests/reject", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ requestId }),
+          });
+
+          const result = await response.json();
+          showMessage(result.success, result.message);
+
+          if (result.success) {
+            loadRequests();
+          }
+        } catch (error) {
+          showMessage(false, "Failed to reject request");
+        }
+      }
+
+      async function deleteUser(userId) {
+        if (!confirm("Delete this user? This action cannot be undone.")) return;
+
+        try {
+          const response = await fetch("/api/users/delete", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ userId }),
+          });
+
+          const result = await response.json();
+          showMessage(result.success, result.message);
+
+          if (result.success) {
+            loadUsers();
+          }
+        } catch (error) {
+          showMessage(false, "Failed to delete user");
+        }
+      }
+
+      function showMessage(success, text) {
+        const messageEl = document.getElementById("message");
+        messageEl.classList.remove("success", "error");
+        messageEl.classList.add(success ? "success" : "error");
+        messageEl.textContent = text;
+
+        setTimeout(() => {
+          messageEl.classList.remove("success", "error");
+        }, 5000);
+      }
+
+      function escapeHtml(text) {
+        const div = document.createElement("div");
+        div.textContent = text;
+        return div.innerHTML;
+      }
+
+      async function logout() {
+        try {
+          await fetch("/api/logout", { method: "POST" });
+          window.location.href = "/";
+        } catch (error) {
+          console.error("Logout error:", error);
+          window.location.href = "/";
+        }
+      }
+
+      // Initial load
+      loadRequests();
+      loadUsers();
+
+      // Refresh every 10 seconds
+      setInterval(() => {
+        loadRequests();
+        loadUsers();
+      }, 10000);
+    </script>
+  </body>
+</html>
