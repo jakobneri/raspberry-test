@@ -181,38 +181,113 @@
               <div
                 class="metric-value"
                 id="sys-uptime"
-                style="font-size: 2rem; margin-bottom: 15px"
+                style="font-size: 1.8rem; margin-bottom: 20px; color: #667eea"
               >
                 --
               </div>
 
               <div
-                class="system-details"
+                class="system-info-list"
                 style="
-                  display: grid;
-                  grid-template-columns: auto 1fr;
-                  gap: 8px 15px;
-                  text-align: left;
-                  font-size: 0.9rem;
+                  display: flex;
+                  flex-direction: column;
+                  gap: 12px;
                   padding: 0 10px;
                 "
               >
-                <div style="color: #888; font-weight: 500">Host:</div>
-                <div id="sys-host" style="font-weight: 600; color: #333">
-                  --
+                <div
+                  class="info-item"
+                  style="
+                    display: flex;
+                    align-items: center;
+                    justify-content: space-between;
+                    border-bottom: 1px solid #f0f0f0;
+                    padding-bottom: 8px;
+                  "
+                >
+                  <span
+                    style="
+                      color: #888;
+                      display: flex;
+                      align-items: center;
+                      gap: 8px;
+                    "
+                    ><span style="font-size: 1.2em">🖥️</span> Host</span
+                  >
+                  <span id="sys-host" style="font-weight: 600; color: #333"
+                    >--</span
+                  >
                 </div>
 
-                <div style="color: #888; font-weight: 500">OS:</div>
-                <div id="sys-os" style="font-weight: 600; color: #333">--</div>
-
-                <div style="color: #888; font-weight: 500">Kernel:</div>
-                <div id="sys-kernel" style="font-weight: 600; color: #333">
-                  --
+                <div
+                  class="info-item"
+                  style="
+                    display: flex;
+                    align-items: center;
+                    justify-content: space-between;
+                    border-bottom: 1px solid #f0f0f0;
+                    padding-bottom: 8px;
+                  "
+                >
+                  <span
+                    style="
+                      color: #888;
+                      display: flex;
+                      align-items: center;
+                      gap: 8px;
+                    "
+                    ><span style="font-size: 1.2em">🐧</span> OS</span
+                  >
+                  <span id="sys-os" style="font-weight: 600; color: #333"
+                    >--</span
+                  >
                 </div>
 
-                <div style="color: #888; font-weight: 500">Distro:</div>
-                <div id="sys-distro" style="font-weight: 600; color: #333">
-                  --
+                <div
+                  class="info-item"
+                  style="
+                    display: flex;
+                    align-items: center;
+                    justify-content: space-between;
+                    border-bottom: 1px solid #f0f0f0;
+                    padding-bottom: 8px;
+                  "
+                >
+                  <span
+                    style="
+                      color: #888;
+                      display: flex;
+                      align-items: center;
+                      gap: 8px;
+                    "
+                    ><span style="font-size: 1.2em">⚙️</span> Kernel</span
+                  >
+                  <span id="sys-kernel" style="font-weight: 600; color: #333"
+                    >--</span
+                  >
+                </div>
+
+                <div
+                  class="info-item"
+                  style="
+                    display: flex;
+                    align-items: center;
+                    justify-content: space-between;
+                    padding-bottom: 8px;
+                  "
+                >
+                  <span
+                    style="
+                      color: #888;
+                      display: flex;
+                      align-items: center;
+                      gap: 8px;
+                    "
+                    ><span style="font-size: 1.2em">📦</span> Distro</span
+                  >
+                  <span id="sys-distro" style="font-weight: 600; color: #333"
+                    >--</span
+                  >
                 </div>
               </div>
 

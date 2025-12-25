@@ -50,17 +50,11 @@
       </form>
 
       <div class="actions">
-        <button
-          type="button"
-          class="secondary"
-          onclick="openRequestModal()"
-        >
+        <button type="button" class="secondary" onclick="openRequestModal()">
           Zugang anfragen
         </button>
         <a href="/game" class="game-link">
-          <button type="button" class="game-btn">
-            🎮 Zum Spiel
-          </button>
+          <button type="button" class="game-btn">🎮 Zum Spiel</button>
         </a>
       </div>
     </div>
@@ -172,73 +166,6 @@
           closeRequestModal();
         }
       };
-    </script>
-  </body>
-</html>
-              placeholder="Choose a password"
-            />
-          </div>
-
-          <button type="submit">Submit Request</button>
-        </form>
-      </div>
-    </div>
-
-    <script>
-      function openRequestModal() {
-        document.getElementById("requestModal").classList.add("show");
-        document
-          .getElementById("requestMessage")
-          .classList.remove("success", "error");
-        document.getElementById("requestMessage").textContent = "";
-        document.getElementById("requestForm").reset();
-      }
-
-      function closeRequestModal() {
-        document.getElementById("requestModal").classList.remove("show");
-      }
-
-      async function submitRequest(event) {
-        event.preventDefault();
-
-        const form = event.target;
-        const formData = new FormData(form);
-
-        try {
-          const response = await fetch("/api/request-access", {
-            method: "POST",
-            body: new URLSearchParams(formData),
-          });
-
-          const result = await response.json();
-          const messageEl = document.getElementById("requestMessage");
-
-          if (result.success) {
-            messageEl.classList.remove("error");
-            messageEl.classList.add("success");
-            messageEl.textContent = result.message;
-            form.reset();
-          } else {
-            messageEl.classList.remove("success");
-            messageEl.classList.add("error");
-            messageEl.textContent = result.message;
-          }
-        } catch (error) {
-          const messageEl = document.getElementById("requestMessage");
-          messageEl.classList.remove("success");
-          messageEl.classList.add("error");
-          messageEl.textContent = "Failed to submit request";
-        }
-      }
-
-      // Close modal when clicking outside
-      document
-        .getElementById("requestModal")
-        .addEventListener("click", function (e) {
-          if (e.target === this) {
-            closeRequestModal();
-          }
-        });
     </script>
   </body>
 </html>
