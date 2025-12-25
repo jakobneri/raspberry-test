@@ -42,6 +42,11 @@ pull_updates() {
         echo -e "${GREEN}✓ Successfully pulled latest changes!${NC}"
         echo ""
         
+        # Ensure start.sh has execute permissions after pull
+        chmod +x start.sh
+        echo -e "${GREEN}✓ Restored execute permissions for start.sh${NC}"
+        echo ""
+        
         # Always install/update dependencies after pull
         echo -e "${YELLOW}📦 Installing dependencies...${NC}"
         npm install --production
