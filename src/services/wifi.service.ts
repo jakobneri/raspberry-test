@@ -55,7 +55,7 @@ export const scanWifi = async (): Promise<WifiNetwork[]> => {
   } catch (nmcliError) {
     // Fallback to systeminformation
     const networks = await si.wifiNetworks();
-    return networks.map((n) => ({
+    return networks.map((n: any) => ({
       ssid: n.ssid,
       signal: n.signalLevel || 0,
       security: n.security && n.security.length > 0,

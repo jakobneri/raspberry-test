@@ -1,10 +1,10 @@
 import { SignJWT, jwtVerify, type JWTPayload } from "jose";
-import { JWT_SECRET } from "../../config/env.json";
+import envConfig from "../../config/env.json" assert { type: "json" };
 import type { User } from "./user.service.js";
 
 // userid claim key
 export const propUserId = "urn:app:userid";
-const secret = new TextEncoder().encode(JWT_SECRET);
+const secret = new TextEncoder().encode(envConfig.JWT_SECRET);
 
 export const createToken = (userId: string) => {
   console.log(`[JWT] Token Created: ${userId}`);
