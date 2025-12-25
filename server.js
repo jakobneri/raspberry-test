@@ -25,7 +25,6 @@ var JWT_SECRET =
 var propUserId = "urn:app:userid";
 var secret = new TextEncoder().encode(JWT_SECRET);
 var createToken = (userId) => {
-  console.log(`[AUTH] Token created for user: ${userId}`);
   return new SignJWT({ [propUserId]: userId })
     .setProtectedHeader({ alg: "HS256" })
     .setIssuedAt()

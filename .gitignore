@@ -1,6 +1,9 @@
 # Environment configuration
 env.json
 
+# Game scores
+scores.json
+
 # Shared files (user uploads)
 shared-files/*
 !shared-files/.gitkeep
