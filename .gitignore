@@ -1,6 +1,10 @@
 # Environment configuration
 config/env.json
 
+# Database
+database.sqlite
+database.sqlite-journal
+
 # Game scores
 config/scores.json
 

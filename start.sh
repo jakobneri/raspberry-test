@@ -45,6 +45,13 @@ check_speedtest() {
 pull_updates() {
     echo -e "${YELLOW}📥 Pulling latest changes from repository...${NC}"
     
+    # Fix: Ensure database is not tracked by git to prevent overwriting
+    if git ls-files --error-unmatch database.sqlite > /dev/null 2>&1; then
+        echo -e "${YELLOW}🔧 Removing database.sqlite from git tracking (keeping local file)...${NC}"
+        git rm --cached database.sqlite
+        echo "database.sqlite" >> .gitignore
+    fi
+
     # Check for local changes
     if ! git diff-index --quiet HEAD --; then
         echo -e "${YELLOW}⚠️  Local changes detected!${NC}"
