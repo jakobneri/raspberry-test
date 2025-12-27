@@ -1,7 +1,37 @@
 import { exec } from "node:child_process";
 import { promisify } from "node:util";
+import { readFileSync, writeFileSync, existsSync } from "node:fs";
+import { resolve } from "node:path";
 
 const execAsync = promisify(exec);
+
+// ========== CONFIGURATION ==========
+
+const configPath = resolve("./config/speedtest.json");
+
+export interface SpeedTestConfig {
+  enabled: boolean;
+  interval: number; // seconds
+}
+
+const loadConfig = (): SpeedTestConfig => {
+  try {
+    if (existsSync(configPath)) {
+      return JSON.parse(readFileSync(configPath, "utf-8"));
+    }
+  } catch (error) {
+    console.error("[Speedtest] Error loading config:", error);
+  }
+  return { enabled: true, interval: 3600 };
+};
+
+const saveConfig = (config: SpeedTestConfig) => {
+  try {
+    writeFileSync(configPath, JSON.stringify(config, null, 2));
+  } catch (error) {
+    console.error("[Speedtest] Error saving config:", error);
+  }
+};
 
 // ========== SPEEDTEST EXECUTION ==========
 
@@ -184,21 +214,23 @@ export const clearSpeedTestHistory = (): void => {
 
 // ========== SPEEDTEST SCHEDULER ==========
 
-export type SpeedTestInterval = 10 | 30 | 60 | 300 | 600; // seconds
+export type SpeedTestInterval = 10 | 30 | 60 | 300 | 600 | 1800 | 3600; // seconds
 
-let currentInterval: SpeedTestInterval = 60; // 1 minute default
+let currentInterval: number = 3600;
 let intervalHandle: NodeJS.Timeout | null = null;
 let isRunning = false;
 
 const runScheduledSpeedTest = async () => {
-  if (isRunning) {
-    // console.log("[Speedtest] Test already running, skipping...");
+  if (isRunning) return;
+
+  // Reload config to check if still enabled (in case changed by CLI)
+  const config = loadConfig();
+  if (!config.enabled) {
+    stopSpeedTestScheduler();
     return;
   }
 
   isRunning = true;
-  // console.log("[Speedtest] Running scheduled speed test...");
-
   try {
     const result = await runSpeedTest(true);
     addSpeedTestResult(result, true);
@@ -209,11 +241,17 @@ const runScheduledSpeedTest = async () => {
   }
 };
 
-export const startSpeedTestScheduler = (interval: SpeedTestInterval = 60) => {
-  console.log(`[Speedtest] Starting scheduler with ${interval}s interval`);
-  currentInterval = interval;
+export const startSpeedTestScheduler = (interval?: number) => {
+  const config = loadConfig();
+  if (!config.enabled) {
+    console.log("[Speedtest] Scheduler disabled in config");
+    return;
+  }
 
-  // Stop existing interval if any
+  const finalInterval = interval || config.interval;
+  console.log(`[Speedtest] Starting scheduler with ${finalInterval}s interval`);
+  currentInterval = finalInterval;
+
   if (intervalHandle) {
     clearInterval(intervalHandle);
   }
@@ -221,8 +259,7 @@ export const startSpeedTestScheduler = (interval: SpeedTestInterval = 60) => {
   // Run immediately on start
   runScheduledSpeedTest();
 
-  // Schedule recurring tests
-  intervalHandle = setInterval(runScheduledSpeedTest, interval * 1000);
+  intervalHandle = setInterval(runScheduledSpeedTest, finalInterval * 1000);
 };
 
 export const stopSpeedTestScheduler = () => {
@@ -233,17 +270,20 @@ export const stopSpeedTestScheduler = () => {
   }
 };
 
-export const setSpeedTestInterval = (interval: SpeedTestInterval) => {
-  if (interval !== currentInterval) {
-    console.log(`[Speedtest] Changing interval to ${interval}s`);
+export const updateSchedulerConfig = (enabled: boolean, interval: number) => {
+  const config = { enabled, interval };
+  saveConfig(config);
+
+  if (enabled) {
     startSpeedTestScheduler(interval);
+  } else {
+    stopSpeedTestScheduler();
   }
 };
 
-export const getCurrentInterval = (): SpeedTestInterval => {
-  return currentInterval;
+export const getSchedulerConfig = (): SpeedTestConfig => {
+  return loadConfig();
 };
 
-export const isSpeedTestRunning = (): boolean => {
-  return isRunning;
-};
+// Initialize on load
+startSpeedTestScheduler();

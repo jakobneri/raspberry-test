@@ -3,6 +3,116 @@ import { randomBytes } from "node:crypto";
 import { db, run, get, all, hashPassword } from "./services/db.service.js";
 import { getMetrics } from "./services/metrics.service.js";
 import { getSessions, revokeAllSessions } from "./services/auth.service.js";
+import {
+  runSpeedTest,
+  getSchedulerConfig,
+  updateSchedulerConfig,
+} from "./services/speedtest.service.js";
+
+// ========== MENU SYSTEM ==========
+
+type MenuAction = () => Promise<void> | void;
+
+interface MenuItem {
+  label: string;
+  action?: MenuAction;
+  submenu?: MenuItem[];
+}
+
+class InteractiveMenu {
+  private items: MenuItem[];
+  private selectedIndex: number = 0;
+  private title: string;
+  private parent?: InteractiveMenu;
+
+  constructor(title: string, items: MenuItem[], parent?: InteractiveMenu) {
+    this.title = title;
+    this.items = items;
+    this.parent = parent;
+  }
+
+  public async show() {
+    this.selectedIndex = 0;
+    process.stdin.setRawMode(true);
+    process.stdin.resume();
+    readline.emitKeypressEvents(process.stdin);
+
+    this.render();
+
+    return new Promise<void>((resolve) => {
+      const keyHandler = async (str: string, key: readline.Key) => {
+        if (key.ctrl && key.name === "c") {
+          process.exit(0);
+        }
+
+        if (key.name === "up") {
+          this.selectedIndex =
+            (this.selectedIndex - 1 + this.items.length) % this.items.length;
+          this.render();
+        } else if (key.name === "down") {
+          this.selectedIndex = (this.selectedIndex + 1) % this.items.length;
+          this.render();
+        } else if (key.name === "return") {
+          const item = this.items[this.selectedIndex];
+          process.stdin.removeListener("keypress", keyHandler);
+          process.stdin.setRawMode(false);
+
+          if (item.submenu) {
+            const subMenu = new InteractiveMenu(
+              item.label,
+              [
+                ...item.submenu,
+                {
+                  label: "< Back",
+                  action: async () => {
+                    /* handled by loop */
+                  },
+                },
+              ],
+              this
+            );
+            await subMenu.show();
+            // Return to this menu
+            this.show();
+            resolve(); // Resolve this promise instance, but we re-entered show()
+          } else if (item.action) {
+            console.clear();
+            await item.action();
+            if (item.label !== "Exit") {
+              console.log("\nPress any key to continue...");
+              process.stdin.setRawMode(true);
+              process.stdin.resume();
+              await new Promise<void>((res) =>
+                process.stdin.once("data", () => res())
+              );
+              process.stdin.setRawMode(false);
+              this.show();
+              resolve();
+            }
+          } else {
+            // Back button or empty
+            resolve();
+          }
+        }
+      };
+
+      process.stdin.on("keypress", keyHandler);
+    });
+  }
+
+  private render() {
+    console.clear();
+    console.log(`\n=== ${this.title} ===\n`);
+    this.items.forEach((item, index) => {
+      const cursor = index === this.selectedIndex ? "> " : "  ";
+      const color = index === this.selectedIndex ? "\x1b[36m" : "\x1b[0m"; // Cyan for selected
+      console.log(`${color}${cursor}${item.label}\x1b[0m`);
+    });
+    console.log("\n(Use arrow keys to navigate, Enter to select)");
+  }
+}
+
+// ========== INPUT HELPERS ==========
 
 const rl = readline.createInterface({
   input: process.stdin,
@@ -15,20 +125,7 @@ const question = (query: string): Promise<string> => {
   });
 };
 
-const printMenu = () => {
-  console.log("\n=== Raspberry Pi Server Manager CLI ===");
-  console.log("1. Create User");
-  console.log("2. List Pending Requests");
-  console.log("3. Approve Request");
-  console.log("4. List All Users");
-  console.log("5. Delete User");
-  console.log("6. Reset Password");
-  console.log("7. System Status");
-  console.log("8. List Active Sessions");
-  console.log("9. Revoke All Sessions");
-  console.log("10. Exit");
-  console.log("=======================================");
-};
+// ========== ACTIONS ==========
 
 const createUser = async () => {
   console.log("\n--- Create New User ---");
@@ -275,50 +372,96 @@ const approveRequest = async () => {
   }
 };
 
-const main = async () => {
-  // Wait for DB init (it happens on import, but let's give it a tick)
-  await new Promise((resolve) => setTimeout(resolve, 100));
+const configureSpeedtest = async () => {
+  const config = getSchedulerConfig();
+  console.log("\n--- Speedtest Configuration ---");
+  console.log(`Current Status: ${config.enabled ? "Enabled" : "Disabled"}`);
+  console.log(`Current Interval: ${config.interval} seconds`);
 
-  while (true) {
-    printMenu();
-    const choice = await question("Select an option: ");
+  const enableInput = await question("\nEnable Scheduler? (y/n/keep): ");
 
-    switch (choice) {
-      case "1":
-        await createUser();
-        break;
-      case "2":
-        await listRequests();
-        break;
-      case "3":
-        await approveRequest();
-        break;
-      case "4":
-        await listUsers();
-        break;
-      case "5":
-        await deleteUser();
-        break;
-      case "6":
-        await resetPassword();
-        break;
-      case "7":
-        await showSystemStatus();
-        break;
-      case "8":
-        listSessions();
-        break;
-      case "9":
-        await revokeSessions();
-        break;
-      case "10":
-        console.log("Goodbye!");
-        rl.close();
-        process.exit(0);
-      default:
-        console.log("Invalid option.");
+  let enabled = config.enabled;
+  if (enableInput.toLowerCase() === "y") enabled = true;
+  if (enableInput.toLowerCase() === "n") enabled = false;
+
+  const intervalInput = await question(
+    "Enter Interval in seconds (e.g. 3600) or press Enter to keep: "
+  );
+
+  let interval = config.interval;
+  if (intervalInput) {
+    const parsed = parseInt(intervalInput);
+    if (!isNaN(parsed) && parsed > 0) {
+      interval = parsed;
+    } else {
+      console.log("Invalid interval, keeping current.");
     }
   }
+
+  updateSchedulerConfig(enabled, interval);
+  console.log("Configuration updated.");
+};
+
+const runManualSpeedtest = async () => {
+  console.log("\nRunning speedtest... (this may take a minute)");
+  const result = await runSpeedTest();
+  if (result.success) {
+    console.log("\n--- Result ---");
+    console.log(`Ping: ${result.ping} ms`);
+    console.log(`Download: ${result.download} Mbit/s`);
+    console.log(`Upload: ${result.upload} Mbit/s`);
+  } else {
+    console.log("Speedtest failed.");
+  }
+};
+
+// ========== MAIN ==========
+
+const mainMenu: MenuItem[] = [
+  {
+    label: "User Management",
+    submenu: [
+      { label: "Create User", action: createUser },
+      { label: "List Users", action: listUsers },
+      { label: "Delete User", action: deleteUser },
+      { label: "Reset Password", action: resetPassword },
+      { label: "List Pending Requests", action: listRequests },
+      { label: "Approve Request", action: approveRequest },
+    ],
+  },
+  {
+    label: "System & Sessions",
+    submenu: [
+      { label: "System Status", action: showSystemStatus },
+      { label: "List Active Sessions", action: listSessions },
+      { label: "Revoke All Sessions", action: revokeSessions },
+    ],
+  },
+  {
+    label: "Speedtest",
+    submenu: [
+      { label: "Run Speedtest Now", action: runManualSpeedtest },
+      { label: "Configure Scheduler", action: configureSpeedtest },
+    ],
+  },
+  {
+    label: "Exit",
+    action: () => {
+      console.log("Goodbye!");
+      process.exit(0);
+    },
+  },
+];
+
+const main = async () => {
+  // Wait for DB init
+  await new Promise((resolve) => setTimeout(resolve, 100));
+
+  const menu = new InteractiveMenu(
+    "Raspberry Pi Server Control Center",
+    mainMenu
+  );
+  await menu.show();
 };
 
 main();

@@ -434,9 +434,11 @@ router.post(
 router.get(
   "/api/speedtest/interval",
   authHandler(async (req, res) => {
-    const interval = speedTestService.getCurrentInterval();
+    const config = speedTestService.getSchedulerConfig();
     res.writeHead(200, { "Content-Type": "application/json" });
-    res.end(JSON.stringify({ interval }));
+    res.end(
+      JSON.stringify({ interval: config.interval, enabled: config.enabled })
+    );
   })
 );
 
@@ -444,11 +446,13 @@ router.post(
   "/api/speedtest/interval",
   authHandler(async (req, res) => {
     const body = await parseBody(req);
-    const interval = parseInt(body.get("interval") || "60");
-    if ([10, 30, 60, 300, 600].includes(interval)) {
-      speedTestService.setSpeedTestInterval(interval as any);
+    const interval = parseInt(body.get("interval") || "3600");
+    const enabled = body.get("enabled") === "true";
+
+    if (interval > 0) {
+      speedTestService.updateSchedulerConfig(enabled, interval);
       res.writeHead(200, { "Content-Type": "application/json" });
-      res.end(JSON.stringify({ success: true, interval }));
+      res.end(JSON.stringify({ success: true, interval, enabled }));
     } else {
       res.writeHead(400).end("Invalid interval");
     }
