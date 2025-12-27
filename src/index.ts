@@ -1,5 +1,6 @@
 import http from "node:http";
 import { readFileSync, createWriteStream, writeFileSync } from "node:fs";
+import { Router } from "./router.js";
 import {
   createToken,
   verifyToken,
@@ -8,7 +9,7 @@ import {
   users,
   getAppToken,
   getCookieToken,
-  hashPassword,
+  validateUser,
 } from "./services/auth.service.js";
 import * as sessionService from "./services/auth.service.js";
 import * as scoreService from "./services/score.service.js";
@@ -19,34 +20,620 @@ import * as networkService from "./services/network.service.js";
 import * as speedTestService from "./services/speedtest.service.js";
 
 const PORT = 3000;
+const router = new Router();
 
-const parseBody = async (req: http.IncomingMessage) => {
-  const body = await getReqBody(req);
-  return new URLSearchParams(body || "");
-};
-
-const getReqBody = async (
-  req: http.IncomingMessage
-): Promise<string | undefined> => {
-  return await new Promise((resolve) => {
-    let body: string | undefined = undefined;
-    req.on("data", (chunk) => {
-      body = (body ?? "") + chunk;
-    });
-    req.on("end", () => {
-      resolve(body);
-    });
+// Helper: Parse Body
+const getReqBody = async (req: http.IncomingMessage): Promise<string> => {
+  return new Promise((resolve) => {
+    let body = "";
+    req.on("data", (chunk) => (body += chunk));
+    req.on("end", () => resolve(body));
   });
 };
 
+const parseBody = async (req: http.IncomingMessage) => {
+  const body = await getReqBody(req);
+  return new URLSearchParams(body);
+};
+
+// Helper: Auth Middleware
+const requireAuth = async (
+  req: http.IncomingMessage,
+  res: http.ServerResponse
+): Promise<string> => {
+  const cookieToken = getCookieToken(req);
+  if (!cookieToken) {
+    throw new Error("Unauthorized");
+  }
+  const payload = await verifyToken(cookieToken);
+  const userId = payload[propUserId] as string;
+  sessionService.updateSessionActivity(cookieToken, userId);
+  return userId;
+};
+
+// ========== PUBLIC ROUTES ==========
+
+router.get("/", (req, res) => {
+  const body = readFileSync("public/login.html", "utf8");
+  res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
+  res.end(body);
+});
+
+router.post("/", async (req, res) => {
+  const params = await parseBody(req);
+  const email = params.get("email") || "";
+  const password = params.get("password") || "";
+
+  const user = await validateUser(email, password);
+
+  if (!user) {
+    console.log(`[AUTH] Failed login attempt for email: ${email}`);
+    const body = readFileSync("public/login.html", "utf8");
+    res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
+    res.end(body);
+    return;
+  }
+
+  console.log(`[AUTH] Successful login for user: ${user.id} (${email})`);
+  const token = await createToken(user.id);
+  sessionService.addSession(user.id, token);
+  res.setHeader("Set-Cookie", `jwt=${token}; HttpOnly; Path=/; Max-Age=900`);
+  res.writeHead(302, { Location: "/cockpit" }).end();
+});
+
+router.post("/api/request-access", async (req, res) => {
+  try {
+    const params = await parseBody(req);
+    const email = params.get("email") || "";
+    const password = params.get("password") || "";
+    const name = params.get("name") || "";
+
+    const { createUserRequest } = await import("./services/auth.service.js");
+    const result = await createUserRequest(email, password, name);
+
+    res.writeHead(200, { "Content-Type": "application/json" });
+    res.end(JSON.stringify(result));
+  } catch (error) {
+    res.writeHead(500).end("Error creating request");
+  }
+});
+
+router.get("/game", async (req, res) => {
+  const cookieToken = getCookieToken(req);
+  if (cookieToken) {
+    try {
+      await verifyToken(cookieToken);
+      sessionService.updateSessionActivity(cookieToken);
+    } catch {}
+  }
+  const body = readFileSync("public/game.html", "utf8");
+  res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
+  res.end(body);
+});
+
+router.post("/api/scores", async (req, res) => {
+  const cookieToken = getCookieToken(req);
+  let userId = "anonymous";
+  if (cookieToken) {
+    try {
+      const payload = await verifyToken(cookieToken);
+      sessionService.updateSessionActivity(cookieToken);
+      userId = payload[propUserId] as string;
+    } catch {}
+  }
+
+  try {
+    const body = await getReqBody(req);
+    const data = JSON.parse(body || "{}");
+    scoreService.addScore(data.score || 0, userId);
+    res.writeHead(200, { "Content-Type": "application/json" });
+    res.end(JSON.stringify({ success: true }));
+  } catch (error) {
+    res.writeHead(500).end("Error saving score");
+  }
+});
+
+router.get("/api/scores", async (req, res) => {
+  const scores = scoreService.getTopScores(10);
+  // Note: This user lookup is now async in reality but scoreService is sync?
+  // We need to fix scoreService or just fetch users here.
+  // For now, assuming users array is still populated or we need to fetch.
+  // Wait, I removed `users` array export from auth.service.ts?
+  // No, I kept `users` export but it was `userArray`.
+  // I should check auth.service.ts again. I removed `users` export in my thought process but did I in the file?
+  // I replaced the file content. Let's check if `users` is still exported.
+  // I replaced the `users` export with `validateUser`.
+  // So `users` is NOT available. I need to fetch user details for scores.
+  // This is a breaking change for `scoreService` or this route.
+  // I will fix this route to fetch user emails from DB.
+
+  const { get } = await import("./services/db.service.js");
+
+  const enrichedScores = await Promise.all(
+    scores.map(async (score) => {
+      let email = "Anonymous";
+      if (score.userId !== "anonymous") {
+        const user = await get<{ email: string }>(
+          "SELECT email FROM users WHERE id = ?",
+          [score.userId]
+        );
+        if (user) email = user.email;
+        else email = score.userId;
+      }
+      return { ...score, user: email };
+    })
+  );
+
+  res.writeHead(200, { "Content-Type": "application/json" });
+  res.end(JSON.stringify(enrichedScores));
+});
+
+router.get("/api/whoami", async (req, res) => {
+  const cookieToken = getCookieToken(req);
+  if (cookieToken) {
+    try {
+      const payload = await verifyToken(cookieToken);
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ loggedIn: true, userId: payload[propUserId] }));
+      return;
+    } catch {}
+  }
+  res.writeHead(200, { "Content-Type": "application/json" });
+  res.end(JSON.stringify({ loggedIn: false, userId: null }));
+});
+
+router.get("/files", async (req, res) => {
+  const cookieToken = getCookieToken(req);
+  if (cookieToken) {
+    try {
+      await verifyToken(cookieToken);
+      sessionService.updateSessionActivity(cookieToken);
+    } catch {}
+  }
+  const body = readFileSync("public/files.html", "utf8");
+  res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
+  res.end(body);
+});
+
+// ========== AUTHENTICATED ROUTES ==========
+
+const authHandler = (
+  handler: (
+    req: http.IncomingMessage,
+    res: http.ServerResponse,
+    userId: string,
+    params: any
+  ) => Promise<void>
+) => {
+  return async (
+    req: http.IncomingMessage,
+    res: http.ServerResponse,
+    params: any
+  ) => {
+    try {
+      const userId = await requireAuth(req, res);
+      await handler(req, res, userId, params);
+    } catch (error) {
+      res.writeHead(302, { Location: "/" }).end();
+    }
+  };
+};
+
+router.get(
+  "/cockpit",
+  authHandler(async (req, res) => {
+    const body = readFileSync("public/cockpit.html", "utf8");
+    res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
+    res.end(body);
+  })
+);
+
+router.get(
+  "/users",
+  authHandler(async (req, res) => {
+    const body = readFileSync("public/users.html", "utf8");
+    res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
+    res.end(body);
+  })
+);
+
+router.get(
+  "/api/users",
+  authHandler(async (req, res) => {
+    const { all } = await import("./services/db.service.js");
+    const users = await all("SELECT id, email FROM users");
+    res.writeHead(200, { "Content-Type": "application/json" });
+    res.end(JSON.stringify(users));
+  })
+);
+
+router.get(
+  "/api/user-requests",
+  authHandler(async (req, res) => {
+    const { getPendingUserRequests } = await import(
+      "./services/auth.service.js"
+    );
+    const requests = await getPendingUserRequests();
+    res.writeHead(200, { "Content-Type": "application/json" });
+    res.end(JSON.stringify(requests));
+  })
+);
+
+router.get(
+  "/game-admin",
+  authHandler(async (req, res) => {
+    const body = readFileSync("public/game-admin.html", "utf8");
+    res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
+    res.end(body);
+  })
+);
+
+router.delete(
+  "/api/scores",
+  authHandler(async (req, res) => {
+    scoreService.resetScores();
+    res.writeHead(200, { "Content-Type": "application/json" });
+    res.end(JSON.stringify({ success: true }));
+  })
+);
+
+router.post(
+  "/api/user-requests/approve",
+  authHandler(async (req, res) => {
+    const body = await getReqBody(req);
+    const data = JSON.parse(body || "{}");
+    const { approveUserRequest } = await import("./services/auth.service.js");
+    const result = await approveUserRequest(data.requestId);
+    res.writeHead(200, { "Content-Type": "application/json" });
+    res.end(JSON.stringify(result));
+  })
+);
+
+router.post(
+  "/api/user-requests/reject",
+  authHandler(async (req, res) => {
+    const body = await getReqBody(req);
+    const data = JSON.parse(body || "{}");
+    const { rejectUserRequest } = await import("./services/auth.service.js");
+    const result = await rejectUserRequest(data.requestId);
+    res.writeHead(200, { "Content-Type": "application/json" });
+    res.end(JSON.stringify(result));
+  })
+);
+
+router.post(
+  "/api/users/delete",
+  authHandler(async (req, res) => {
+    const body = await getReqBody(req);
+    const data = JSON.parse(body || "{}");
+    const { deleteUser } = await import("./services/auth.service.js");
+    const result = await deleteUser(data.userId);
+    res.writeHead(200, { "Content-Type": "application/json" });
+    res.end(JSON.stringify(result));
+  })
+);
+
+router.get(
+  "/api/metrics",
+  authHandler(async (req, res) => {
+    const metrics = await metricsService.getMetrics();
+    res.writeHead(200, { "Content-Type": "application/json" });
+    res.end(JSON.stringify(metrics));
+  })
+);
+
+router.get(
+  "/api/logs",
+  authHandler(async (req, res) => {
+    const logs = systemService.getLogs();
+    res.writeHead(200, { "Content-Type": "application/json" });
+    res.end(JSON.stringify({ logs }));
+  })
+);
+
+router.post(
+  "/api/logs/clear",
+  authHandler(async (req, res) => {
+    systemService.clearLogs();
+    res.writeHead(200, { "Content-Type": "application/json" });
+    res.end(JSON.stringify({ success: true }));
+  })
+);
+
+router.get(
+  "/api/sessions",
+  authHandler(async (req, res) => {
+    res.writeHead(200, { "Content-Type": "application/json" });
+    res.end(
+      JSON.stringify({
+        sessions: sessionService.getSessions(),
+        appToken: getAppToken() || null,
+      })
+    );
+  })
+);
+
+router.get(
+  "/api/system-info",
+  authHandler(async (req, res) => {
+    const info = await metricsService.getSystemInfo();
+    res.writeHead(200, { "Content-Type": "application/json" });
+    res.end(JSON.stringify(info));
+  })
+);
+
+router.get(
+  "/api/network/details",
+  authHandler(async (req, res) => {
+    const details = await networkService.getNetworkDetails();
+    res.writeHead(200, { "Content-Type": "application/json" });
+    res.end(JSON.stringify(details));
+  })
+);
+
+router.post(
+  "/api/speedtest",
+  authHandler(async (req, res) => {
+    try {
+      const result = await speedTestService.runSpeedTest();
+      speedTestService.addSpeedTestResult(result);
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(JSON.stringify(result));
+    } catch (error) {
+      res.writeHead(500).end("Error running speedtest");
+    }
+  })
+);
+
+router.get(
+  "/api/speedtest/history",
+  authHandler(async (req, res) => {
+    const history = speedTestService.getSpeedTestHistory();
+    res.writeHead(200, { "Content-Type": "application/json" });
+    res.end(JSON.stringify({ history }));
+  })
+);
+
+router.post(
+  "/api/speedtest/history/clear",
+  authHandler(async (req, res) => {
+    speedTestService.clearSpeedTestHistory();
+    res.writeHead(200, { "Content-Type": "application/json" });
+    res.end(JSON.stringify({ success: true }));
+  })
+);
+
+router.get(
+  "/api/speedtest/interval",
+  authHandler(async (req, res) => {
+    const interval = speedTestService.getCurrentInterval();
+    res.writeHead(200, { "Content-Type": "application/json" });
+    res.end(JSON.stringify({ interval }));
+  })
+);
+
+router.post(
+  "/api/speedtest/interval",
+  authHandler(async (req, res) => {
+    const body = await parseBody(req);
+    const interval = parseInt(body.get("interval") || "60");
+    if ([10, 30, 60, 300, 600].includes(interval)) {
+      speedTestService.setSpeedTestInterval(interval as any);
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ success: true, interval }));
+    } else {
+      res.writeHead(400).end("Invalid interval");
+    }
+  })
+);
+
+router.get(
+  "/api/wifi/status",
+  authHandler(async (req, res) => {
+    const status = await networkService.getWifiStatus();
+    res.writeHead(200, { "Content-Type": "application/json" });
+    res.end(JSON.stringify(status));
+  })
+);
+
+router.get(
+  "/api/wifi/scan",
+  authHandler(async (req, res) => {
+    const networks = await networkService.scanWifi();
+    res.writeHead(200, { "Content-Type": "application/json" });
+    res.end(JSON.stringify(networks));
+  })
+);
+
+router.post(
+  "/api/wifi/connect",
+  authHandler(async (req, res) => {
+    const body = await getReqBody(req);
+    const { ssid, password } = JSON.parse(body || "{}");
+    if (!ssid) {
+      res.writeHead(400).end("SSID required");
+      return;
+    }
+    const result = await networkService.connectWifi(ssid, password);
+    res.writeHead(200, { "Content-Type": "application/json" });
+    res.end(JSON.stringify(result));
+  })
+);
+
+router.get(
+  "/api/files",
+  authHandler(async (req, res) => {
+    const files = filesService.listFiles();
+    res.writeHead(200, { "Content-Type": "application/json" });
+    res.end(JSON.stringify(files));
+  })
+);
+
+router.post(
+  "/api/files/upload",
+  authHandler(async (req, res) => {
+    const contentType = req.headers["content-type"] || "";
+    const boundary = contentType.split("boundary=")[1];
+    if (!boundary) {
+      res.writeHead(400).end("Invalid content type");
+      return;
+    }
+
+    let body = await getReqBody(req);
+    if (!body) {
+      res.writeHead(400).end("No file data");
+      return;
+    }
+
+    const parts = body.split(`--${boundary}`);
+    for (const part of parts) {
+      if (part.includes('name="file"')) {
+        const filenameMatch = part.match(/filename="([^"]+)"/);
+        if (!filenameMatch) continue;
+
+        const filename = filenameMatch[1];
+        const dataStart = part.indexOf("\r\n\r\n") + 4;
+        const dataEnd = part.lastIndexOf("\r\n");
+        const fileData = part.substring(dataStart, dataEnd);
+
+        const filePath = filesService.getFilePath(filename);
+        const stream = createWriteStream(filePath);
+        stream.write(fileData);
+        stream.end();
+
+        console.log(`[Files] Uploaded file: ${filename}`);
+        res.writeHead(200, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ success: true, filename }));
+        return;
+      }
+    }
+    res.writeHead(400).end("No file found");
+  })
+);
+
+router.get(
+  "/api/files/download/:filename",
+  authHandler(async (req, res, userId, params) => {
+    try {
+      const filename = decodeURIComponent(params.filename);
+      const file = filesService.getFile(filename);
+      res.writeHead(200, {
+        "Content-Type": "application/octet-stream",
+        "Content-Disposition": `attachment; filename="${filename}"`,
+      });
+      res.end(file);
+    } catch (error) {
+      res.writeHead(404).end("File not found");
+    }
+  })
+);
+
+router.delete(
+  "/api/files/:filename",
+  authHandler(async (req, res, userId, params) => {
+    try {
+      const filename = decodeURIComponent(params.filename);
+      const success = filesService.deleteFile(filename);
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ success }));
+    } catch (error) {
+      res.writeHead(500).end("Error deleting file");
+    }
+  })
+);
+
+router.post(
+  "/api/admin/update",
+  authHandler(async (req, res, userId) => {
+    console.log(`[ADMIN] Server update & restart requested by user: ${userId}`);
+    res.writeHead(200, { "Content-Type": "application/json" });
+    res.end(
+      JSON.stringify({ success: true, message: "Server wird aktualisiert..." })
+    );
+    systemService.updateAndRestart();
+  })
+);
+
+router.post(
+  "/api/admin/restart",
+  authHandler(async (req, res, userId) => {
+    console.log(`[ADMIN] Server restart requested by user: ${userId}`);
+    res.writeHead(200, { "Content-Type": "application/json" });
+    res.end(JSON.stringify({ success: true, message: "Server restarting..." }));
+    systemService.restart();
+  })
+);
+
+router.post(
+  "/api/admin/shutdown",
+  authHandler(async (req, res, userId) => {
+    console.log(`[ADMIN] Server shutdown requested by user: ${userId}`);
+    res.writeHead(200, { "Content-Type": "application/json" });
+    res.end(
+      JSON.stringify({ success: true, message: "Server shutting down..." })
+    );
+    systemService.shutdown();
+  })
+);
+
+router.post(
+  "/api/admin/speedtest/toggle",
+  authHandler(async (req, res, userId) => {
+    const params = await parseBody(req);
+    const enabled = params.get("enabled") === "true";
+    console.log(`[ADMIN] Speedtest toggle: ${enabled} by user: ${userId}`);
+
+    try {
+      const envConfig = JSON.parse(readFileSync("config/env.json", "utf8"));
+      envConfig.ENABLE_SPEEDTEST = enabled;
+      writeFileSync("config/env.json", JSON.stringify(envConfig, null, 2));
+
+      if (enabled) speedTestService.startSpeedTestScheduler(60);
+      else speedTestService.stopSpeedTestScheduler();
+
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ success: true, enabled }));
+    } catch (error) {
+      res.writeHead(500, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ success: false, message: "Internal Error" }));
+    }
+  })
+);
+
+router.get(
+  "/api/admin/speedtest/status",
+  authHandler(async (req, res) => {
+    try {
+      const envConfig = JSON.parse(readFileSync("config/env.json", "utf8"));
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ enabled: envConfig.ENABLE_SPEEDTEST === true }));
+    } catch (error) {
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ enabled: false }));
+    }
+  })
+);
+
+router.post(
+  "/api/logout",
+  authHandler(async (req, res, userId) => {
+    console.log(`[AUTH] User logged out: ${userId}`);
+    const cookieToken = getCookieToken(req);
+    if (cookieToken) {
+      sessionService.removeSession(cookieToken);
+      clearTokenCache(cookieToken);
+    }
+    res.setHeader("Set-Cookie", "jwt=; HttpOnly; Path=/; Max-Age=0");
+    res.writeHead(200, { "Content-Type": "application/json" });
+    res.end(JSON.stringify({ success: true }));
+  })
+);
+
 const server = http.createServer(async (req, res) => {
-  const method = req.method || "";
   const url = req.url || "";
 
-  // ========== PUBLIC ROUTES ==========
-
-  // Serve CSS files
-  if (method === "GET" && url.startsWith("/css/")) {
+  // Static CSS files
+  if (req.method === "GET" && url.startsWith("/css/")) {
     try {
       if (url.includes("..")) {
         res.writeHead(403).end("Forbidden");
@@ -62,636 +649,10 @@ const server = http.createServer(async (req, res) => {
     }
   }
 
-  // Login page
-  if (method === "GET" && url === "/") {
-    const body = readFileSync("public/login.html", "utf8");
-    res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
-    res.end(body);
-    return;
+  const handled = await router.handle(req, res);
+  if (handled === false) {
+    res.writeHead(404).end("Not found");
   }
-
-  // Login POST
-  if (method === "POST" && url === "/") {
-    const params = await parseBody(req);
-    const email = params.get("email") || "";
-    const password = params.get("password") || "";
-
-    const user = users.find(
-      (u) => u.email === email && u.password === hashPassword(password)
-    );
-
-    if (!user || !user.email) {
-      console.log(`[AUTH] Failed login attempt for email: ${email}`);
-      const body = readFileSync("public/login.html", "utf8");
-      res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
-      res.end(body);
-      return;
-    }
-
-    console.log(`[AUTH] Successful login for user: ${user.id} (${email})`);
-    const token = await createToken(user.id);
-    sessionService.addSession(user.id, token);
-    res.setHeader("Set-Cookie", `jwt=${token}; HttpOnly; Path=/; Max-Age=900`);
-    res.writeHead(302, { Location: "/cockpit" }).end();
-    return;
-  }
-
-  // Request access POST
-  if (method === "POST" && url === "/api/request-access") {
-    try {
-      const params = await parseBody(req);
-      const email = params.get("email") || "";
-      const password = params.get("password") || "";
-      const name = params.get("name") || "";
-
-      const result = (
-        await import("./services/auth.service.js")
-      ).createUserRequest(email, password, name);
-
-      res.writeHead(200, { "Content-Type": "application/json" });
-      res.end(JSON.stringify(result));
-      return;
-    } catch (error) {
-      res.writeHead(500).end("Error creating request");
-      return;
-    }
-  }
-
-  // Game page (public but track session if logged in)
-  if (method === "GET" && url === "/game") {
-    const cookieToken = getCookieToken(req);
-    if (cookieToken) {
-      try {
-        await verifyToken(cookieToken);
-        sessionService.updateSessionActivity(cookieToken);
-      } catch {}
-    }
-    const body = readFileSync("public/game.html", "utf8");
-    res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
-    res.end(body);
-    return;
-  }
-
-  // Submit score (public)
-  if (method === "POST" && url === "/api/scores") {
-    const cookieToken = getCookieToken(req);
-    let userId = "anonymous";
-
-    if (cookieToken) {
-      try {
-        const payload = await verifyToken(cookieToken);
-        sessionService.updateSessionActivity(cookieToken);
-        userId = payload[propUserId] as string;
-      } catch {}
-    }
-
-    try {
-      const body = await getReqBody(req);
-      const data = JSON.parse(body || "{}");
-      scoreService.addScore(data.score || 0, userId);
-
-      res.writeHead(200, { "Content-Type": "application/json" });
-      res.end(JSON.stringify({ success: true }));
-      return;
-    } catch (error) {
-      res.writeHead(500).end("Error saving score");
-      return;
-    }
-  }
-
-  // Get scores (public)
-  if (method === "GET" && url === "/api/scores") {
-    const scores = scoreService.getTopScores(10);
-    const enrichedScores = scores.map((score) => {
-      const user = users.find((u) => u.id === score.userId);
-      return {
-        ...score,
-        user: user
-          ? user.email
-          : score.userId === "anonymous"
-          ? "Anonymous"
-          : score.userId,
-      };
-    });
-    res.writeHead(200, { "Content-Type": "application/json" });
-    res.end(JSON.stringify(enrichedScores));
-    return;
-  }
-
-  // Who am I (public)
-  if (method === "GET" && url === "/api/whoami") {
-    const cookieToken = getCookieToken(req);
-    if (cookieToken) {
-      try {
-        const payload = await verifyToken(cookieToken);
-        res.writeHead(200, { "Content-Type": "application/json" });
-        res.end(
-          JSON.stringify({ loggedIn: true, userId: payload[propUserId] })
-        );
-        return;
-      } catch {}
-    }
-    res.writeHead(200, { "Content-Type": "application/json" });
-    res.end(JSON.stringify({ loggedIn: false, userId: null }));
-    return;
-  }
-
-  // Files page (public but track session if logged in)
-  if (method === "GET" && url === "/files") {
-    const cookieToken = getCookieToken(req);
-    if (cookieToken) {
-      try {
-        await verifyToken(cookieToken);
-        sessionService.updateSessionActivity(cookieToken);
-      } catch {}
-    }
-    const body = readFileSync("public/files.html", "utf8");
-    res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
-    res.end(body);
-    return;
-  }
-
-  // ========== AUTHENTICATED ROUTES ==========
-
-  const cookieToken = getCookieToken(req);
-  if (!cookieToken) {
-    res.writeHead(401).end("Unauthorized");
-    return;
-  }
-
-  try {
-    const payload = await verifyToken(cookieToken);
-    sessionService.updateSessionActivity(
-      cookieToken,
-      payload[propUserId] as string
-    );
-
-    // Cockpit page
-    if (method === "GET" && url === "/cockpit") {
-      const body = readFileSync("public/cockpit.html", "utf8");
-      res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
-      res.end(body);
-      return;
-    }
-
-    // User management page
-    if (method === "GET" && url === "/users") {
-      const body = readFileSync("public/users.html", "utf8");
-      res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
-      res.end(body);
-      return;
-    }
-
-    // Get all users
-    if (method === "GET" && url === "/api/users") {
-      res.writeHead(200, { "Content-Type": "application/json" });
-      res.end(JSON.stringify(users));
-      return;
-    }
-
-    // Get pending user requests
-    if (method === "GET" && url === "/api/user-requests") {
-      const { getPendingUserRequests } = await import(
-        "./services/auth.service.js"
-      );
-      const requests = getPendingUserRequests();
-      res.writeHead(200, { "Content-Type": "application/json" });
-      res.end(JSON.stringify(requests));
-      return;
-    }
-
-    // Game Admin page
-    if (method === "GET" && url === "/game-admin") {
-      const body = readFileSync("public/game-admin.html", "utf8");
-      res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
-      res.end(body);
-      return;
-    }
-
-    // Reset scores
-    if (method === "DELETE" && url === "/api/scores") {
-      scoreService.resetScores();
-      res.writeHead(200, { "Content-Type": "application/json" });
-      res.end(JSON.stringify({ success: true }));
-      return;
-    }
-
-    // Approve user request
-    if (method === "POST" && url === "/api/user-requests/approve") {
-      try {
-        const body = await getReqBody(req);
-        const data = JSON.parse(body || "{}");
-        const { approveUserRequest } = await import(
-          "./services/auth.service.js"
-        );
-        const result = approveUserRequest(data.requestId);
-        res.writeHead(200, { "Content-Type": "application/json" });
-        res.end(JSON.stringify(result));
-        return;
-      } catch (error) {
-        res.writeHead(500).end("Error approving request");
-        return;
-      }
-    }
-
-    // Reject user request
-    if (method === "POST" && url === "/api/user-requests/reject") {
-      try {
-        const body = await getReqBody(req);
-        const data = JSON.parse(body || "{}");
-        const { rejectUserRequest } = await import(
-          "./services/auth.service.js"
-        );
-        const result = rejectUserRequest(data.requestId);
-        res.writeHead(200, { "Content-Type": "application/json" });
-        res.end(JSON.stringify(result));
-        return;
-      } catch (error) {
-        res.writeHead(500).end("Error rejecting request");
-        return;
-      }
-    }
-
-    // Delete user
-    if (method === "POST" && url === "/api/users/delete") {
-      try {
-        const body = await getReqBody(req);
-        const data = JSON.parse(body || "{}");
-        const { deleteUser } = await import("./services/auth.service.js");
-        const result = deleteUser(data.userId);
-        res.writeHead(200, { "Content-Type": "application/json" });
-        res.end(JSON.stringify(result));
-        return;
-      } catch (error) {
-        res.writeHead(500).end("Error deleting user");
-        return;
-      }
-    }
-
-    // Get metrics
-    if (method === "GET" && url === "/api/metrics") {
-      const metrics = await metricsService.getMetrics();
-      res.writeHead(200, { "Content-Type": "application/json" });
-      res.end(JSON.stringify(metrics));
-      return;
-    }
-
-    // Get logs
-    if (method === "GET" && url === "/api/logs") {
-      const logs = systemService.getLogs();
-      res.writeHead(200, { "Content-Type": "application/json" });
-      res.end(JSON.stringify({ logs }));
-      return;
-    }
-
-    // Clear logs
-    if (method === "POST" && url === "/api/logs/clear") {
-      systemService.clearLogs();
-      res.writeHead(200, { "Content-Type": "application/json" });
-      res.end(JSON.stringify({ success: true }));
-      return;
-    }
-
-    // Get sessions
-    if (method === "GET" && url === "/api/sessions") {
-      res.writeHead(200, { "Content-Type": "application/json" });
-      res.end(
-        JSON.stringify({
-          sessions: sessionService.getSessions(),
-          appToken: getAppToken() || null,
-        })
-      );
-      return;
-    }
-
-    // System info
-    if (method === "GET" && url === "/api/system-info") {
-      const info = await metricsService.getSystemInfo();
-      res.writeHead(200, { "Content-Type": "application/json" });
-      res.end(JSON.stringify(info));
-      return;
-    }
-
-    // Network details
-    if (method === "GET" && url === "/api/network/details") {
-      const details = await networkService.getNetworkDetails();
-      res.writeHead(200, { "Content-Type": "application/json" });
-      res.end(JSON.stringify(details));
-      return;
-    }
-
-    // Speedtest
-    if (method === "POST" && url === "/api/speedtest") {
-      try {
-        const result = await speedTestService.runSpeedTest();
-        speedTestService.addSpeedTestResult(result);
-        res.writeHead(200, { "Content-Type": "application/json" });
-        res.end(JSON.stringify(result));
-        return;
-      } catch (error) {
-        console.error("[Speedtest Error]", error);
-        res.writeHead(500).end("Error running speedtest");
-        return;
-      }
-    }
-
-    // Get speedtest history
-    if (method === "GET" && url === "/api/speedtest/history") {
-      const history = speedTestService.getSpeedTestHistory();
-      res.writeHead(200, { "Content-Type": "application/json" });
-      res.end(JSON.stringify({ history }));
-      return;
-    }
-
-    // Clear speedtest history
-    if (method === "POST" && url === "/api/speedtest/history/clear") {
-      speedTestService.clearSpeedTestHistory();
-      res.writeHead(200, { "Content-Type": "application/json" });
-      res.end(JSON.stringify({ success: true }));
-      return;
-    }
-
-    // Get speedtest interval
-    if (method === "GET" && url === "/api/speedtest/interval") {
-      const interval = speedTestService.getCurrentInterval();
-      res.writeHead(200, { "Content-Type": "application/json" });
-      res.end(JSON.stringify({ interval }));
-      return;
-    }
-
-    // Set speedtest interval
-    if (method === "POST" && url === "/api/speedtest/interval") {
-      try {
-        const body = await parseBody(req);
-        const interval = parseInt(body.get("interval") || "60");
-        if ([10, 30, 60, 300, 600].includes(interval)) {
-          speedTestService.setSpeedTestInterval(interval as any);
-          res.writeHead(200, { "Content-Type": "application/json" });
-          res.end(JSON.stringify({ success: true, interval }));
-        } else {
-          res.writeHead(400).end("Invalid interval");
-        }
-        return;
-      } catch (error) {
-        console.error("[Speedtest Interval Error]", error);
-        res.writeHead(500).end("Error setting interval");
-        return;
-      }
-    }
-
-    // WiFi status
-    if (method === "GET" && url === "/api/wifi/status") {
-      try {
-        const status = await networkService.getWifiStatus();
-        res.writeHead(200, { "Content-Type": "application/json" });
-        res.end(JSON.stringify(status));
-        return;
-      } catch (error) {
-        res.writeHead(500).end("Error getting WiFi status");
-        return;
-      }
-    }
-
-    // WiFi scan
-    if (method === "GET" && url === "/api/wifi/scan") {
-      try {
-        const networks = await networkService.scanWifi();
-        res.writeHead(200, { "Content-Type": "application/json" });
-        res.end(JSON.stringify(networks));
-        return;
-      } catch (error) {
-        console.error("[WiFi Scan Error]", error);
-        res.writeHead(500).end("Error scanning WiFi networks");
-        return;
-      }
-    }
-
-    // WiFi connect
-    if (method === "POST" && url === "/api/wifi/connect") {
-      try {
-        const body = await getReqBody(req);
-        const { ssid, password } = JSON.parse(body || "{}");
-
-        if (!ssid) {
-          res.writeHead(400).end("SSID required");
-          return;
-        }
-
-        const result = await networkService.connectWifi(ssid, password);
-        res.writeHead(200, { "Content-Type": "application/json" });
-        res.end(JSON.stringify(result));
-        return;
-      } catch (error) {
-        console.error("[WiFi Connect Error]", error);
-        res.writeHead(500).end("Error connecting to WiFi");
-        return;
-      }
-    }
-
-    // List files
-    if (method === "GET" && url === "/api/files") {
-      const files = filesService.listFiles();
-      res.writeHead(200, { "Content-Type": "application/json" });
-      res.end(JSON.stringify(files));
-      return;
-    }
-
-    // Upload file
-    if (method === "POST" && url === "/api/files/upload") {
-      try {
-        const contentType = req.headers["content-type"] || "";
-        const boundary = contentType.split("boundary=")[1];
-        if (!boundary) {
-          res.writeHead(400).end("Invalid content type");
-          return;
-        }
-
-        let body = await getReqBody(req);
-        if (!body) {
-          res.writeHead(400).end("No file data");
-          return;
-        }
-
-        // Simple multipart parser for file upload
-        const parts = body.split(`--${boundary}`);
-        for (const part of parts) {
-          if (part.includes('name="file"')) {
-            const filenameMatch = part.match(/filename="([^"]+)"/);
-            if (!filenameMatch) continue;
-
-            const filename = filenameMatch[1];
-            const dataStart = part.indexOf("\r\n\r\n") + 4;
-            const dataEnd = part.lastIndexOf("\r\n");
-            const fileData = part.substring(dataStart, dataEnd);
-
-            const filePath = filesService.getFilePath(filename);
-            const stream = createWriteStream(filePath);
-            stream.write(fileData);
-            stream.end();
-
-            console.log(`[Files] Uploaded file: ${filename}`);
-
-            res.writeHead(200, { "Content-Type": "application/json" });
-            res.end(JSON.stringify({ success: true, filename }));
-            return;
-          }
-        }
-
-        res.writeHead(400).end("No file found in request");
-        return;
-      } catch (error) {
-        console.error("[Files] Upload error:", error);
-        res.writeHead(500).end("Error uploading file");
-        return;
-      }
-    }
-
-    // Download file
-    if (method === "GET" && url.startsWith("/api/files/download/")) {
-      try {
-        const filename = decodeURIComponent(
-          url.split("/api/files/download/")[1]
-        );
-        const file = filesService.getFile(filename);
-
-        res.writeHead(200, {
-          "Content-Type": "application/octet-stream",
-          "Content-Disposition": `attachment; filename="${filename}"`,
-        });
-        res.end(file);
-        return;
-      } catch (error) {
-        res.writeHead(404).end("File not found");
-        return;
-      }
-    }
-
-    // Delete file
-    if (method === "DELETE" && url.startsWith("/api/files/")) {
-      try {
-        const filename = decodeURIComponent(url.split("/api/files/")[1]);
-        const success = filesService.deleteFile(filename);
-
-        res.writeHead(200, { "Content-Type": "application/json" });
-        res.end(JSON.stringify({ success }));
-        return;
-      } catch (error) {
-        res.writeHead(500).end("Error deleting file");
-        return;
-      }
-    }
-
-    // Admin: Update and restart
-    if (method === "POST" && url === "/api/admin/update") {
-      console.log(
-        `[ADMIN] Server update & restart requested by user: ${payload[propUserId]}`
-      );
-
-      res.writeHead(200, { "Content-Type": "application/json" });
-      res.end(
-        JSON.stringify({
-          success: true,
-          message: "Server wird aktualisiert und neu gestartet...",
-        })
-      );
-
-      systemService.updateAndRestart();
-      return;
-    }
-
-    // Admin: Restart
-    if (method === "POST" && url === "/api/admin/restart") {
-      console.log(
-        `[ADMIN] Server restart requested by user: ${payload[propUserId]}`
-      );
-
-      res.writeHead(200, { "Content-Type": "application/json" });
-      res.end(
-        JSON.stringify({ success: true, message: "Server restarting..." })
-      );
-
-      systemService.restart();
-      return;
-    }
-
-    // Admin: Shutdown
-    if (method === "POST" && url === "/api/admin/shutdown") {
-      console.log(
-        `[ADMIN] Server shutdown requested by user: ${payload[propUserId]}`
-      );
-
-      res.writeHead(200, { "Content-Type": "application/json" });
-      res.end(
-        JSON.stringify({ success: true, message: "Server shutting down..." })
-      );
-
-      systemService.shutdown();
-      return;
-    }
-
-    // Admin: Toggle Speedtest
-    if (method === "POST" && url === "/api/admin/speedtest/toggle") {
-      const params = await parseBody(req);
-      const enabled = params.get("enabled") === "true";
-
-      console.log(
-        `[ADMIN] Speedtest toggle requested: ${enabled} by user: ${payload[propUserId]}`
-      );
-
-      try {
-        const envConfig = JSON.parse(readFileSync("config/env.json", "utf8"));
-        envConfig.ENABLE_SPEEDTEST = enabled;
-        writeFileSync("config/env.json", JSON.stringify(envConfig, null, 2));
-
-        if (enabled) {
-          speedTestService.startSpeedTestScheduler(60);
-        } else {
-          speedTestService.stopSpeedTestScheduler();
-        }
-
-        res.writeHead(200, { "Content-Type": "application/json" });
-        res.end(JSON.stringify({ success: true, enabled }));
-      } catch (error) {
-        console.error("Error toggling speedtest:", error);
-        res.writeHead(500, { "Content-Type": "application/json" });
-        res.end(JSON.stringify({ success: false, message: "Internal Error" }));
-      }
-      return;
-    }
-
-    // Admin: Get Speedtest Status
-    if (method === "GET" && url === "/api/admin/speedtest/status") {
-      try {
-        const envConfig = JSON.parse(readFileSync("config/env.json", "utf8"));
-        const enabled = envConfig.ENABLE_SPEEDTEST === true;
-        res.writeHead(200, { "Content-Type": "application/json" });
-        res.end(JSON.stringify({ enabled }));
-      } catch (error) {
-        res.writeHead(200, { "Content-Type": "application/json" });
-        res.end(JSON.stringify({ enabled: false }));
-      }
-      return;
-    }
-
-    // Logout
-    if (method === "POST" && url === "/api/logout") {
-      console.log(`[AUTH] User logged out: ${payload[propUserId]}`);
-      sessionService.removeSession(cookieToken);
-      clearTokenCache(cookieToken);
-
-      res.setHeader("Set-Cookie", "jwt=; HttpOnly; Path=/; Max-Age=0");
-      res.writeHead(200, { "Content-Type": "application/json" });
-      res.end(JSON.stringify({ success: true }));
-      return;
-    }
-  } catch (error) {
-    // Invalid token
-    res.writeHead(302, { Location: "/" }).end();
-    return;
-  }
-
-  // 404 for all other routes
-  res.writeHead(404).end("Not found");
 });
 
 server.listen(PORT);
@@ -707,6 +668,5 @@ try {
     console.log("[Speedtest] Scheduler disabled in config");
   }
 } catch (e) {
-  // Default to disabled if config missing or error
   console.log("[Speedtest] Scheduler disabled (default)");
 }
