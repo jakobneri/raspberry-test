@@ -608,6 +608,61 @@ router.post(
   })
 );
 
+// ========== LOGGING ROUTES ==========
+
+router.get(
+  "/api/logs/stream",
+  authHandler(async (req, res) => {
+    res.writeHead(200, {
+      "Content-Type": "text/event-stream",
+      "Cache-Control": "no-cache",
+      Connection: "keep-alive",
+    });
+
+    // Send existing logs
+    const logs = systemService.getLogs();
+    logs.forEach((log) => {
+      res.write(`data: ${JSON.stringify(log)}\n\n`);
+    });
+
+    // Subscribe to new logs
+    const onLog = (log: systemService.LogEntry) => {
+      res.write(`data: ${JSON.stringify(log)}\n\n`);
+    };
+
+    systemService.logEvents.on("log", onLog);
+
+    // Cleanup on close
+    req.on("close", () => {
+      systemService.logEvents.off("log", onLog);
+    });
+  })
+);
+
+router.post(
+  "/api/logs/clear",
+  authHandler(async (req, res) => {
+    systemService.clearLogs();
+    res.writeHead(200, { "Content-Type": "application/json" });
+    res.end(JSON.stringify({ success: true }));
+  })
+);
+
+router.post(
+  "/api/logs/level",
+  authHandler(async (req, res) => {
+    const params = await parseBody(req);
+    const level = params.get("level");
+    if (level && ["info", "warn", "error"].includes(level)) {
+      systemService.setLogLevel(level as "info" | "warn" | "error");
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ success: true, level }));
+    } else {
+      res.writeHead(400).end("Invalid log level");
+    }
+  })
+);
+
 router.post(
   "/api/admin/speedtest/toggle",
   authHandler(async (req, res, userId) => {

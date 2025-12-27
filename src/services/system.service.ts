@@ -1,6 +1,9 @@
 import { exec } from "node:child_process";
+import { EventEmitter } from "node:events";
 
 // ========== LOG MANAGEMENT ==========
+
+export const logEvents = new EventEmitter();
 
 export interface LogEntry {
   timestamp: string;
@@ -10,6 +13,20 @@ export interface LogEntry {
 
 const MAX_LOGS = 500;
 const logs: LogEntry[] = [];
+let currentLogLevel: "info" | "warn" | "error" = "info";
+
+const LOG_LEVELS = {
+  info: 0,
+  warn: 1,
+  error: 2,
+};
+
+export const setLogLevel = (level: "info" | "warn" | "error") => {
+  currentLogLevel = level;
+  console.log(`[System] Log level set to ${level}`);
+};
+
+export const getLogLevel = () => currentLogLevel;
 
 // Store original console methods
 const originalConsole = {
@@ -38,11 +55,19 @@ console.error = (...args: any[]) => {
 };
 
 const addLog = (level: "info" | "warn" | "error", message: string): void => {
-  logs.push({
+  // Filter based on current log level
+  if (LOG_LEVELS[level] < LOG_LEVELS[currentLogLevel]) {
+    return;
+  }
+
+  const entry: LogEntry = {
     timestamp: new Date().toISOString(),
     level,
     message,
-  });
+  };
+
+  logs.push(entry);
+  logEvents.emit("log", entry);
 
   // Keep only the last MAX_LOGS entries
   if (logs.length > MAX_LOGS) {

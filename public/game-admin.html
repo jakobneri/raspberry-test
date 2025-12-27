@@ -188,6 +188,65 @@
       </div>
     </div>
 
+    <!-- Terminal Section -->
+    <div class="card" style="margin-top: 20px">
+      <div
+        class="card-header"
+        style="
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 10px;
+        "
+      >
+        <h2>🖥️ Server Terminal</h2>
+        <div style="display: flex; gap: 10px">
+          <select
+            id="log-level"
+            onchange="setLogLevel(this.value)"
+            style="
+              padding: 5px;
+              border-radius: 4px;
+              background: var(--bg-color);
+              color: var(--text-color);
+              border: 1px solid var(--border-color);
+            "
+          >
+            <option value="info">Info</option>
+            <option value="warn">Warn</option>
+            <option value="error">Error</option>
+          </select>
+          <button
+            onclick="clearTerminal()"
+            style="
+              padding: 5px 10px;
+              border-radius: 4px;
+              background: var(--bg-color);
+              color: var(--text-color);
+              border: 1px solid var(--border-color);
+              cursor: pointer;
+            "
+          >
+            Clear
+          </button>
+        </div>
+      </div>
+      <div
+        id="terminal-output"
+        style="
+          background: #1e1e1e;
+          color: #d4d4d4;
+          padding: 10px;
+          border-radius: 4px;
+          height: 300px;
+          overflow-y: auto;
+          font-family: monospace;
+          font-size: 14px;
+          white-space: pre-wrap;
+        "
+      ></div>
+    </div>
+
     <script>
       // Initial fetch
       fetchScoreboard();
@@ -278,6 +337,65 @@
           window.location.href = "/";
         }
       }
+
+      // Terminal Logic
+      const terminalOutput = document.getElementById("terminal-output");
+
+      function appendLog(log) {
+        const line = document.createElement("div");
+        line.style.marginBottom = "2px";
+
+        const timestamp = new Date(log.timestamp).toLocaleTimeString();
+        let color = "#d4d4d4"; // Default
+        if (log.level === "warn") color = "#cca700";
+        if (log.level === "error") color = "#f14c4c";
+
+        line.innerHTML = `<span style="color: #569cd6;">[${timestamp}]</span> <span style="color: ${color};">[${log.level.toUpperCase()}]</span> ${
+          log.message
+        }`;
+        terminalOutput.appendChild(line);
+        terminalOutput.scrollTop = terminalOutput.scrollHeight;
+      }
+
+      function initTerminal() {
+        const eventSource = new EventSource("/api/logs/stream");
+
+        eventSource.onmessage = (event) => {
+          const log = JSON.parse(event.data);
+          appendLog(log);
+        };
+
+        eventSource.onerror = (err) => {
+          console.error("EventSource failed:", err);
+          eventSource.close();
+          // Retry after 5 seconds
+          setTimeout(initTerminal, 5000);
+        };
+      }
+
+      async function clearTerminal() {
+        try {
+          await fetch("/api/logs/clear", { method: "POST" });
+          terminalOutput.innerHTML = "";
+        } catch (error) {
+          console.error("Error clearing logs:", error);
+        }
+      }
+
+      async function setLogLevel(level) {
+        try {
+          await fetch("/api/logs/level", {
+            method: "POST",
+            headers: { "Content-Type": "application/x-www-form-urlencoded" },
+            body: `level=${level}`,
+          });
+        } catch (error) {
+          console.error("Error setting log level:", error);
+        }
+      }
+
+      // Initialize
+      initTerminal();
     </script>
   </body>
 </html>
