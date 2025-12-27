@@ -1,12 +1,11 @@
 import { SignJWT, jwtVerify, type JWTPayload } from "jose";
 import { ConfidentialClientApplication, Configuration } from "@azure/msal-node";
-import { readFileSync, writeFileSync } from "node:fs";
+import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
-import { createHash } from "node:crypto";
+import { createHash, randomBytes } from "node:crypto";
 import type { IncomingMessage } from "node:http";
 import { z } from "zod";
-import usersJson from "../../config/users.json" with { type: "json" };
-import userRequestsJson from "../../config/user-requests.json" with { type: "json" };
+import { get, run, all } from "./db.service.js";
 
 // ========== USER MANAGEMENT ==========
 
@@ -14,22 +13,28 @@ export type User = {
   id: string;
   email: string;
   password: string;
+  salt: string;
 };
 
-export const hashPassword = (password: string): string => {
-  return createHash("sha256").update(password).digest("hex");
+export const hashPassword = (password: string, salt: string): string => {
+  return createHash("sha256")
+    .update(password + salt)
+    .digest("hex");
 };
 
-const userArray: User[] = [];
-const data = usersJson as unknown as { users?: User[] } | undefined;
+export const validateUser = async (
+  email: string,
+  password: string
+): Promise<User | null> => {
+  const user = await get<User>("SELECT * FROM users WHERE email = ?", [email]);
+  if (!user) return null;
 
-if (data?.users && Array.isArray(data.users)) {
-  userArray.push(...data.users);
-} else {
-  console.error("[Auth] Error loading users.json: invalid structure or empty");
-}
-
-export const users = userArray;
+  const hashed = hashPassword(password, user.salt);
+  if (hashed === user.password) {
+    return user;
+  }
+  return null;
+};
 
 // ========== JWT MANAGEMENT ==========
 
@@ -79,8 +84,8 @@ export const verifyToken = async (jwt: string): Promise<JWTPayload> => {
     throw new Error("[Auth] Invalid token: missing or invalid userid");
   }
 
-  const userExists = users.some((user) => user.id === userId);
-  if (!userExists) {
+  const user = await get<User>("SELECT id FROM users WHERE id = ?", [userId]);
+  if (!user) {
     console.log(`[Auth] Token verification failed: user '${userId}' not found`);
     throw new Error(`[Auth] Invalid token: user '${userId}' not found`);
   }
@@ -204,57 +209,51 @@ export interface UserRequest {
   id: string;
   email: string;
   password: string;
+  salt: string;
   name: string;
   requestedAt: string;
   status: "pending" | "approved" | "rejected";
 }
 
-interface UserRequestsData {
-  requests: UserRequest[];
-}
-
-const userRequestsPath = resolve("./config/user-requests.json");
-const userRequestsData = userRequestsJson as UserRequestsData;
-let userRequests: UserRequest[] = userRequestsData.requests || [];
-
-const saveUserRequests = (): void => {
-  writeFileSync(
-    userRequestsPath,
-    JSON.stringify({ requests: userRequests }, null, 2),
-    "utf-8"
-  );
-};
-
-export const createUserRequest = (
+export const createUserRequest = async (
   email: string,
   password: string,
   name: string
-): { success: boolean; message: string } => {
+): Promise<{ success: boolean; message: string }> => {
   try {
     // Validate email with Zod
     emailSchema.parse(email);
 
     // Check if email already exists in users
-    if (users.some((u) => u.email === email)) {
+    const existingUser = await get("SELECT id FROM users WHERE email = ?", [
+      email,
+    ]);
+    if (existingUser) {
       return { success: false, message: "Email already registered" };
     }
 
     // Check if there's already a pending request for this email
-    if (userRequests.some((r) => r.email === email && r.status === "pending")) {
-      return { success: false, message: "Request already pending for this email" };
+    const existingRequest = await get(
+      "SELECT id FROM user_requests WHERE email = ? AND status = 'pending'",
+      [email]
+    );
+    if (existingRequest) {
+      return {
+        success: false,
+        message: "Request already pending for this email",
+      };
     }
 
-    const request: UserRequest = {
-      id: `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-      email,
-      password: hashPassword(password),
-      name,
-      requestedAt: new Date().toISOString(),
-      status: "pending",
-    };
+    const salt = randomBytes(16).toString("hex");
+    const hashedPassword = hashPassword(password, salt);
+    const id = `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    const requestedAt = new Date().toISOString();
 
-    userRequests.push(request);
-    saveUserRequests();
+    await run(
+      `INSERT INTO user_requests (id, email, password, salt, name, requested_at, status)
+       VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      [id, email, hashedPassword, salt, name, requestedAt, "pending"]
+    );
 
     console.log(`[Auth] New user request created: ${email}`);
     return { success: true, message: "Access request submitted successfully" };
@@ -262,22 +261,28 @@ export const createUserRequest = (
     if (error instanceof z.ZodError) {
       return { success: false, message: "Invalid email format" };
     }
+    console.error(error);
     return { success: false, message: "Failed to create request" };
   }
 };
 
-export const getPendingUserRequests = (): UserRequest[] => {
-  return userRequests.filter((r) => r.status === "pending");
+export const getPendingUserRequests = async (): Promise<UserRequest[]> => {
+  return await all<UserRequest>(
+    "SELECT * FROM user_requests WHERE status = 'pending'"
+  );
 };
 
-export const getAllUserRequests = (): UserRequest[] => {
-  return [...userRequests];
+export const getAllUserRequests = async (): Promise<UserRequest[]> => {
+  return await all<UserRequest>("SELECT * FROM user_requests");
 };
 
-export const approveUserRequest = (
+export const approveUserRequest = async (
   requestId: string
-): { success: boolean; message: string } => {
-  const request = userRequests.find((r) => r.id === requestId);
+): Promise<{ success: boolean; message: string }> => {
+  const request = await get<UserRequest>(
+    "SELECT * FROM user_requests WHERE id = ?",
+    [requestId]
+  );
   if (!request) {
     return { success: false, message: "Request not found" };
   }
@@ -286,35 +291,30 @@ export const approveUserRequest = (
     return { success: false, message: "Request already processed" };
   }
 
-  // Add user to users array
-  const newUser: User = {
-    id: `user_${Date.now()}`,
-    email: request.email,
-    password: request.password,
-  };
+  const userId = `user_${Date.now()}`;
 
-  userArray.push(newUser);
-
-  // Save to users.json
-  const usersPath = resolve("./config/users.json");
-  writeFileSync(
-    usersPath,
-    JSON.stringify({ users: userArray }, null, 2),
-    "utf-8"
+  // Add user to users table
+  await run(
+    "INSERT INTO users (id, email, password, salt) VALUES (?, ?, ?, ?)",
+    [userId, request.email, request.password, request.salt]
   );
 
   // Update request status
-  request.status = "approved";
-  saveUserRequests();
+  await run("UPDATE user_requests SET status = 'approved' WHERE id = ?", [
+    requestId,
+  ]);
 
   console.log(`[Auth] User request approved: ${request.email}`);
   return { success: true, message: "User approved successfully" };
 };
 
-export const rejectUserRequest = (
+export const rejectUserRequest = async (
   requestId: string
-): { success: boolean; message: string } => {
-  const request = userRequests.find((r) => r.id === requestId);
+): Promise<{ success: boolean; message: string }> => {
+  const request = await get<UserRequest>(
+    "SELECT * FROM user_requests WHERE id = ?",
+    [requestId]
+  );
   if (!request) {
     return { success: false, message: "Request not found" };
   }
@@ -323,31 +323,23 @@ export const rejectUserRequest = (
     return { success: false, message: "Request already processed" };
   }
 
-  request.status = "rejected";
-  saveUserRequests();
+  await run("UPDATE user_requests SET status = 'rejected' WHERE id = ?", [
+    requestId,
+  ]);
 
   console.log(`[Auth] User request rejected: ${request.email}`);
   return { success: true, message: "User request rejected" };
 };
 
-export const deleteUser = (
+export const deleteUser = async (
   userId: string
-): { success: boolean; message: string } => {
-  const userIndex = userArray.findIndex((u) => u.id === userId);
-  if (userIndex === -1) {
+): Promise<{ success: boolean; message: string }> => {
+  const user = await get<User>("SELECT * FROM users WHERE id = ?", [userId]);
+  if (!user) {
     return { success: false, message: "User not found" };
   }
 
-  const user = userArray[userIndex];
-  userArray.splice(userIndex, 1);
-
-  // Save to users.json
-  const usersPath = resolve("./config/users.json");
-  writeFileSync(
-    usersPath,
-    JSON.stringify({ users: userArray }, null, 2),
-    "utf-8"
-  );
+  await run("DELETE FROM users WHERE id = ?", [userId]);
 
   console.log(`[Auth] User deleted: ${user.email}`);
   return { success: true, message: "User deleted successfully" };
