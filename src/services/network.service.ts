@@ -1,8 +1,71 @@
 import si from "systeminformation";
 import { exec } from "node:child_process";
 import { promisify } from "node:util";
+import { platform } from "node:os";
 
 const execAsync = promisify(exec);
+
+// ========== NETWORK SCANNING ==========
+
+export interface NetworkDevice {
+  ip: string;
+  alive: boolean;
+  hostname?: string;
+  mac?: string;
+}
+
+const ping = async (ip: string): Promise<boolean> => {
+  const cmd =
+    platform() === "win32" ? `ping -n 1 -w 200 ${ip}` : `ping -c 1 -W 1 ${ip}`;
+
+  try {
+    await execAsync(cmd);
+    return true;
+  } catch {
+    return false;
+  }
+};
+
+export const scanNetwork = async (
+  onDeviceFound: (device: NetworkDevice) => void
+): Promise<void> => {
+  const interfaces = await si.networkInterfaces();
+  // Find default or first active non-internal interface
+  const ifaceList = Array.isArray(interfaces) ? interfaces : [interfaces];
+  const defaultIface =
+    ifaceList.find((i) => !i.internal && i.ip4) || ifaceList[0];
+
+  if (!defaultIface || !defaultIface.ip4) return;
+
+  const subnet = defaultIface.ip4.substring(
+    0,
+    defaultIface.ip4.lastIndexOf(".")
+  );
+  const myIp = defaultIface.ip4;
+
+  // Emit self immediately
+  onDeviceFound({ ip: myIp, alive: true, hostname: "Raspberry Pi (Self)" });
+
+  // Scan 1-254 in batches
+  const batchSize = 20;
+  const ips = [];
+  for (let i = 1; i < 255; i++) {
+    ips.push(`${subnet}.${i}`);
+  }
+
+  for (let i = 0; i < ips.length; i += batchSize) {
+    const batch = ips.slice(i, i + batchSize);
+    await Promise.all(
+      batch.map(async (ip) => {
+        if (ip === myIp) return;
+        const alive = await ping(ip);
+        if (alive) {
+          onDeviceFound({ ip, alive: true });
+        }
+      })
+    );
+  }
+};
 
 // ========== WIFI MANAGEMENT ==========
 

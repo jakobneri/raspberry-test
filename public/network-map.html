@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Network Map - Pi Cockpit</title>
+    <script src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
+    <link rel="stylesheet" href="css/cockpit.css" />
+    <link rel="stylesheet" href="css/network-map.css" />
+  </head>
+  <body>
+    <!-- Left Sidebar -->
+    <div class="sidebar">
+      <div class="sidebar-header">
+        <h1>🥧 Pi Cockpit</h1>
+        <div class="subtitle">Raspberry Pi Server</div>
+      </div>
+
+      <nav class="sidebar-nav">
+        <div class="nav-section">
+          <div class="nav-section-title">Admin Pages</div>
+          <a href="/cockpit" class="nav-link">
+            <span class="nav-link-icon">📊</span>
+            <span>Dashboard</span>
+          </a>
+          <a href="/users" class="nav-link">
+            <span class="nav-link-icon">👥</span>
+            <span>User Management</span>
+          </a>
+          <a href="/game-admin" class="nav-link">
+            <span class="nav-link-icon">⚙️</span>
+            <span>Game Admin</span>
+          </a>
+          <a href="/network-map" class="nav-link active">
+            <span class="nav-link-icon">🕸️</span>
+            <span>Network Map</span>
+          </a>
+        </div>
+
+        <div class="nav-section">
+          <div class="nav-section-title">Public Pages</div>
+          <a href="/files" class="nav-link">
+            <span class="nav-link-icon">📁</span>
+            <span>Files</span>
+          </a>
+          <a href="/game" class="nav-link">
+            <span class="nav-link-icon">🎮</span>
+            <span>Game</span>
+          </a>
+        </div>
+      </nav>
+
+      <div class="sidebar-footer">
+        <button class="logout-btn" onclick="logout()">🚪 Logout</button>
+      </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content">
+      <header class="top-bar">
+        <h2 class="page-title">Network Map</h2>
+        <div class="user-info">
+          <span id="user-email">Admin</span>
+        </div>
+      </header>
+
+      <div class="content-wrapper">
+        <div class="card full-height">
+          <div class="card-header">
+            <h3>Live Network Topology</h3>
+            <button id="scan-btn" class="btn-primary" onclick="startScan()">
+              🔄 Start Scan
+            </button>
+          </div>
+          <div class="card-body">
+            <div id="network-graph"></div>
+            <div id="scan-status">Ready to scan...</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      // Logout function
+      function logout() {
+        document.cookie =
+          "jwt=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT;";
+        window.location.href = "/";
+      }
+
+      // Network Graph Logic
+      let network = null;
+      let nodes = new vis.DataSet([]);
+      let edges = new vis.DataSet([]);
+      let eventSource = null;
+
+      function initGraph() {
+        const container = document.getElementById("network-graph");
+        const data = { nodes, edges };
+        const options = {
+          nodes: {
+            shape: "dot",
+            size: 16,
+            font: {
+              size: 14,
+              color: "#ffffff",
+            },
+            borderWidth: 2,
+          },
+          edges: {
+            width: 2,
+            color: { inherit: "from" },
+            smooth: {
+              type: "continuous",
+            },
+          },
+          physics: {
+            stabilization: false,
+            barnesHut: {
+              gravitationalConstant: -8000,
+              springConstant: 0.04,
+              springLength: 95,
+            },
+          },
+          interaction: {
+            hover: true,
+          },
+        };
+        network = new vis.Network(container, data, options);
+      }
+
+      function startScan() {
+        const btn = document.getElementById("scan-btn");
+        const status = document.getElementById("scan-status");
+
+        if (eventSource) {
+          eventSource.close();
+        }
+
+        // Reset graph
+        nodes.clear();
+        edges.clear();
+
+        // Add central node (Router/Gateway concept, or just the Pi itself)
+        // We'll wait for the first node which is usually self
+
+        btn.disabled = true;
+        btn.innerText = "Scanning...";
+        status.innerText = "Scanning network...";
+
+        eventSource = new EventSource("/api/network/scan");
+
+        eventSource.onmessage = (event) => {
+          const device = JSON.parse(event.data);
+          addDeviceToGraph(device);
+        };
+
+        eventSource.addEventListener("done", () => {
+          eventSource.close();
+          btn.disabled = false;
+          btn.innerText = "🔄 Start Scan";
+          status.innerText = `Scan complete. Found ${nodes.length} devices.`;
+        });
+
+        eventSource.onerror = (err) => {
+          console.error("EventSource failed:", err);
+          eventSource.close();
+          btn.disabled = false;
+          btn.innerText = "🔄 Start Scan";
+          status.innerText = "Scan failed or interrupted.";
+        };
+      }
+
+      function addDeviceToGraph(device) {
+        // Check if node exists
+        if (nodes.get(device.ip)) return;
+
+        const isSelf = device.hostname && device.hostname.includes("Self");
+
+        nodes.add({
+          id: device.ip,
+          label: device.hostname || device.ip,
+          group: isSelf ? "self" : "device",
+          color: isSelf ? "#ff5722" : "#4caf50",
+          size: isSelf ? 25 : 15,
+        });
+
+        // Connect everything to the first node found (usually self) or create a mesh?
+        // For a simple star topology view from the Pi's perspective:
+        const selfNode = nodes.get({
+          filter: (item) => item.group === "self",
+        })[0];
+
+        if (selfNode && !isSelf) {
+          edges.add({ from: selfNode.id, to: device.ip });
+        } else if (!selfNode && !isSelf) {
+          // If we found a device before self, just wait or add it floating
+        }
+      }
+
+      // Initialize empty graph on load
+      initGraph();
+    </script>
+  </body>
+</html>

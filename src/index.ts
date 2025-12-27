@@ -267,6 +267,35 @@ router.get(
   })
 );
 
+router.get(
+  "/network-map",
+  authHandler(async (req, res) => {
+    const body = readFileSync("public/network-map.html", "utf8");
+    res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
+    res.end(body);
+  })
+);
+
+router.get(
+  "/api/network/scan",
+  authHandler(async (req, res) => {
+    res.writeHead(200, {
+      "Content-Type": "text/event-stream",
+      "Cache-Control": "no-cache",
+      Connection: "keep-alive",
+    });
+
+    const { scanNetwork } = await import("./services/network.service.js");
+
+    await scanNetwork((device) => {
+      res.write(`data: ${JSON.stringify(device)}\n\n`);
+    });
+
+    res.write("event: done\ndata: {}\n\n");
+    res.end();
+  })
+);
+
 router.delete(
   "/api/scores",
   authHandler(async (req, res) => {
