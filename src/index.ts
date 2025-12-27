@@ -6,7 +6,6 @@ import {
   verifyToken,
   propUserId,
   clearTokenCache,
-  users,
   getAppToken,
   getCookieToken,
   validateUser,
