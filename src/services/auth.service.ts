@@ -2,6 +2,7 @@ import { SignJWT, jwtVerify, type JWTPayload } from "jose";
 import { ConfidentialClientApplication, Configuration } from "@azure/msal-node";
 import { readFileSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
+import { createHash } from "node:crypto";
 import type { IncomingMessage } from "node:http";
 import { z } from "zod";
 import usersJson from "../../config/users.json" with { type: "json" };
@@ -13,6 +14,10 @@ export type User = {
   id: string;
   email: string;
   password: string;
+};
+
+export const hashPassword = (password: string): string => {
+  return createHash("sha256").update(password).digest("hex");
 };
 
 const userArray: User[] = [];
@@ -242,7 +247,7 @@ export const createUserRequest = (
     const request: UserRequest = {
       id: `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
       email,
-      password,
+      password: hashPassword(password),
       name,
       requestedAt: new Date().toISOString(),
       status: "pending",

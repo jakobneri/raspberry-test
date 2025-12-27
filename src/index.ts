@@ -8,6 +8,7 @@ import {
   users,
   getAppToken,
   getCookieToken,
+  hashPassword,
 } from "./services/auth.service.js";
 import * as sessionService from "./services/auth.service.js";
 import * as scoreService from "./services/score.service.js";
@@ -76,7 +77,7 @@ const server = http.createServer(async (req, res) => {
     const password = params.get("password") || "";
 
     const user = users.find(
-      (u) => u.email === email && u.password === password
+      (u) => u.email === email && u.password === hashPassword(password)
     );
 
     if (!user || !user.email) {
