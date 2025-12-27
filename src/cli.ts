@@ -1,6 +1,8 @@
 import readline from "node:readline";
 import { randomBytes } from "node:crypto";
 import { db, run, get, all, hashPassword } from "./services/db.service.js";
+import { getMetrics } from "./services/metrics.service.js";
+import { getSessions, revokeAllSessions } from "./services/auth.service.js";
 
 const rl = readline.createInterface({
   input: process.stdin,
@@ -18,7 +20,13 @@ const printMenu = () => {
   console.log("1. Create User");
   console.log("2. List Pending Requests");
   console.log("3. Approve Request");
-  console.log("4. Exit");
+  console.log("4. List All Users");
+  console.log("5. Delete User");
+  console.log("6. Reset Password");
+  console.log("7. System Status");
+  console.log("8. List Active Sessions");
+  console.log("9. Revoke All Sessions");
+  console.log("10. Exit");
   console.log("=======================================");
 };
 
@@ -51,6 +59,152 @@ const createUser = async () => {
     console.log(`Success: User '${email}' created.`);
   } catch (error) {
     console.error("Error creating user:", error);
+  }
+};
+
+const listUsers = async () => {
+  console.log("\n--- Registered Users ---");
+  try {
+    const users = await all<{ id: string; email: string }>(
+      "SELECT id, email FROM users"
+    );
+
+    if (users.length === 0) {
+      console.log("No users found.");
+      return;
+    }
+
+    console.table(users);
+  } catch (error) {
+    console.error("Error listing users:", error);
+  }
+};
+
+const deleteUser = async () => {
+  await listUsers();
+  const email = await question(
+    "\nEnter Email of user to delete (or press Enter to cancel): "
+  );
+
+  if (!email) return;
+
+  try {
+    const user = await get<{ id: string }>(
+      "SELECT id FROM users WHERE email = ?",
+      [email]
+    );
+
+    if (!user) {
+      console.log("Error: User not found.");
+      return;
+    }
+
+    const confirm = await question(
+      `Are you sure you want to delete user '${email}'? (yes/no): `
+    );
+    if (confirm.toLowerCase() !== "yes") {
+      console.log("Deletion cancelled.");
+      return;
+    }
+
+    await run("DELETE FROM users WHERE email = ?", [email]);
+    console.log(`Success: User '${email}' deleted.`);
+  } catch (error) {
+    console.error("Error deleting user:", error);
+  }
+};
+
+const resetPassword = async () => {
+  await listUsers();
+  const email = await question(
+    "\nEnter Email of user to reset password (or press Enter to cancel): "
+  );
+
+  if (!email) return;
+
+  try {
+    const user = await get<{ id: string }>(
+      "SELECT id FROM users WHERE email = ?",
+      [email]
+    );
+
+    if (!user) {
+      console.log("Error: User not found.");
+      return;
+    }
+
+    const newPassword = await question("Enter new password: ");
+    if (!newPassword) {
+      console.log("Error: Password cannot be empty.");
+      return;
+    }
+
+    const salt = randomBytes(16).toString("hex");
+    const hashedPassword = hashPassword(newPassword, salt);
+
+    await run("UPDATE users SET password = ?, salt = ? WHERE email = ?", [
+      hashedPassword,
+      salt,
+      email,
+    ]);
+
+    console.log(`Success: Password for '${email}' updated.`);
+  } catch (error) {
+    console.error("Error resetting password:", error);
+  }
+};
+
+const showSystemStatus = async () => {
+  console.log("\n--- System Status ---");
+  try {
+    const metrics = await getMetrics();
+    const { cpu, memory, disk, os, system } = metrics.current;
+
+    console.log(`Hostname: ${os.hostname}`);
+    console.log(`OS: ${os.distro} ${os.release} (${os.platform})`);
+    console.log(
+      `Uptime: ${Math.floor(system.uptime / 3600)}h ${Math.floor(
+        (system.uptime % 3600) / 60
+      )}m`
+    );
+    console.log(`CPU Temp: ${cpu.temperature}°C`);
+    console.log(`CPU Load: ${cpu.usage}%`);
+    console.log(
+      `Memory: ${memory.used}GB / ${memory.total}GB (${memory.usagePercent}%)`
+    );
+    console.log(
+      `Disk: ${disk.used}GB / ${disk.totalSize}GB (${disk.usagePercent}%)`
+    );
+  } catch (error) {
+    console.error("Error fetching system metrics:", error);
+  }
+};
+
+const listSessions = () => {
+  console.log("\n--- Active Sessions ---");
+  const sessions = getSessions();
+  if (sessions.length === 0) {
+    console.log("No active sessions.");
+    return;
+  }
+  console.table(
+    sessions.map((s) => ({
+      User: s.userId,
+      Created: s.createdAt,
+      LastActive: s.lastActivity,
+    }))
+  );
+};
+
+const revokeSessions = async () => {
+  const confirm = await question(
+    "Are you sure you want to revoke ALL active sessions? Users will be logged out. (yes/no): "
+  );
+  if (confirm.toLowerCase() === "yes") {
+    revokeAllSessions();
+    console.log("All sessions revoked.");
+  } else {
+    console.log("Cancelled.");
   }
 };
 
@@ -140,6 +294,24 @@ const main = async () => {
         await approveRequest();
         break;
       case "4":
+        await listUsers();
+        break;
+      case "5":
+        await deleteUser();
+        break;
+      case "6":
+        await resetPassword();
+        break;
+      case "7":
+        await showSystemStatus();
+        break;
+      case "8":
+        listSessions();
+        break;
+      case "9":
+        await revokeSessions();
+        break;
+      case "10":
         console.log("Goodbye!");
         rl.close();
         process.exit(0);

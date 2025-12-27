@@ -27,12 +27,17 @@ export const validateUser = async (
   password: string
 ): Promise<User | null> => {
   const user = await get<User>("SELECT * FROM users WHERE email = ?", [email]);
-  if (!user) return null;
+  if (!user) {
+    console.log(`[Auth] Login failed: User '${email}' not found.`);
+    return null;
+  }
 
   const hashed = hashPassword(password, user.salt);
   if (hashed === user.password) {
     return user;
   }
+
+  console.log(`[Auth] Login failed: Invalid password for user '${email}'.`);
   return null;
 };
 
@@ -187,6 +192,12 @@ export const removeSession = (token: string): void => {
 
 export const getSessions = (): Session[] => {
   return activeSessions;
+};
+
+export const revokeAllSessions = (): void => {
+  const count = activeSessions.length;
+  activeSessions = [];
+  console.log(`[Auth] Revoked all ${count} active sessions.`);
 };
 
 export const cleanOldSessions = (): void => {
