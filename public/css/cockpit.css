@@ -567,10 +567,11 @@ body {
 }
 
 .token-display {
-  background: #fff;
+  background: #333;
+  color: var(--text-primary);
   padding: 10px;
   border-radius: 6px;
-  border: 1px solid #ddd;
+  border: 1px solid var(--border-color);
   font-family: monospace;
   font-size: 12px;
   word-break: break-all;
