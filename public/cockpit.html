@@ -336,6 +336,89 @@
                 </button>
               </div>
             </div>
+
+            <!-- Sessions Card -->
+            <div
+              class="metric-card"
+              onclick="openSessionsModal()"
+              style="cursor: pointer"
+            >
+              <div class="metric-header">
+                <div class="metric-icon">👥</div>
+                <div class="metric-title">Sessions</div>
+              </div>
+              <div class="metric-value" id="session-count-card">--</div>
+              <div class="metric-detail">
+                Active Users: <span id="session-active-users">--</span>
+              </div>
+              <div
+                class="metric-detail"
+                style="
+                  font-size: 0.8em;
+                  color: var(--text-secondary);
+                  margin-top: 10px;
+                "
+              >
+                Click for details
+              </div>
+            </div>
+
+            <!-- Terminal Card -->
+            <div class="metric-card" style="grid-column: span 2">
+              <div class="metric-header" style="justify-content: space-between">
+                <div style="display: flex; align-items: center; gap: 10px">
+                  <div class="metric-icon">🖥️</div>
+                  <div class="metric-title">Server Terminal</div>
+                </div>
+                <div style="display: flex; gap: 10px">
+                  <select
+                    id="log-level"
+                    onchange="setLogLevel(this.value)"
+                    style="
+                      padding: 2px 5px;
+                      border-radius: 4px;
+                      background: var(--bg-color);
+                      color: var(--text-color);
+                      border: 1px solid var(--border-color);
+                      font-size: 0.8rem;
+                    "
+                  >
+                    <option value="info">Info</option>
+                    <option value="warn">Warn</option>
+                    <option value="error">Error</option>
+                  </select>
+                  <button
+                    onclick="clearTerminal()"
+                    style="
+                      padding: 2px 8px;
+                      border-radius: 4px;
+                      background: var(--bg-color);
+                      color: var(--text-color);
+                      border: 1px solid var(--border-color);
+                      cursor: pointer;
+                      font-size: 0.8rem;
+                    "
+                  >
+                    Clear
+                  </button>
+                </div>
+              </div>
+              <div
+                id="terminal-output"
+                style="
+                  background: #1e1e1e;
+                  color: #d4d4d4;
+                  padding: 10px;
+                  border-radius: 4px;
+                  height: 200px;
+                  overflow-y: auto;
+                  font-family: monospace;
+                  font-size: 12px;
+                  white-space: pre-wrap;
+                  margin-top: 10px;
+                "
+              ></div>
+            </div>
           </div>
 
           <div class="timestamp">
@@ -838,10 +921,29 @@
             if (response.ok) {
               const data = await response.json();
               currentSessionCount = data.sessions.length;
+
+              // Update Button Count
               const countEl = document.getElementById("session-count-btn");
               if (countEl) {
                 countEl.textContent = currentSessionCount;
               }
+
+              // Update Card
+              const cardCountEl = document.getElementById("session-count-card");
+              const activeUsersEl = document.getElementById(
+                "session-active-users"
+              );
+
+              if (cardCountEl) {
+                cardCountEl.textContent = currentSessionCount;
+              }
+
+              if (activeUsersEl) {
+                const uniqueUsers = new Set(data.sessions.map((s) => s.userId))
+                  .size;
+                activeUsersEl.textContent = uniqueUsers;
+              }
+
               return data;
             }
           } catch (error) {
@@ -1843,6 +1945,65 @@
 
         // Update speedtest history every 10 seconds
         setInterval(fetchSpeedtestHistory, 10000);
+
+        // Terminal Logic
+        const terminalOutput = document.getElementById("terminal-output");
+
+        function appendLog(log) {
+          const line = document.createElement("div");
+          line.style.marginBottom = "2px";
+
+          const timestamp = new Date(log.timestamp).toLocaleTimeString();
+          let color = "#d4d4d4"; // Default
+          if (log.level === "warn") color = "#cca700";
+          if (log.level === "error") color = "#f14c4c";
+
+          line.innerHTML = `<span style="color: #569cd6;">[${timestamp}]</span> <span style="color: ${color};">[${log.level.toUpperCase()}]</span> ${
+            log.message
+          }`;
+          terminalOutput.appendChild(line);
+          terminalOutput.scrollTop = terminalOutput.scrollHeight;
+        }
+
+        function initTerminal() {
+          const eventSource = new EventSource("/api/logs/stream");
+
+          eventSource.onmessage = (event) => {
+            const log = JSON.parse(event.data);
+            appendLog(log);
+          };
+
+          eventSource.onerror = (err) => {
+            console.error("EventSource failed:", err);
+            eventSource.close();
+            // Retry after 5 seconds
+            setTimeout(initTerminal, 5000);
+          };
+        }
+
+        async function clearTerminal() {
+          try {
+            await fetch("/api/logs/clear", { method: "POST" });
+            terminalOutput.innerHTML = "";
+          } catch (error) {
+            console.error("Error clearing logs:", error);
+          }
+        }
+
+        async function setLogLevel(level) {
+          try {
+            await fetch("/api/logs/level", {
+              method: "POST",
+              headers: { "Content-Type": "application/x-www-form-urlencoded" },
+              body: `level=${level}`,
+            });
+          } catch (error) {
+            console.error("Error setting log level:", error);
+          }
+        }
+
+        // Initialize Terminal
+        initTerminal();
 
         // Cleanup on page unload
         window.addEventListener("beforeunload", () => {
