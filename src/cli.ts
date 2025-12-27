@@ -57,21 +57,26 @@ const createUser = async () => {
 const listRequests = async () => {
   console.log("\n--- Pending User Requests ---");
   try {
-    const requests = await all<{ id: string; email: string; name: string; requested_at: string }>(
-      "SELECT * FROM user_requests WHERE status = 'pending'"
-    );
+    const requests = await all<{
+      id: string;
+      email: string;
+      name: string;
+      requested_at: string;
+    }>("SELECT * FROM user_requests WHERE status = 'pending'");
 
     if (requests.length === 0) {
       console.log("No pending requests.");
       return;
     }
 
-    console.table(requests.map(r => ({
-      ID: r.id,
-      Email: r.email,
-      Name: r.name,
-      Date: r.requested_at
-    })));
+    console.table(
+      requests.map((r) => ({
+        ID: r.id,
+        Email: r.email,
+        Name: r.name,
+        Date: r.requested_at,
+      }))
+    );
   } catch (error) {
     console.error("Error listing requests:", error);
   }
@@ -79,15 +84,21 @@ const listRequests = async () => {
 
 const approveRequest = async () => {
   await listRequests();
-  const requestId = await question("\nEnter Request ID to approve (or press Enter to cancel): ");
-  
+  const requestId = await question(
+    "\nEnter Request ID to approve (or press Enter to cancel): "
+  );
+
   if (!requestId) return;
 
   try {
-    const request = await get<{ id: string; email: string; password: string; salt: string }>(
-      "SELECT * FROM user_requests WHERE id = ? AND status = 'pending'",
-      [requestId]
-    );
+    const request = await get<{
+      id: string;
+      email: string;
+      password: string;
+      salt: string;
+    }>("SELECT * FROM user_requests WHERE id = ? AND status = 'pending'", [
+      requestId,
+    ]);
 
     if (!request) {
       console.log("Error: Request not found or not pending.");
@@ -100,7 +111,9 @@ const approveRequest = async () => {
       [userId, request.email, request.password, request.salt]
     );
 
-    await run("UPDATE user_requests SET status = 'approved' WHERE id = ?", [requestId]);
+    await run("UPDATE user_requests SET status = 'approved' WHERE id = ?", [
+      requestId,
+    ]);
 
     console.log(`Success: Request for '${request.email}' approved.`);
   } catch (error) {
@@ -110,7 +123,7 @@ const approveRequest = async () => {
 
 const main = async () => {
   // Wait for DB init (it happens on import, but let's give it a tick)
-  await new Promise(resolve => setTimeout(resolve, 100));
+  await new Promise((resolve) => setTimeout(resolve, 100));
 
   while (true) {
     printMenu();
