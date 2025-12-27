@@ -186,6 +186,7 @@ show_menu() {
         "Pull updates and start server"
         "Just start server (no update)"
         "Only pull updates (don't start)"
+        "Manage Users (CLI)"
         "Exit"
     )
     
@@ -274,6 +275,17 @@ while true; do
             break
             ;;
         3)
+            echo -e "${BLUE}╔════════════════════════════════════════${NC}"
+            echo -e "${BLUE}║  🥧 Raspberry Pi Server Manager 🥧   ║${NC}"
+            echo -e "${BLUE}╔════════════════════════════════════════${NC}"
+            echo ""
+            echo -e "${YELLOW}Starting CLI Manager...${NC}"
+            npm run manage
+            echo ""
+            echo -e "${GREEN}Press Enter to return to menu...${NC}"
+            read
+            ;;
+        4)
             echo ""
             echo -e "${GREEN}Goodbye! 👋${NC}"
             exit 0
