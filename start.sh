@@ -117,27 +117,34 @@ pull_updates() {
         echo ""
         
         # Only install/build if there were updates
-        echo -e "${YELLOW}📦 Installing dependencies...${NC}"
+        echo -e "${YELLOW}📦 Installing backend dependencies...${NC}"
         npm install
         if [ $? -eq 0 ]; then
-            echo -e "${GREEN}✓ All dependencies installed successfully!${NC}"
+            echo -e "${GREEN}✓ Backend dependencies installed successfully!${NC}"
         else
-            echo -e "${RED}✗ Failed to install dependencies${NC}"
+            echo -e "${RED}✗ Failed to install backend dependencies${NC}"
             echo -e "${RED}  Please check your internet connection or package.json${NC}"
             return 1
         fi
         echo ""
         
-        # Build TypeScript
-        echo -e "${YELLOW}🔨 Building TypeScript...${NC}"
+        # Build TypeScript backend
+        echo -e "${YELLOW}🔨 Building TypeScript backend...${NC}"
         npm run build
         if [ $? -eq 0 ]; then
-            echo -e "${GREEN}✓ Build successful!${NC}"
+            echo -e "${GREEN}✓ Backend build successful!${NC}"
         else
-            echo -e "${RED}✗ Build failed${NC}"
+            echo -e "${RED}✗ Backend build failed${NC}"
             return 1
         fi
         echo ""
+        
+        # Build Angular frontend
+        build_frontend
+        if [ $? -ne 0 ]; then
+            echo -e "${RED}✗ Frontend build failed${NC}"
+            return 1
+        fi
         
         # Check and install speedtest-cli if needed
         check_speedtest
@@ -152,22 +159,85 @@ pull_updates() {
     fi
 }
 
+# Function to build Angular frontend
+build_frontend() {
+    echo -e "${YELLOW}🎨 Building Angular frontend...${NC}"
+    
+    # Check if frontend directory exists
+    if [ ! -d "frontend" ]; then
+        echo -e "${RED}✗ Frontend directory not found${NC}"
+        return 1
+    fi
+    
+    cd frontend
+    
+    # Install frontend dependencies if node_modules doesn't exist
+    if [ ! -d "node_modules" ]; then
+        echo -e "${YELLOW}📦 Installing frontend dependencies...${NC}"
+        npm install
+        if [ $? -ne 0 ]; then
+            echo -e "${RED}✗ Failed to install frontend dependencies${NC}"
+            cd ..
+            return 1
+        fi
+    fi
+    
+    # Build Angular
+    npm run build
+    if [ $? -ne 0 ]; then
+        echo -e "${RED}✗ Angular build failed${NC}"
+        cd ..
+        return 1
+    fi
+    
+    echo -e "${GREEN}✓ Angular frontend built successfully!${NC}"
+    cd ..
+    echo ""
+    return 0
+}
+
 # Function to start the server
 start_server() {
     echo -e "${GREEN}🚀 Starting server...${NC}"
     echo -e "${BLUE}═══════════════════════════════════════${NC}"
     echo ""
     
-    # Build TypeScript if dist doesn't exist
-    if [ ! -d "dist" ]; then
-        echo -e "${YELLOW}🔨 Building TypeScript...${NC}"
-        npm run build
+    # Build Angular frontend if dist doesn't exist
+    if [ ! -d "frontend/dist" ]; then
+        build_frontend
         if [ $? -ne 0 ]; then
-            echo -e "${RED}✗ Build failed${NC}"
             return 1
         fi
+    fi
+    
+    # Build TypeScript backend if dist doesn't exist
+    if [ ! -d "dist" ]; then
+        echo -e "${YELLOW}🔨 Building TypeScript backend...${NC}"
+        npm run build
+        if [ $? -ne 0 ]; then
+            echo -e "${RED}✗ Backend build failed${NC}"
+            return 1
+        fi
+        echo -e "${GREEN}✓ Backend built successfully!${NC}"
         echo ""
     fi
+    
+    # Get local IP address for display
+    LOCAL_IP=$(hostname -I 2>/dev/null | awk '{print $1}')
+    if [ -z "$LOCAL_IP" ]; then
+        LOCAL_IP=$(ipconfig getifaddr en0 2>/dev/null || echo "localhost")
+    fi
+    
+    echo -e "${GREEN}═══════════════════════════════════════${NC}"
+    echo -e "${GREEN}   Server starting on:${NC}"
+    echo ""
+    echo -e "   ${BLUE}➜${NC}  Local:   ${GREEN}http://localhost:3000${NC}"
+    if [ "$LOCAL_IP" != "localhost" ]; then
+        echo -e "   ${BLUE}➜${NC}  Network: ${GREEN}http://${LOCAL_IP}:3000${NC}"
+    fi
+    echo ""
+    echo -e "${GREEN}═══════════════════════════════════════${NC}"
+    echo ""
     
     while true; do
         npm start
@@ -192,6 +262,7 @@ show_menu() {
     local options=(
         "Pull updates and start server"
         "Just start server (no update)"
+        "Rebuild everything (frontend + backend)"
         "Only pull updates (don't start)"
         "Manage Users (CLI)"
         "Exit"
@@ -277,11 +348,39 @@ while true; do
             echo -e "${BLUE}║  🥧 Raspberry Pi Server Manager 🥧   ║${NC}"
             echo -e "${BLUE}╔════════════════════════════════════════${NC}"
             echo ""
+            echo -e "${YELLOW}🔄 Rebuilding everything...${NC}"
+            echo ""
+            # Remove old builds
+            rm -rf dist frontend/dist
+            # Build backend
+            echo -e "${YELLOW}🔨 Building TypeScript backend...${NC}"
+            npm run build
+            if [ $? -eq 0 ]; then
+                echo -e "${GREEN}✓ Backend built successfully!${NC}"
+            else
+                echo -e "${RED}✗ Backend build failed${NC}"
+                break
+            fi
+            echo ""
+            # Build frontend
+            build_frontend
+            if [ $? -eq 0 ]; then
+                echo -e "${GREEN}✓ All builds completed!${NC}"
+                echo ""
+                start_server
+            fi
+            break
+            ;;
+        3)
+            echo -e "${BLUE}╔════════════════════════════════════════${NC}"
+            echo -e "${BLUE}║  🥧 Raspberry Pi Server Manager 🥧   ║${NC}"
+            echo -e "${BLUE}╔════════════════════════════════════════${NC}"
+            echo ""
             pull_updates
             echo -e "${GREEN}Done! Exiting...${NC}"
             break
             ;;
-        3)
+        4)
             echo -e "${BLUE}╔════════════════════════════════════════${NC}"
             echo -e "${BLUE}║  🥧 Raspberry Pi Server Manager 🥧   ║${NC}"
             echo -e "${BLUE}╔════════════════════════════════════════${NC}"
@@ -292,7 +391,7 @@ while true; do
             echo -e "${GREEN}Press Enter to return to menu...${NC}"
             read
             ;;
-        4)
+        5)
             echo ""
             echo -e "${GREEN}Goodbye! 👋${NC}"
             exit 0
