@@ -57,4 +57,19 @@
 
 .progress-bar {
   margin-top: $spacing-md;
+  height: 6px;
+  background: $bg-color;
+  border-radius: $border-radius-sm;
+  overflow: hidden;
+
+  .progress-fill {
+    height: 100%;
+    background: $accent-color;
+    border-radius: $border-radius-sm;
+    transition: width 0.3s ease;
+
+    &.warning {
+      background: $danger-color;
+    }
+  }
 }

@@ -757,9 +757,31 @@ const server = http.createServer(async (req, res) => {
   res.writeHead(404).end("Not found");
 });
 
-server.listen(PORT);
-console.log(`Server: http://pi.local:${PORT}`);
-console.log("");
+server.on("error", (err) => {
+  console.error("[Server] Error:", err);
+});
+
+server.listen(PORT, "0.0.0.0", () => {
+  console.log(`Server running on http://localhost:${PORT}`);
+  console.log("");
+});
+
+// Keep process alive with keepalive
+setInterval(() => {}, 1000);
+
+// Keep process alive
+process.on("uncaughtException", (err) => {
+  console.error("[Process] Uncaught Exception:", err);
+});
+
+process.on("unhandledRejection", (reason, promise) => {
+  console.error(
+    "[Process] Unhandled Rejection at:",
+    promise,
+    "reason:",
+    reason
+  );
+});
 
 // Start speedtest scheduler if enabled
 try {

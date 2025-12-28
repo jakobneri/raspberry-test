@@ -115,19 +115,34 @@ export const getCookieToken = (req: IncomingMessage): string | undefined => {
 
 // ========== SSO MANAGEMENT ==========
 
-const msalConfig: Configuration = {
-  auth: {
-    clientId: envConfig.CLIENT_ID,
-    authority: `${envConfig.CLOUD_INSTANCE}${envConfig.TENANT_ID}`,
-    clientSecret: envConfig.CLIENT_SECRET,
-  },
-};
-
-const cca = new ConfidentialClientApplication(msalConfig);
+// Azure SSO is optional - only initialized if credentials are provided
+let cca: ConfidentialClientApplication | null = null;
 let appToken = "";
 
-const initializeAppToken = async (): Promise<void> => {
+const initializeSSO = async (): Promise<void> => {
+  // Skip SSO initialization if credentials are not configured
+  if (
+    !envConfig.CLIENT_ID ||
+    !envConfig.CLIENT_SECRET ||
+    !envConfig.TENANT_ID
+  ) {
+    console.log(
+      "[Auth] SSO not configured - skipping Azure SSO initialization"
+    );
+    return;
+  }
+
   try {
+    const msalConfig: Configuration = {
+      auth: {
+        clientId: envConfig.CLIENT_ID,
+        authority: `${envConfig.CLOUD_INSTANCE}${envConfig.TENANT_ID}`,
+        clientSecret: envConfig.CLIENT_SECRET,
+      },
+    };
+
+    cca = new ConfidentialClientApplication(msalConfig);
+
     const result = await cca.acquireTokenByClientCredential({
       scopes: ["https://graph.microsoft.com/.default"],
     });
@@ -139,12 +154,13 @@ const initializeAppToken = async (): Promise<void> => {
       console.log("[Auth] Failed to acquire SSO app token");
     }
   } catch (error) {
-    console.error("[Auth] Error acquiring SSO app token:", error);
+    console.error("[Auth] Error initializing SSO:", error);
+    cca = null;
   }
 };
 
 // Initialize on module load
-initializeAppToken();
+initializeSSO();
 
 export const getAppToken = (): string => appToken;
 

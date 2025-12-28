@@ -285,5 +285,5 @@ export const getSchedulerConfig = (): SpeedTestConfig => {
   return loadConfig();
 };
 
-// Initialize on load
-startSpeedTestScheduler();
+// NOTE: Auto-initialization disabled - call startSpeedTestScheduler() explicitly from main module if needed
+// startSpeedTestScheduler();

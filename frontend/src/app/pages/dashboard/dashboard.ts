@@ -19,18 +19,35 @@ export class Dashboard implements OnInit, OnDestroy {
   systemInfo: any = null;
   lastUpdate: string = '--';
   loading = true;
+  error: string | null = null;
 
   private metricsSubscription?: Subscription;
 
   constructor(private metricsService: MetricsService, private api: ApiService) {}
 
   ngOnInit(): void {
-    this.metricsService.startPolling(1000);
+    // Fetch initial data directly first
+    this.api.getMetrics().subscribe({
+      next: (data) => {
+        this.metrics = data;
+        this.lastUpdate = new Date().toLocaleString('de-DE');
+        this.loading = false;
+      },
+      error: (err) => {
+        console.error('Error fetching metrics:', err);
+        this.error = 'Failed to load metrics';
+        this.loading = false;
+      },
+    });
+
+    // Then start polling
+    this.metricsService.startPolling(2000);
     this.metricsSubscription = this.metricsService.metrics$.subscribe((data) => {
       if (data) {
         this.metrics = data;
         this.lastUpdate = new Date().toLocaleString('de-DE');
         this.loading = false;
+        this.error = null;
       }
     });
 
