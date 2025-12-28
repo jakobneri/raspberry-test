@@ -1,0 +1,93 @@
+@use '../../../styles/variables' as *;
+@use '../../../styles/mixins' as *;
+
+.sidebar {
+  width: $sidebar-width;
+  background: $sidebar-bg;
+  box-shadow: 2px 0 6px rgba(0, 0, 0, 0.2);
+  display: flex;
+  flex-direction: column;
+  position: fixed;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  z-index: 1000;
+  border-right: 1px solid $border-color;
+}
+
+.sidebar-header {
+  padding: $spacing-lg;
+  border-bottom: 1px solid $border-color;
+
+  h1 {
+    font-size: 24px;
+    color: $text-primary;
+    margin: 0 0 $spacing-xs 0;
+  }
+
+  .subtitle {
+    font-size: 12px;
+    color: $text-secondary;
+  }
+}
+
+.sidebar-nav {
+  flex: 1;
+  overflow-y: auto;
+  padding: $spacing-md 0;
+  @include custom-scrollbar;
+}
+
+.nav-section {
+  margin-bottom: $spacing-lg;
+}
+
+.nav-section-title {
+  padding: $spacing-sm $spacing-lg;
+  font-size: 11px;
+  text-transform: uppercase;
+  color: $text-secondary;
+  letter-spacing: 0.5px;
+}
+
+.nav-link {
+  display: flex;
+  align-items: center;
+  padding: $spacing-sm $spacing-lg;
+  color: $text-secondary;
+  text-decoration: none;
+  transition: all $transition-fast;
+
+  &:hover {
+    background: $nav-hover;
+    color: $text-primary;
+  }
+
+  &.active {
+    background: $nav-active;
+    color: $accent-color;
+    border-left: 3px solid $accent-color;
+  }
+
+  .nav-link-icon {
+    margin-right: $spacing-sm;
+    font-size: 18px;
+  }
+}
+
+.sidebar-footer {
+  padding: $spacing-md;
+  border-top: 1px solid $border-color;
+
+  .logout-btn {
+    @include button-secondary;
+    width: 100%;
+    justify-content: center;
+
+    &:hover {
+      background: $danger-color;
+      color: white;
+      border-color: $danger-color;
+    }
+  }
+}

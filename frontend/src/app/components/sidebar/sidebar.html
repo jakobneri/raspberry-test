@@ -1,0 +1,32 @@
+<div class="sidebar">
+  <div class="sidebar-header">
+    <h1>🥧 Pi Cockpit</h1>
+    <div class="subtitle">Raspberry Pi Server</div>
+  </div>
+
+  <nav class="sidebar-nav">
+    <div class="nav-section">
+      <div class="nav-section-title">Admin Pages</div>
+      @for (link of adminLinks; track link.path) {
+      <a [routerLink]="link.path" routerLinkActive="active" class="nav-link">
+        <span class="nav-link-icon">{{ link.icon }}</span>
+        <span>{{ link.label }}</span>
+      </a>
+      }
+    </div>
+
+    <div class="nav-section">
+      <div class="nav-section-title">Public Pages</div>
+      @for (link of publicLinks; track link.path) {
+      <a [routerLink]="link.path" routerLinkActive="active" class="nav-link">
+        <span class="nav-link-icon">{{ link.icon }}</span>
+        <span>{{ link.label }}</span>
+      </a>
+      }
+    </div>
+  </nav>
+
+  <div class="sidebar-footer">
+    <button class="logout-btn" (click)="logout()">🚪 Logout</button>
+  </div>
+</div>

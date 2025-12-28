@@ -1,0 +1,101 @@
+<app-sidebar />
+
+<div class="main-content">
+  <div class="container">
+    @if (loading) {
+    <div class="loading-spinner"></div>
+    } @else {
+    <div class="metrics-grid">
+      <!-- CPU Card -->
+      <app-metric-card
+        icon="🖥️"
+        title="CPU Usage"
+        [value]="metrics?.cpu?.usage || '--'"
+        unit="%"
+        [details]="cpuDetails"
+      />
+
+      <!-- Memory Card -->
+      <app-metric-card
+        icon="💾"
+        title="RAM Memory"
+        [value]="metrics?.memory?.usagePercent || '--'"
+        unit="%"
+        [details]="memoryDetails"
+      />
+
+      <!-- Disk Card -->
+      <app-metric-card
+        icon="💿"
+        title="Disk"
+        [value]="metrics?.disk?.usagePercent || '--'"
+        unit="%"
+        [details]="diskDetails"
+        [progress]="metrics?.disk?.usagePercent"
+        [progressWarning]="(metrics?.disk?.usagePercent || 0) > 80"
+      />
+
+      <!-- Network Card -->
+      <app-metric-card
+        icon="🌐"
+        title="Network"
+        [value]="(metrics?.network?.rx || 0).toFixed(1)"
+        unit="KB/s ↓"
+        [details]="networkDetails"
+        [clickable]="true"
+      />
+
+      <!-- System Load Card -->
+      <app-metric-card
+        icon="⚙️"
+        title="System Load"
+        [value]="metrics?.system?.loadAvg?.[0]?.toFixed(2) || '--'"
+        [details]="systemLoadDetails"
+      />
+
+      <!-- System Info Card -->
+      <div class="metric-card system-info-card">
+        <div class="metric-header">
+          <div class="metric-icon">ℹ️</div>
+          <div class="metric-title">System Info</div>
+        </div>
+
+        @if (systemInfo) {
+        <div class="uptime-display">
+          <span class="label">Uptime</span>
+          <span class="value">{{ formatUptime(systemInfo.os?.uptime || 0) }}</span>
+        </div>
+
+        <div class="system-details">
+          <div class="detail-row">
+            <span>🖥️ Host</span>
+            <span>{{ systemInfo.os?.hostname || '--' }}</span>
+          </div>
+          <div class="detail-row">
+            <span>🐧 OS</span>
+            <span>{{ systemInfo.os?.platform || '--' }}</span>
+          </div>
+          <div class="detail-row">
+            <span>⚙️ Kernel</span>
+            <span>{{ systemInfo.os?.release || '--' }}</span>
+          </div>
+        </div>
+        }
+
+        <div class="admin-buttons">
+          <button class="btn-restart" (click)="restartServer()">🔄 Restart</button>
+          <button class="btn-shutdown" (click)="shutdownServer()">⛔ Shutdown</button>
+        </div>
+      </div>
+
+      <!-- Sessions Card -->
+      <app-sessions-card />
+
+      <!-- Terminal Card -->
+      <app-terminal-card />
+    </div>
+
+    <div class="timestamp">Last updated: {{ lastUpdate }}</div>
+    }
+  </div>
+</div>

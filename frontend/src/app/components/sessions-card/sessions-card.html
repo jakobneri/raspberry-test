@@ -1,0 +1,56 @@
+<div class="sessions-card" (click)="openModal()">
+  <div class="metric-header">
+    <div class="metric-icon">👥</div>
+    <div class="metric-title">Sessions</div>
+  </div>
+  <div class="metric-value">{{ sessionCount }}</div>
+  <div class="metric-detail">
+    Active Users: <span>{{ activeUsers }}</span>
+  </div>
+  <div class="click-hint">Click for details</div>
+</div>
+
+@if (showModal) {
+<div class="modal-overlay" (click)="closeModal()">
+  <div class="modal-content" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h2>🔐 Active Sessions</h2>
+      <button class="close-btn" (click)="closeModal()">×</button>
+    </div>
+
+    <div class="sessions-list">
+      @if (appToken) {
+      <div class="session-item">
+        <h3>🔑 Azure App Token</h3>
+        <div class="token-display">
+          {{ isExpanded('app') ? appToken : getShortToken(appToken!) }}
+        </div>
+        <div class="token-actions">
+          <button class="btn-secondary" (click)="toggleToken('app')">
+            {{ isExpanded('app') ? 'Show Short' : 'Show Full' }}
+          </button>
+          <button class="btn-secondary" (click)="copyToken(appToken!)">Copy</button>
+        </div>
+      </div>
+      } @for (session of sessions; track session.id; let i = $index) {
+      <div class="session-item">
+        <h3>👤 Session {{ i + 1 }} - User: {{ session.userId }}</h3>
+        <p><strong>Created:</strong> {{ formatDate(session.createdAt) }}</p>
+        <p><strong>Last Activity:</strong> {{ formatDate(session.lastActivity) }}</p>
+        <div class="token-display">
+          {{ isExpanded(session.id) ? session.token : getShortToken(session.token) }}
+        </div>
+        <div class="token-actions">
+          <button class="btn-secondary" (click)="toggleToken(session.id)">
+            {{ isExpanded(session.id) ? 'Show Short' : 'Show Full' }}
+          </button>
+          <button class="btn-secondary" (click)="copyToken(session.token)">Copy</button>
+        </div>
+      </div>
+      } @if (sessions.length === 0 && !appToken) {
+      <p class="empty-state">No active sessions</p>
+      }
+    </div>
+  </div>
+</div>
+}

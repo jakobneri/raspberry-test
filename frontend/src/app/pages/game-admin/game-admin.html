@@ -1,0 +1,149 @@
+<div class="admin-layout">
+  <app-sidebar></app-sidebar>
+
+  <main class="admin-main">
+    <header class="admin-header">
+      <h1>🎮 Game Administration</h1>
+    </header>
+
+    <div class="admin-content">
+      <!-- Difficulty Settings Card -->
+      <section class="settings-card">
+        <div class="card-header">
+          <h2>⚙️ Difficulty Settings</h2>
+        </div>
+
+        <div class="difficulty-tabs">
+          @for (diff of ['easy', 'medium', 'hard']; track diff) {
+          <button
+            class="tab-btn"
+            [class.active]="selectedDifficulty === diff"
+            (click)="selectDifficulty(diff)"
+          >
+            {{ diff | titlecase }}
+          </button>
+          }
+        </div>
+
+        <div class="settings-form">
+          @if (!editingSettings) {
+          <div class="settings-display">
+            <div class="setting-row">
+              <span class="label">Speed (ms)</span>
+              <span class="value">{{ difficulties[selectedDifficulty].speed }}</span>
+            </div>
+            <div class="setting-row">
+              <span class="label">Grid Size</span>
+              <span class="value">{{ difficulties[selectedDifficulty].gridSize }}</span>
+            </div>
+            <div class="setting-row">
+              <span class="label">Growth Rate</span>
+              <span class="value">{{ difficulties[selectedDifficulty].growthRate }}</span>
+            </div>
+            <button class="btn btn-primary" (click)="startEditSettings()">Edit Settings</button>
+          </div>
+          } @else {
+          <div class="settings-edit">
+            <div class="form-group">
+              <label>Speed (ms) - Lower is faster</label>
+              <input type="number" [(ngModel)]="tempSettings.speed" min="50" max="500" />
+            </div>
+            <div class="form-group">
+              <label>Grid Size</label>
+              <input type="number" [(ngModel)]="tempSettings.gridSize" min="10" max="30" />
+            </div>
+            <div class="form-group">
+              <label>Growth Rate</label>
+              <input type="number" [(ngModel)]="tempSettings.growthRate" min="1" max="5" />
+            </div>
+            <div class="btn-group">
+              <button class="btn btn-primary" (click)="saveSettings()">Save</button>
+              <button class="btn btn-secondary" (click)="cancelEditSettings()">Cancel</button>
+            </div>
+          </div>
+          }
+        </div>
+      </section>
+
+      <!-- Scores Management Card -->
+      <section class="scores-card">
+        <div class="card-header">
+          <h2>🏆 Score Management</h2>
+          <button
+            class="btn btn-danger"
+            (click)="clearAllScores()"
+            [disabled]="scores.length === 0"
+          >
+            Clear All
+          </button>
+        </div>
+
+        <div class="scores-table-container">
+          @if (scores.length > 0) {
+          <table class="scores-table">
+            <thead>
+              <tr>
+                <th>Rank</th>
+                <th>Player</th>
+                <th>Score</th>
+                <th>Difficulty</th>
+                <th>Date</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (score of scores; track score; let i = $index) {
+              <tr>
+                <td class="rank">{{ i + 1 }}</td>
+                <td class="name">{{ score.name }}</td>
+                <td class="score">{{ score.score }}</td>
+                <td>
+                  <span class="difficulty-badge" [class]="getDifficultyColor(score.difficulty)">
+                    {{ score.difficulty }}
+                  </span>
+                </td>
+                <td class="date">{{ formatDate(score.date) }}</td>
+                <td>
+                  <button class="btn-icon" (click)="confirmDeleteScore(score)" title="Delete">
+                    🗑️
+                  </button>
+                </td>
+              </tr>
+              }
+            </tbody>
+          </table>
+          } @else {
+          <div class="empty-state">
+            <p>No scores recorded yet</p>
+          </div>
+          }
+        </div>
+      </section>
+
+      <!-- Terminal Card -->
+      <app-terminal-card></app-terminal-card>
+    </div>
+  </main>
+</div>
+
+<!-- Delete Confirmation Modal -->
+@if (showDeleteModal) {
+<div class="modal-overlay" (click)="closeDeleteModal()">
+  <div class="modal" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h3>Confirm Delete</h3>
+      <button class="close-btn" (click)="closeDeleteModal()">×</button>
+    </div>
+    <div class="modal-body">
+      <p>
+        Are you sure you want to delete the score for <strong>{{ scoreToDelete?.name }}</strong
+        >?
+      </p>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" (click)="closeDeleteModal()">Cancel</button>
+      <button class="btn btn-danger" (click)="deleteScore()">Delete</button>
+    </div>
+  </div>
+</div>
+}
