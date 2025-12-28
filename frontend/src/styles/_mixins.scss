@@ -1,0 +1,143 @@
+@use 'variables' as *;
+
+// Button Mixins
+@mixin button-base {
+  padding: $spacing-sm $spacing-md;
+  border-radius: $border-radius-sm;
+  border: none;
+  cursor: pointer;
+  font-size: 14px;
+  transition: all $transition-fast;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: $spacing-xs;
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+}
+
+@mixin button-primary {
+  @include button-base;
+  background: $accent-color;
+  color: white;
+
+  &:hover:not(:disabled) {
+    background: $accent-hover;
+  }
+}
+
+@mixin button-danger {
+  @include button-base;
+  background: $danger-color;
+  color: white;
+
+  &:hover:not(:disabled) {
+    background: $danger-hover;
+  }
+}
+
+@mixin button-secondary {
+  @include button-base;
+  background: $card-bg;
+  color: $text-primary;
+  border: 1px solid $border-color;
+
+  &:hover:not(:disabled) {
+    background: $nav-hover;
+  }
+}
+
+// Card Mixins
+@mixin card {
+  background: $card-bg;
+  padding: $spacing-lg;
+  border-radius: $border-radius-lg;
+  box-shadow: $shadow-md;
+  border: 1px solid $border-color;
+}
+
+// Input Mixins
+@mixin input-base {
+  width: 100%;
+  padding: $spacing-sm $spacing-md;
+  border: 1px solid $input-border;
+  border-radius: $border-radius-sm;
+  background: $input-bg;
+  color: $text-primary;
+  font-size: 14px;
+  transition: border-color $transition-fast;
+
+  &:focus {
+    outline: none;
+    border-color: $accent-color;
+  }
+
+  &::placeholder {
+    color: $text-secondary;
+  }
+}
+
+// Modal Mixins
+@mixin modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.6);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+@mixin modal-content {
+  background: $card-bg;
+  color: $text-primary;
+  padding: $spacing-xl;
+  border-radius: $border-radius-lg;
+  width: 90%;
+  max-width: 800px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: $shadow-lg;
+  border: 1px solid $border-color;
+}
+
+// Flex Utilities
+@mixin flex-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+@mixin flex-between {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+// Scrollbar Mixin
+@mixin custom-scrollbar {
+  &::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: $bg-color;
+    border-radius: $border-radius-sm;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: $border-color;
+    border-radius: $border-radius-sm;
+
+    &:hover {
+      background: $text-secondary;
+    }
+  }
+}

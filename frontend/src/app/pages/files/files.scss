@@ -1,0 +1,144 @@
+@use '../../../styles/variables' as *;
+@use '../../../styles/mixins' as *;
+
+.main-content {
+  margin-left: $sidebar-width;
+  padding: $spacing-xl;
+  min-height: 100vh;
+}
+
+.container {
+  max-width: 1000px;
+  margin: 0 auto;
+}
+
+.page-header {
+  margin-bottom: $spacing-xl;
+
+  h1 {
+    color: $text-primary;
+    margin: 0;
+  }
+}
+
+.upload-area {
+  @include card;
+  border: 2px dashed $border-color;
+  text-align: center;
+  margin-bottom: $spacing-xl;
+  transition: all $transition-fast;
+
+  &.drag-over {
+    border-color: $accent-color;
+    background: rgba($accent-color, 0.05);
+  }
+}
+
+.upload-content {
+  padding: $spacing-xl;
+
+  .upload-icon {
+    font-size: 48px;
+    display: block;
+    margin-bottom: $spacing-md;
+  }
+
+  p {
+    color: $text-secondary;
+    margin-bottom: $spacing-md;
+  }
+}
+
+.upload-btn {
+  cursor: pointer;
+}
+
+.uploading {
+  padding: $spacing-xl;
+  @include flex-center;
+  gap: $spacing-md;
+
+  span {
+    color: $text-secondary;
+  }
+}
+
+.files-card {
+  h2 {
+    color: $text-primary;
+    margin-bottom: $spacing-lg;
+  }
+}
+
+.files-list {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-sm;
+}
+
+.file-item {
+  display: flex;
+  align-items: center;
+  padding: $spacing-md;
+  background: $bg-color;
+  border-radius: $border-radius-md;
+  transition: background $transition-fast;
+
+  &:hover {
+    background: lighten($bg-color, 5%);
+  }
+}
+
+.file-icon {
+  font-size: 32px;
+  margin-right: $spacing-md;
+}
+
+.file-info {
+  flex: 1;
+
+  .file-name {
+    color: $text-primary;
+    font-weight: 500;
+    margin-bottom: $spacing-xs;
+  }
+
+  .file-meta {
+    color: $text-secondary;
+    font-size: 12px;
+  }
+}
+
+.file-actions {
+  display: flex;
+  gap: $spacing-sm;
+
+  button {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 20px;
+    padding: $spacing-xs;
+    border-radius: $border-radius-sm;
+    transition: background $transition-fast;
+
+    &:hover {
+      background: rgba($accent-color, 0.1);
+    }
+  }
+}
+
+.empty-state {
+  text-align: center;
+  padding: $spacing-xl * 2;
+
+  span {
+    font-size: 64px;
+    display: block;
+    margin-bottom: $spacing-md;
+  }
+
+  p {
+    color: $text-secondary;
+  }
+}

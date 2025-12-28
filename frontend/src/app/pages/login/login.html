@@ -1,0 +1,101 @@
+<div class="login-container">
+  <div class="login-card">
+    <div class="login-header">
+      <h1>🥧 Pi Cockpit</h1>
+      <p>Raspberry Pi Server Login</p>
+    </div>
+
+    @if (!showRequestForm) {
+    <form (ngSubmit)="login()" class="login-form">
+      @if (error) {
+      <div class="error-message">{{ error }}</div>
+      }
+
+      <div class="form-group">
+        <label for="email">Email</label>
+        <input
+          type="email"
+          id="email"
+          [(ngModel)]="email"
+          name="email"
+          placeholder="Enter your email"
+          [disabled]="loading"
+        />
+      </div>
+
+      <div class="form-group">
+        <label for="password">Password</label>
+        <input
+          type="password"
+          id="password"
+          [(ngModel)]="password"
+          name="password"
+          placeholder="Enter your password"
+          [disabled]="loading"
+        />
+      </div>
+
+      <button type="submit" class="btn-login" [disabled]="loading">
+        @if (loading) {
+        <span>Logging in...</span>
+        } @else {
+        <span>🔐 Login</span>
+        }
+      </button>
+
+      <div class="login-footer">
+        <button type="button" class="btn-link" (click)="toggleRequestForm()">Request Access</button>
+      </div>
+    </form>
+    } @else {
+    <form (ngSubmit)="requestAccess()" class="login-form">
+      <h3>Request Access</h3>
+
+      @if (requestError) {
+      <div class="error-message">{{ requestError }}</div>
+      } @if (requestSuccess) {
+      <div class="success-message">{{ requestSuccess }}</div>
+      }
+
+      <div class="form-group">
+        <label for="requestName">Name</label>
+        <input
+          type="text"
+          id="requestName"
+          [(ngModel)]="requestName"
+          name="requestName"
+          placeholder="Your name"
+        />
+      </div>
+
+      <div class="form-group">
+        <label for="requestEmail">Email</label>
+        <input
+          type="email"
+          id="requestEmail"
+          [(ngModel)]="requestEmail"
+          name="requestEmail"
+          placeholder="Your email"
+        />
+      </div>
+
+      <div class="form-group">
+        <label for="requestPassword">Desired Password</label>
+        <input
+          type="password"
+          id="requestPassword"
+          [(ngModel)]="requestPassword"
+          name="requestPassword"
+          placeholder="Choose a password"
+        />
+      </div>
+
+      <button type="submit" class="btn-login">📧 Submit Request</button>
+
+      <div class="login-footer">
+        <button type="button" class="btn-link" (click)="toggleRequestForm()">Back to Login</button>
+      </div>
+    </form>
+    }
+  </div>
+</div>

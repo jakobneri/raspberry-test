@@ -1,0 +1,170 @@
+@use '../../../styles/variables' as *;
+@use '../../../styles/mixins' as *;
+
+.main-content {
+  margin-left: $sidebar-width;
+  padding: $spacing-xl;
+  min-height: 100vh;
+}
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.page-header {
+  @include flex-between;
+  margin-bottom: $spacing-xl;
+
+  h1 {
+    color: $text-primary;
+    margin: 0;
+  }
+}
+
+.requests-section {
+  margin-bottom: $spacing-xl;
+
+  h2 {
+    color: $text-primary;
+    margin-bottom: $spacing-md;
+  }
+}
+
+.requests-list {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-md;
+}
+
+.request-item {
+  @include flex-between;
+  background: $bg-color;
+  padding: $spacing-md;
+  border-radius: $border-radius-md;
+
+  .request-info {
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-xs;
+
+    strong {
+      color: $text-primary;
+    }
+
+    span {
+      color: $text-secondary;
+      font-size: 14px;
+    }
+
+    .date {
+      font-size: 12px;
+    }
+  }
+
+  .request-actions {
+    display: flex;
+    gap: $spacing-sm;
+  }
+}
+
+.btn-approve {
+  @include button-base;
+  background: $success-color;
+  color: white;
+
+  &:hover {
+    background: darken($success-color, 10%);
+  }
+}
+
+.btn-reject {
+  @include button-base;
+  background: $danger-color;
+  color: white;
+
+  &:hover {
+    background: $danger-hover;
+  }
+}
+
+.users-table {
+  width: 100%;
+  border-collapse: collapse;
+
+  th,
+  td {
+    padding: $spacing-md;
+    text-align: left;
+    border-bottom: 1px solid $border-color;
+  }
+
+  th {
+    color: $text-secondary;
+    font-weight: 600;
+    font-size: 14px;
+  }
+
+  td {
+    color: $text-primary;
+  }
+
+  tbody tr:hover {
+    background: rgba($accent-color, 0.05);
+  }
+}
+
+.role-badge {
+  display: inline-block;
+  padding: $spacing-xs $spacing-sm;
+  border-radius: $border-radius-sm;
+  font-size: 12px;
+  background: $bg-color;
+  color: $text-secondary;
+
+  &.admin {
+    background: rgba($accent-color, 0.2);
+    color: $accent-color;
+  }
+}
+
+.btn-delete {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 18px;
+  padding: $spacing-xs;
+
+  &:hover {
+    transform: scale(1.1);
+  }
+}
+
+.empty-state {
+  text-align: center;
+  color: $text-secondary;
+  padding: $spacing-xl !important;
+}
+
+.form-group {
+  margin-bottom: $spacing-md;
+
+  label {
+    display: block;
+    margin-bottom: $spacing-xs;
+    color: $text-secondary;
+    font-size: 14px;
+  }
+}
+
+.modal-actions {
+  display: flex;
+  gap: $spacing-md;
+  justify-content: flex-end;
+  margin-top: $spacing-lg;
+}
+
+h2 {
+  color: $text-primary;
+  margin-bottom: $spacing-lg;
+}

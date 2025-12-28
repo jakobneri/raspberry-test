@@ -1,0 +1,117 @@
+@use '../../../styles/variables' as *;
+@use '../../../styles/mixins' as *;
+
+.main-content {
+  margin-left: $sidebar-width;
+  padding: $spacing-xl;
+  min-height: 100vh;
+}
+
+.container {
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.system-info-card {
+  @include card;
+}
+
+.metric-header {
+  display: flex;
+  align-items: center;
+  margin-bottom: $spacing-md;
+
+  .metric-icon {
+    font-size: 28px;
+    margin-right: $spacing-sm;
+  }
+
+  .metric-title {
+    font-size: 16px;
+    color: $text-secondary;
+    font-weight: 600;
+  }
+}
+
+.uptime-display {
+  text-align: center;
+  margin-bottom: $spacing-lg;
+
+  .label {
+    display: block;
+    font-size: 14px;
+    color: $text-secondary;
+    margin-bottom: $spacing-xs;
+  }
+
+  .value {
+    font-size: 28px;
+    font-weight: bold;
+    color: $accent-color;
+  }
+}
+
+.system-details {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-sm;
+}
+
+.detail-row {
+  @include flex-between;
+  padding-bottom: $spacing-sm;
+  border-bottom: 1px solid $border-color;
+  font-size: 14px;
+
+  &:last-child {
+    border-bottom: none;
+  }
+
+  span:first-child {
+    color: $text-secondary;
+  }
+
+  span:last-child {
+    color: $text-primary;
+    font-weight: 600;
+  }
+}
+
+.admin-buttons {
+  display: flex;
+  gap: $spacing-sm;
+  margin-top: $spacing-md;
+  padding-top: $spacing-md;
+  border-top: 1px solid $border-color;
+
+  button {
+    flex: 1;
+    @include button-base;
+    padding: $spacing-sm;
+  }
+
+  .btn-restart {
+    background: $accent-color;
+    color: white;
+
+    &:hover {
+      background: $accent-hover;
+    }
+  }
+
+  .btn-shutdown {
+    background: $danger-color;
+    color: white;
+
+    &:hover {
+      background: $danger-hover;
+    }
+  }
+}
+
+.timestamp {
+  text-align: center;
+  color: $text-secondary;
+  margin-top: $spacing-lg;
+  font-size: 14px;
+}

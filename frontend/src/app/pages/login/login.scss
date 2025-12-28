@@ -1,0 +1,99 @@
+@use '../../../styles/variables' as *;
+@use '../../../styles/mixins' as *;
+
+.login-container {
+  min-height: 100vh;
+  @include flex-center;
+  background: $bg-color;
+  padding: $spacing-lg;
+}
+
+.login-card {
+  @include card;
+  width: 100%;
+  max-width: 400px;
+}
+
+.login-header {
+  text-align: center;
+  margin-bottom: $spacing-xl;
+
+  h1 {
+    font-size: 32px;
+    color: $text-primary;
+    margin-bottom: $spacing-sm;
+  }
+
+  p {
+    color: $text-secondary;
+    font-size: 14px;
+  }
+}
+
+.login-form {
+  h3 {
+    color: $text-primary;
+    margin-bottom: $spacing-lg;
+    text-align: center;
+  }
+}
+
+.form-group {
+  margin-bottom: $spacing-md;
+
+  label {
+    display: block;
+    margin-bottom: $spacing-xs;
+    color: $text-secondary;
+    font-size: 14px;
+  }
+
+  input {
+    width: 100%;
+  }
+}
+
+.error-message {
+  background: rgba($danger-color, 0.1);
+  border: 1px solid $danger-color;
+  color: $danger-color;
+  padding: $spacing-sm $spacing-md;
+  border-radius: $border-radius-sm;
+  margin-bottom: $spacing-md;
+  font-size: 14px;
+}
+
+.success-message {
+  background: rgba($success-color, 0.1);
+  border: 1px solid $success-color;
+  color: $success-color;
+  padding: $spacing-sm $spacing-md;
+  border-radius: $border-radius-sm;
+  margin-bottom: $spacing-md;
+  font-size: 14px;
+}
+
+.btn-login {
+  @include button-primary;
+  width: 100%;
+  padding: $spacing-md;
+  font-size: 16px;
+  margin-top: $spacing-md;
+}
+
+.login-footer {
+  margin-top: $spacing-lg;
+  text-align: center;
+
+  .btn-link {
+    background: none;
+    border: none;
+    color: $accent-color;
+    cursor: pointer;
+    font-size: 14px;
+
+    &:hover {
+      text-decoration: underline;
+    }
+  }
+}

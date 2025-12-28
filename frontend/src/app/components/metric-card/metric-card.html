@@ -1,0 +1,23 @@
+<div class="metric-card" [class.clickable]="clickable" (click)="onClick()">
+  <div class="metric-header">
+    <div class="metric-icon">{{ icon }}</div>
+    <div class="metric-title">{{ title }}</div>
+  </div>
+
+  <div class="metric-value">
+    {{ value }}@if (unit) {<span class="unit">{{ unit }}</span
+    >}
+  </div>
+
+  @for (detail of details; track detail.label) {
+  <div class="metric-detail">
+    {{ detail.label }}: <span>{{ detail.value }}</span>
+  </div>
+  } @if (progress !== undefined) {
+  <div class="progress-bar">
+    <div class="progress-fill" [class.warning]="progressWarning" [style.width.%]="progress"></div>
+  </div>
+  }
+
+  <ng-content></ng-content>
+</div>

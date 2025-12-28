@@ -1,0 +1,64 @@
+<div class="game-container">
+  <div class="game-header">
+    <h1>🐍 Snake Game</h1>
+  </div>
+
+  <div class="game-content">
+    <div class="game-area">
+      <div class="score-display">
+        <div class="score">Score: {{ score }}</div>
+        <div class="high-score">High Score: {{ highScore }}</div>
+      </div>
+
+      <div
+        class="game-board"
+        [style.width.px]="gridSize * cellSize"
+        [style.height.px]="gridSize * cellSize"
+      >
+        @for (segment of snake; track $index) {
+        <div class="snake-segment" [class.head]="$first" [ngStyle]="getSegmentStyle(segment)"></div>
+        }
+
+        <div class="food" [ngStyle]="getFoodStyle()">🍎</div>
+
+        @if (!gameRunning) {
+        <div class="game-overlay">
+          @if (gameOver) {
+          <div class="game-over">
+            <h2>Game Over!</h2>
+            <p>Score: {{ score }}</p>
+            <button class="btn-primary" (click)="startGame()">Play Again</button>
+          </div>
+          } @else {
+          <div class="start-screen">
+            <h2>Press SPACE or click to start</h2>
+            <p>Use Arrow Keys or WASD to move</p>
+            <button class="btn-primary" (click)="startGame()">Start Game</button>
+          </div>
+          }
+        </div>
+        }
+      </div>
+    </div>
+
+    <div class="scoreboard">
+      <h2>🏆 Top Scores</h2>
+      <div class="scores-list">
+        @for (score of topScores; track $index; let i = $index) {
+        <div class="score-item">
+          <span class="rank">
+            @switch (i) { @case (0) { 🥇 } @case (1) { 🥈 } @case (2) { 🥉 } @default { #{{
+              i + 1
+            }}
+            } }
+          </span>
+          <span class="name">{{ score.user || 'Anonymous' }}</span>
+          <span class="points">{{ score.score }}</span>
+        </div>
+        } @empty {
+        <p class="empty-state">No scores yet</p>
+        }
+      </div>
+    </div>
+  </div>
+</div>
