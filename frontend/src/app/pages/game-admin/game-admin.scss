@@ -1,0 +1,298 @@
+@use '../../../styles/variables' as *;
+@use '../../../styles/mixins' as *;
+
+.admin-layout {
+  display: flex;
+  min-height: 100vh;
+  background: $bg-color;
+}
+
+.admin-main {
+  flex: 1;
+  padding: $spacing-xl;
+  margin-left: 250px;
+}
+
+.admin-header {
+  margin-bottom: $spacing-xl;
+
+  h1 {
+    color: $text-primary;
+    font-size: 28px;
+  }
+}
+
+.admin-content {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-xl;
+}
+
+// Settings Card
+.settings-card,
+.scores-card {
+  @include card;
+}
+
+.card-header {
+  @include flex-between;
+  margin-bottom: $spacing-lg;
+
+  h2 {
+    color: $text-primary;
+    font-size: 20px;
+  }
+}
+
+.difficulty-tabs {
+  display: flex;
+  gap: $spacing-sm;
+  margin-bottom: $spacing-lg;
+}
+
+.tab-btn {
+  @include button-base;
+  background: $card-bg;
+  border: 1px solid $border-color;
+  color: $text-secondary;
+  padding: $spacing-sm $spacing-lg;
+
+  &.active {
+    background: $accent-color;
+    border-color: $accent-color;
+    color: white;
+  }
+
+  &:hover:not(.active) {
+    border-color: $accent-color;
+    color: $text-primary;
+  }
+}
+
+.settings-display {
+  .setting-row {
+    @include flex-between;
+    padding: $spacing-md 0;
+    border-bottom: 1px solid $border-color;
+
+    &:last-of-type {
+      border-bottom: none;
+      margin-bottom: $spacing-lg;
+    }
+
+    .label {
+      color: $text-secondary;
+    }
+
+    .value {
+      color: $text-primary;
+      font-weight: bold;
+    }
+  }
+}
+
+.settings-edit {
+  .form-group {
+    margin-bottom: $spacing-md;
+
+    label {
+      display: block;
+      color: $text-secondary;
+      margin-bottom: $spacing-xs;
+      font-size: 14px;
+    }
+
+    input {
+      width: 100%;
+      padding: $spacing-sm $spacing-md;
+      background: $bg-color;
+      border: 1px solid $border-color;
+      border-radius: $border-radius-sm;
+      color: $text-primary;
+
+      &:focus {
+        outline: none;
+        border-color: $accent-color;
+      }
+    }
+  }
+
+  .btn-group {
+    display: flex;
+    gap: $spacing-sm;
+    margin-top: $spacing-lg;
+  }
+}
+
+// Scores Table
+.scores-table-container {
+  overflow-x: auto;
+}
+
+.scores-table {
+  width: 100%;
+  border-collapse: collapse;
+
+  th,
+  td {
+    padding: $spacing-md;
+    text-align: left;
+    border-bottom: 1px solid $border-color;
+  }
+
+  th {
+    color: $text-secondary;
+    font-weight: 500;
+    font-size: 14px;
+  }
+
+  td {
+    color: $text-primary;
+  }
+
+  .rank {
+    font-size: 18px;
+  }
+
+  .name {
+    font-weight: 500;
+  }
+
+  .score {
+    color: $accent-color;
+    font-weight: bold;
+  }
+
+  .date {
+    color: $text-secondary;
+  }
+}
+
+.difficulty-badge {
+  padding: $spacing-xs $spacing-sm;
+  border-radius: $border-radius-sm;
+  font-size: 12px;
+  text-transform: uppercase;
+
+  &.easy {
+    background: rgba($success-color, 0.2);
+    color: $success-color;
+  }
+
+  &.medium {
+    background: rgba($warning-color, 0.2);
+    color: $warning-color;
+  }
+
+  &.hard {
+    background: rgba($danger-color, 0.2);
+    color: $danger-color;
+  }
+}
+
+.btn-icon {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 16px;
+  padding: $spacing-xs;
+  opacity: 0.7;
+  transition: opacity 0.2s;
+
+  &:hover {
+    opacity: 1;
+  }
+}
+
+.empty-state {
+  text-align: center;
+  padding: $spacing-xl;
+  color: $text-secondary;
+}
+
+// Buttons
+.btn {
+  @include button-base;
+
+  &-primary {
+    @include button-primary;
+  }
+
+  &-secondary {
+    background: $card-bg;
+    border: 1px solid $border-color;
+    color: $text-primary;
+
+    &:hover {
+      border-color: $accent-color;
+    }
+  }
+
+  &-danger {
+    background: $danger-color;
+    color: white;
+
+    &:hover {
+      background: darken($danger-color, 10%);
+    }
+
+    &:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+  }
+}
+
+// Modal
+.modal-overlay {
+  @include modal-overlay;
+}
+
+.modal {
+  background: $card-bg;
+  border-radius: $border-radius-md;
+  width: 90%;
+  max-width: 400px;
+  box-shadow: $shadow-lg;
+}
+
+.modal-header {
+  @include flex-between;
+  padding: $spacing-lg;
+  border-bottom: 1px solid $border-color;
+
+  h3 {
+    color: $text-primary;
+    margin: 0;
+  }
+
+  .close-btn {
+    background: none;
+    border: none;
+    color: $text-secondary;
+    font-size: 24px;
+    cursor: pointer;
+    line-height: 1;
+
+    &:hover {
+      color: $text-primary;
+    }
+  }
+}
+
+.modal-body {
+  padding: $spacing-lg;
+  color: $text-secondary;
+
+  strong {
+    color: $text-primary;
+  }
+}
+
+.modal-footer {
+  padding: $spacing-lg;
+  border-top: 1px solid $border-color;
+  display: flex;
+  justify-content: flex-end;
+  gap: $spacing-sm;
+}

@@ -1,0 +1,117 @@
+<app-sidebar />
+
+<div class="main-content">
+  <div class="container">
+    <div class="page-header">
+      <h1>👥 User Management</h1>
+      <button class="btn-primary" (click)="showCreateModal = true">+ Add User</button>
+    </div>
+
+    @if (loading) {
+    <div class="loading-spinner"></div>
+    } @else {
+    <!-- User Requests Section -->
+    @if (userRequests.length > 0) {
+    <div class="card requests-section">
+      <h2>📝 Pending Requests ({{ userRequests.length }})</h2>
+      <div class="requests-list">
+        @for (request of userRequests; track request.id) {
+        <div class="request-item">
+          <div class="request-info">
+            <strong>{{ request.name }}</strong>
+            <span>{{ request.email }}</span>
+            <span class="date">{{ formatDate(request.createdAt) }}</span>
+          </div>
+          <div class="request-actions">
+            <button class="btn-approve" (click)="approveRequest(request.id)">✓ Approve</button>
+            <button class="btn-reject" (click)="rejectRequest(request.id)">✗ Reject</button>
+          </div>
+        </div>
+        }
+      </div>
+    </div>
+    }
+
+    <!-- Users Table -->
+    <div class="card">
+      <h2>Registered Users ({{ users.length }})</h2>
+      <table class="users-table">
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Email</th>
+            <th>Role</th>
+            <th>Created</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (user of users; track user.id) {
+          <tr>
+            <td>{{ user.name }}</td>
+            <td>{{ user.email }}</td>
+            <td>
+              <span class="role-badge" [class.admin]="user.role === 'admin'">
+                {{ user.role }}
+              </span>
+            </td>
+            <td>{{ formatDate(user.createdAt) }}</td>
+            <td>
+              <button class="btn-delete" (click)="deleteUser(user.id)">🗑️</button>
+            </td>
+          </tr>
+          } @empty {
+          <tr>
+            <td colspan="5" class="empty-state">No users found</td>
+          </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+    }
+  </div>
+</div>
+
+<!-- Create User Modal -->
+@if (showCreateModal) {
+<div class="modal-overlay" (click)="showCreateModal = false">
+  <div class="modal-content" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h2>Add New User</h2>
+      <button class="close-btn" (click)="showCreateModal = false">×</button>
+    </div>
+
+    <form (ngSubmit)="createUser()">
+      <div class="form-group">
+        <label for="name">Name</label>
+        <input type="text" id="name" [(ngModel)]="newUser.name" name="name" />
+      </div>
+
+      <div class="form-group">
+        <label for="email">Email</label>
+        <input type="email" id="email" [(ngModel)]="newUser.email" name="email" />
+      </div>
+
+      <div class="form-group">
+        <label for="password">Password</label>
+        <input type="password" id="password" [(ngModel)]="newUser.password" name="password" />
+      </div>
+
+      <div class="form-group">
+        <label for="role">Role</label>
+        <select id="role" [(ngModel)]="newUser.role" name="role">
+          <option value="user">User</option>
+          <option value="admin">Admin</option>
+        </select>
+      </div>
+
+      <div class="modal-actions">
+        <button type="button" class="btn-secondary" (click)="showCreateModal = false">
+          Cancel
+        </button>
+        <button type="submit" class="btn-primary">Create User</button>
+      </div>
+    </form>
+  </div>
+</div>
+}

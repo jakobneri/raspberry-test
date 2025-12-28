@@ -1,0 +1,60 @@
+@use '../../../styles/variables' as *;
+@use '../../../styles/mixins' as *;
+
+.metric-card {
+  @include card;
+
+  &.clickable {
+    cursor: pointer;
+    transition: transform $transition-fast, box-shadow $transition-fast;
+
+    &:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
+    }
+  }
+}
+
+.metric-header {
+  display: flex;
+  align-items: center;
+  margin-bottom: $spacing-md;
+}
+
+.metric-icon {
+  font-size: 28px;
+  margin-right: $spacing-sm;
+}
+
+.metric-title {
+  font-size: 16px;
+  color: $text-secondary;
+  font-weight: 600;
+}
+
+.metric-value {
+  font-size: 32px;
+  font-weight: bold;
+  color: $text-primary;
+  margin-bottom: $spacing-sm;
+
+  .unit {
+    font-size: 16px;
+    color: $text-secondary;
+    margin-left: $spacing-xs;
+  }
+}
+
+.metric-detail {
+  font-size: 14px;
+  color: $text-secondary;
+  margin: $spacing-xs 0;
+
+  span {
+    color: $text-primary;
+  }
+}
+
+.progress-bar {
+  margin-top: $spacing-md;
+}

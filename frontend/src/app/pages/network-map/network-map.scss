@@ -1,0 +1,228 @@
+@use '../../../styles/variables' as *;
+@use '../../../styles/mixins' as *;
+
+.network-layout {
+  display: flex;
+  min-height: 100vh;
+  background: $bg-color;
+}
+
+.network-main {
+  flex: 1;
+  padding: $spacing-xl;
+  margin-left: 250px;
+}
+
+.network-header {
+  margin-bottom: $spacing-xl;
+
+  .header-content {
+    @include flex-between;
+  }
+
+  h1 {
+    color: $text-primary;
+    font-size: 28px;
+  }
+
+  .last-scan {
+    color: $text-secondary;
+    font-size: 14px;
+    margin-top: $spacing-sm;
+  }
+}
+
+// Stats Row
+.stats-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: $spacing-lg;
+  margin-bottom: $spacing-xl;
+}
+
+.stat-card {
+  @include card;
+  display: flex;
+  align-items: center;
+  gap: $spacing-md;
+
+  .stat-icon {
+    font-size: 32px;
+  }
+
+  .stat-info {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .stat-value {
+    font-size: 28px;
+    font-weight: bold;
+    color: $text-primary;
+  }
+
+  .stat-label {
+    color: $text-secondary;
+    font-size: 14px;
+  }
+
+  &.online .stat-value {
+    color: $success-color;
+  }
+
+  &.offline .stat-value {
+    color: $error-color;
+  }
+}
+
+// Devices Section
+.devices-section {
+  h2 {
+    color: $text-primary;
+    margin-bottom: $spacing-lg;
+  }
+}
+
+.devices-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: $spacing-lg;
+}
+
+.device-card {
+  @include card;
+  position: relative;
+
+  &.online {
+    border-left: 3px solid $success-color;
+  }
+
+  &.offline {
+    border-left: 3px solid $error-color;
+    opacity: 0.7;
+  }
+}
+
+.device-status {
+  position: absolute;
+  top: $spacing-md;
+  right: $spacing-md;
+  display: flex;
+  align-items: center;
+  gap: $spacing-xs;
+
+  .status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+
+    &.online {
+      background: $success-color;
+      box-shadow: 0 0 8px $success-color;
+    }
+
+    &.offline {
+      background: $error-color;
+    }
+  }
+
+  .status-text {
+    font-size: 12px;
+    color: $text-secondary;
+    text-transform: uppercase;
+  }
+}
+
+.device-icon {
+  font-size: 48px;
+  margin-bottom: $spacing-md;
+}
+
+.device-info {
+  margin-bottom: $spacing-md;
+
+  .device-hostname {
+    color: $text-primary;
+    font-size: 18px;
+    margin-bottom: $spacing-xs;
+  }
+
+  .device-ip {
+    color: $accent-color;
+    font-family: monospace;
+    font-size: 14px;
+  }
+}
+
+.device-details {
+  border-top: 1px solid $border-color;
+  padding-top: $spacing-md;
+
+  .detail-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 13px;
+    margin-bottom: $spacing-xs;
+
+    &:last-child {
+      margin-bottom: 0;
+    }
+
+    .label {
+      color: $text-secondary;
+    }
+
+    .value {
+      color: $text-primary;
+      font-family: monospace;
+    }
+  }
+}
+
+// States
+.loading-state,
+.empty-state {
+  @include card;
+  @include flex-center;
+  flex-direction: column;
+  padding: $spacing-xl * 2;
+
+  p {
+    color: $text-secondary;
+    margin-top: $spacing-md;
+  }
+}
+
+// Button
+.btn {
+  @include button-base;
+  display: inline-flex;
+  align-items: center;
+  gap: $spacing-sm;
+
+  &-primary {
+    @include button-primary;
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+}
+
+// Spinner
+.spinner {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+  border-top-color: white;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

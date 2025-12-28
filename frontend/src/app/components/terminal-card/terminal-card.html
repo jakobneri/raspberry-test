@@ -1,0 +1,30 @@
+<div class="terminal-card">
+  <div class="terminal-header">
+    <div class="terminal-title">
+      <span class="icon">🖥️</span>
+      <span>Server Terminal</span>
+    </div>
+    <div class="terminal-controls">
+      <select [(ngModel)]="logLevel" (change)="setLogLevel(logLevel)">
+        <option value="info">Info</option>
+        <option value="warn">Warn</option>
+        <option value="error">Error</option>
+      </select>
+      <button class="btn-clear" (click)="clearTerminal()">Clear</button>
+    </div>
+  </div>
+
+  <div class="terminal-output" #terminalOutput>
+    @for (log of logs; track $index) {
+    <div class="log-line">
+      <span class="timestamp">[{{ formatTime(log.timestamp) }}]</span>
+      <span class="level" [style.color]="getLogColor(log.level)"
+        >[{{ log.level.toUpperCase() }}]</span
+      >
+      <span class="message">{{ log.message }}</span>
+    </div>
+    } @if (logs.length === 0) {
+    <div class="empty-state">No logs yet...</div>
+    }
+  </div>
+</div>

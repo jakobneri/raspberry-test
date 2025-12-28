@@ -1,5 +1,11 @@
 import http from "node:http";
-import { readFileSync, createWriteStream, writeFileSync } from "node:fs";
+import {
+  readFileSync,
+  createWriteStream,
+  writeFileSync,
+  existsSync,
+} from "node:fs";
+import { extname, join } from "node:path";
 import { Router } from "./router.js";
 import {
   createToken,
@@ -20,6 +26,25 @@ import * as speedTestService from "./services/speedtest.service.js";
 
 const PORT = 3000;
 const router = new Router();
+
+// Angular build directory
+const ANGULAR_DIST = "frontend/dist/frontend/browser";
+
+// MIME types for static files
+const MIME_TYPES: Record<string, string> = {
+  ".html": "text/html",
+  ".js": "application/javascript",
+  ".css": "text/css",
+  ".json": "application/json",
+  ".png": "image/png",
+  ".jpg": "image/jpeg",
+  ".gif": "image/gif",
+  ".svg": "image/svg+xml",
+  ".ico": "image/x-icon",
+  ".woff": "font/woff",
+  ".woff2": "font/woff2",
+  ".ttf": "font/ttf",
+};
 
 // Helper: Parse Body
 const getReqBody = async (req: http.IncomingMessage): Promise<string> => {
@@ -50,15 +75,10 @@ const requireAuth = async (
   return userId;
 };
 
-// ========== PUBLIC ROUTES ==========
+// ========== API ROUTES ==========
 
-router.get("/", (req, res) => {
-  const body = readFileSync("public/login.html", "utf8");
-  res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
-  res.end(body);
-});
-
-router.post("/", async (req, res) => {
+// Login API endpoint for Angular
+router.post("/api/login", async (req, res) => {
   const params = await parseBody(req);
   const email = params.get("email") || "";
   const password = params.get("password") || "";
@@ -67,9 +87,8 @@ router.post("/", async (req, res) => {
 
   if (!user) {
     console.log(`[AUTH] Failed login attempt for email: ${email}`);
-    const body = readFileSync("public/login.html", "utf8");
-    res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
-    res.end(body);
+    res.writeHead(401, { "Content-Type": "application/json" });
+    res.end(JSON.stringify({ success: false, error: "Invalid credentials" }));
     return;
   }
 
@@ -77,7 +96,8 @@ router.post("/", async (req, res) => {
   const token = await createToken(user.id);
   sessionService.addSession(user.id, token);
   res.setHeader("Set-Cookie", `jwt=${token}; HttpOnly; Path=/; Max-Age=900`);
-  res.writeHead(302, { Location: "/cockpit" }).end();
+  res.writeHead(200, { "Content-Type": "application/json" });
+  res.end(JSON.stringify({ success: true, userId: user.id }));
 });
 
 router.post("/api/request-access", async (req, res) => {
@@ -97,18 +117,7 @@ router.post("/api/request-access", async (req, res) => {
   }
 });
 
-router.get("/game", async (req, res) => {
-  const cookieToken = getCookieToken(req);
-  if (cookieToken) {
-    try {
-      await verifyToken(cookieToken);
-      sessionService.updateSessionActivity(cookieToken);
-    } catch {}
-  }
-  const body = readFileSync("public/game.html", "utf8");
-  res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
-  res.end(body);
-});
+// Game routes are now handled by Angular SPA
 
 router.post("/api/scores", async (req, res) => {
   const cookieToken = getCookieToken(req);
@@ -181,18 +190,7 @@ router.get("/api/whoami", async (req, res) => {
   res.end(JSON.stringify({ loggedIn: false, userId: null }));
 });
 
-router.get("/files", async (req, res) => {
-  const cookieToken = getCookieToken(req);
-  if (cookieToken) {
-    try {
-      await verifyToken(cookieToken);
-      sessionService.updateSessionActivity(cookieToken);
-    } catch {}
-  }
-  const body = readFileSync("public/files.html", "utf8");
-  res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
-  res.end(body);
-});
+// All static page routes (/files, /cockpit, /users, etc.) are now handled by Angular SPA
 
 // ========== AUTHENTICATED ROUTES ==========
 
@@ -213,28 +211,13 @@ const authHandler = (
       const userId = await requireAuth(req, res);
       await handler(req, res, userId, params);
     } catch (error) {
-      res.writeHead(302, { Location: "/" }).end();
+      res.writeHead(401, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ error: "Unauthorized" }));
     }
   };
 };
 
-router.get(
-  "/cockpit",
-  authHandler(async (req, res) => {
-    const body = readFileSync("public/cockpit.html", "utf8");
-    res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
-    res.end(body);
-  })
-);
-
-router.get(
-  "/users",
-  authHandler(async (req, res) => {
-    const body = readFileSync("public/users.html", "utf8");
-    res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
-    res.end(body);
-  })
-);
+// Static page routes removed - Angular SPA handles /cockpit, /users, /game-admin, /network-map
 
 router.get(
   "/api/users",
@@ -255,24 +238,6 @@ router.get(
     const requests = await getPendingUserRequests();
     res.writeHead(200, { "Content-Type": "application/json" });
     res.end(JSON.stringify(requests));
-  })
-);
-
-router.get(
-  "/game-admin",
-  authHandler(async (req, res) => {
-    const body = readFileSync("public/game-admin.html", "utf8");
-    res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
-    res.end(body);
-  })
-);
-
-router.get(
-  "/network-map",
-  authHandler(async (req, res) => {
-    const body = readFileSync("public/network-map.html", "utf8");
-    res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
-    res.end(body);
   })
 );
 
@@ -718,15 +683,25 @@ router.post(
 
 const server = http.createServer(async (req, res) => {
   const url = req.url || "";
+  const urlPath = url.split("?")[0]; // Remove query string
 
-  // Static CSS files
-  if (req.method === "GET" && url.startsWith("/css/")) {
+  // API routes take priority
+  if (urlPath.startsWith("/api/")) {
+    const handled = await router.handle(req, res);
+    if (handled === false) {
+      res.writeHead(404).end("Not found");
+    }
+    return;
+  }
+
+  // Static CSS files (legacy)
+  if (req.method === "GET" && urlPath.startsWith("/css/")) {
     try {
-      if (url.includes("..")) {
+      if (urlPath.includes("..")) {
         res.writeHead(403).end("Forbidden");
         return;
       }
-      const body = readFileSync("public" + url, "utf8");
+      const body = readFileSync("public" + urlPath, "utf8");
       res.writeHead(200, { "Content-Type": "text/css" });
       res.end(body);
       return;
@@ -736,10 +711,50 @@ const server = http.createServer(async (req, res) => {
     }
   }
 
+  // Try to handle as a defined route first
   const handled = await router.handle(req, res);
-  if (handled === false) {
-    res.writeHead(404).end("Not found");
+  if (handled !== false) {
+    return;
   }
+
+  // Serve Angular static files
+  if (req.method === "GET") {
+    // Check for security issues
+    if (urlPath.includes("..")) {
+      res.writeHead(403).end("Forbidden");
+      return;
+    }
+
+    // Try exact file match first
+    const filePath = join(ANGULAR_DIST, urlPath);
+    const ext = extname(urlPath);
+
+    if (ext && existsSync(filePath)) {
+      try {
+        const content = readFileSync(filePath);
+        const contentType = MIME_TYPES[ext] || "application/octet-stream";
+        res.writeHead(200, { "Content-Type": contentType });
+        res.end(content);
+        return;
+      } catch (error) {
+        // Fall through to index.html
+      }
+    }
+
+    // For SPA routes, serve index.html
+    try {
+      const indexPath = join(ANGULAR_DIST, "index.html");
+      const content = readFileSync(indexPath, "utf8");
+      res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
+      res.end(content);
+      return;
+    } catch (error) {
+      res.writeHead(404).end("Not found");
+      return;
+    }
+  }
+
+  res.writeHead(404).end("Not found");
 });
 
 server.listen(PORT);

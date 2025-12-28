@@ -1,0 +1,53 @@
+// Color Variables
+$bg-color: #1a1a1a;
+$sidebar-bg: #222222;
+$card-bg: #2d2d2d;
+$text-primary: #e0e0e0;
+$text-secondary: #a0a0a0;
+$border-color: #404040;
+$accent-color: #667eea;
+$accent-hover: #5a67d8;
+$danger-color: #f5576c;
+$danger-hover: #e04555;
+$error-color: #f5576c;
+$success-color: #48bb78;
+$warning-color: #ffd93d;
+$nav-hover: #333333;
+$nav-active: #333333;
+$input-bg: #333333;
+$input-border: #555555;
+
+// Gradients
+$gradient-primary: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+$gradient-danger: linear-gradient(90deg, #f093fb, #f5576c);
+$gradient-success: linear-gradient(90deg, #48bb78, #38a169);
+
+// Spacing
+$spacing-xs: 4px;
+$spacing-sm: 8px;
+$spacing-md: 16px;
+$spacing-lg: 24px;
+$spacing-xl: 32px;
+
+// Border Radius
+$border-radius-sm: 4px;
+$border-radius-md: 8px;
+$border-radius-lg: 12px;
+
+// Shadows
+$shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.2);
+$shadow-md: 0 4px 6px rgba(0, 0, 0, 0.2);
+$shadow-lg: 0 10px 40px rgba(0, 0, 0, 0.3);
+
+// Transitions
+$transition-fast: 0.15s ease;
+$transition-normal: 0.3s ease;
+
+// Sidebar
+$sidebar-width: 250px;
+
+// Breakpoints
+$breakpoint-sm: 576px;
+$breakpoint-md: 768px;
+$breakpoint-lg: 992px;
+$breakpoint-xl: 1200px;

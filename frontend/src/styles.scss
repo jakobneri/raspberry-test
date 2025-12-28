@@ -1,0 +1,179 @@
+@use 'styles/variables' as *;
+@use 'styles/mixins' as *;
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: $bg-color;
+  color: $text-primary;
+  min-height: 100vh;
+  overflow-x: hidden;
+  @include custom-scrollbar;
+}
+
+// Global Button Styles
+.btn-primary {
+  @include button-primary;
+}
+
+.btn-danger {
+  @include button-danger;
+}
+
+.btn-secondary {
+  @include button-secondary;
+}
+
+// Global Input Styles
+input,
+select,
+textarea {
+  @include input-base;
+}
+
+// Global Card Style
+.card {
+  @include card;
+}
+
+// Grid Utilities
+.metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: $spacing-lg;
+  margin-bottom: $spacing-lg;
+}
+
+// Flex Utilities
+.flex-center {
+  @include flex-center;
+}
+
+.flex-between {
+  @include flex-between;
+}
+
+// Text Utilities
+.text-primary {
+  color: $text-primary;
+}
+
+.text-secondary {
+  color: $text-secondary;
+}
+
+.text-accent {
+  color: $accent-color;
+}
+
+.text-danger {
+  color: $danger-color;
+}
+
+.text-success {
+  color: $success-color;
+}
+
+// Spacing Utilities
+.mt-sm {
+  margin-top: $spacing-sm;
+}
+.mt-md {
+  margin-top: $spacing-md;
+}
+.mt-lg {
+  margin-top: $spacing-lg;
+}
+.mb-sm {
+  margin-bottom: $spacing-sm;
+}
+.mb-md {
+  margin-bottom: $spacing-md;
+}
+.mb-lg {
+  margin-bottom: $spacing-lg;
+}
+
+// Loading Spinner
+.loading-spinner {
+  @include flex-center;
+  padding: 40px;
+
+  &::after {
+    content: '';
+    width: 40px;
+    height: 40px;
+    border: 3px solid $border-color;
+    border-top-color: $accent-color;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+  }
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+// Progress Bar
+.progress-bar {
+  width: 100%;
+  height: 8px;
+  background: #444;
+  border-radius: $border-radius-sm;
+  overflow: hidden;
+
+  .progress-fill {
+    height: 100%;
+    background: $gradient-primary;
+    transition: width $transition-normal;
+    border-radius: $border-radius-sm;
+
+    &.warning {
+      background: $gradient-danger;
+    }
+  }
+}
+
+// Modal Base Styles
+.modal-overlay {
+  @include modal-overlay;
+}
+
+.modal-content {
+  @include modal-content;
+}
+
+.modal-header {
+  @include flex-between;
+  margin-bottom: $spacing-lg;
+
+  h2 {
+    margin: 0;
+    color: $text-primary;
+  }
+
+  .close-btn {
+    background: none;
+    border: none;
+    color: $text-secondary;
+    font-size: 28px;
+    cursor: pointer;
+    line-height: 1;
+
+    &:hover {
+      color: $text-primary;
+    }
+  }
+}
