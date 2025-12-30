@@ -1,5 +1,6 @@
 @use '../../../styles/variables' as *;
 @use '../../../styles/mixins' as *;
+@use 'sass:color';
 
 .admin-layout {
   display: flex;
@@ -233,7 +234,7 @@
     color: white;
 
     &:hover {
-      background: darken($danger-color, 10%);
+      background: color.adjust($danger-color, $lightness: -10%);
     }
 
     &:disabled {
