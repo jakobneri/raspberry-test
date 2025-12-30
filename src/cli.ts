@@ -264,7 +264,7 @@ const showSystemStatus = async () => {
         (system.uptime % 3600) / 60
       )}m`
     );
-    console.log(`CPU Temp: ${cpu.temperature}°C`);
+    console.log(`CPU Temp: ${cpu.temp}°C`);
     console.log(`CPU Load: ${cpu.usage}%`);
     console.log(
       `Memory: ${memory.used}GB / ${memory.total}GB (${memory.usagePercent}%)`

@@ -309,9 +309,9 @@ router.post(
 router.get(
   "/api/metrics",
   authHandler(async (req, res) => {
-    const metrics = await metricsService.getMetrics();
+    const metricsData = await metricsService.getMetrics();
     res.writeHead(200, { "Content-Type": "application/json" });
-    res.end(JSON.stringify(metrics));
+    res.end(JSON.stringify(metricsData.current));
   })
 );
 
