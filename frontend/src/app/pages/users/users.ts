@@ -21,7 +21,6 @@ export class Users implements OnInit {
     email: '',
     name: '',
     password: '',
-    role: 'user',
   };
 
   constructor(private api: ApiService) {}
@@ -60,7 +59,7 @@ export class Users implements OnInit {
     this.api.createUser(this.newUser).subscribe({
       next: () => {
         this.showCreateModal = false;
-        this.newUser = { email: '', name: '', password: '', role: 'user' };
+        this.newUser = { email: '', name: '', password: '' };
         this.fetchUsers();
       },
       error: (err) => {
