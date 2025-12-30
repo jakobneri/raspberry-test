@@ -1,5 +1,6 @@
 @use '../../../styles/variables' as *;
 @use '../../../styles/mixins' as *;
+@use 'sass:color';
 
 .game-container {
   min-height: 100vh;
@@ -60,7 +61,7 @@
   border-radius: 4px;
 
   &.head {
-    background: lighten($success-color, 10%);
+    background: color.adjust($success-color, $lightness: 10%);
   }
 }
 
