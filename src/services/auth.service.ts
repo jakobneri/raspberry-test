@@ -178,7 +178,7 @@ let activeSessions: Session[] = [];
 
 export const addSession = (userId: string, token: string): Session => {
   const session: Session = {
-    id: `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+    id: `session_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`,
     userId,
     token,
     createdAt: new Date().toISOString(),
@@ -273,7 +273,7 @@ export const createUserRequest = async (
 
     const salt = randomBytes(16).toString("hex");
     const hashedPassword = hashPassword(password, salt);
-    const id = `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    const id = `req_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
     const requestedAt = new Date().toISOString();
 
     await run(
@@ -377,7 +377,7 @@ export const createUser = async (
 
     const salt = randomBytes(16).toString("hex");
     const hashedPassword = hashPassword(password, salt);
-    const userId = `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    const userId = `user_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
 
     await run(
       "INSERT INTO users (id, email, password, salt) VALUES (?, ?, ?, ?)",
