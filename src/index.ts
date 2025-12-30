@@ -229,6 +229,18 @@ router.get(
   })
 );
 
+router.post(
+  "/api/users",
+  authHandler(async (req, res) => {
+    const body = await getReqBody(req);
+    const data = JSON.parse(body || "{}");
+    const { createUser } = await import("./services/auth.service.js");
+    const result = await createUser(data.email, data.password, data.name || "");
+    res.writeHead(200, { "Content-Type": "application/json" });
+    res.end(JSON.stringify(result));
+  })
+);
+
 router.get(
   "/api/user-requests",
   authHandler(async (req, res) => {
@@ -242,22 +254,27 @@ router.get(
 );
 
 router.get(
+  "/api/network/devices",
+  authHandler(async (req, res) => {
+    // Return empty devices array as a placeholder
+    // In a real implementation, this could store scanned devices
+    res.writeHead(200, { "Content-Type": "application/json" });
+    res.end(JSON.stringify({ devices: [] }));
+  })
+);
+
+router.post(
   "/api/network/scan",
   authHandler(async (req, res) => {
-    res.writeHead(200, {
-      "Content-Type": "text/event-stream",
-      "Cache-Control": "no-cache",
-      Connection: "keep-alive",
-    });
-
     const { scanNetwork } = await import("./services/network.service.js");
+    const devices: any[] = [];
 
     await scanNetwork((device) => {
-      res.write(`data: ${JSON.stringify(device)}\n\n`);
+      devices.push(device);
     });
 
-    res.write("event: done\ndata: {}\n\n");
-    res.end();
+    res.writeHead(200, { "Content-Type": "application/json" });
+    res.end(JSON.stringify({ devices }));
   })
 );
 
@@ -271,36 +288,30 @@ router.delete(
 );
 
 router.post(
-  "/api/user-requests/approve",
-  authHandler(async (req, res) => {
-    const body = await getReqBody(req);
-    const data = JSON.parse(body || "{}");
+  "/api/user-requests/:requestId/approve",
+  authHandler(async (req, res, userId, params) => {
     const { approveUserRequest } = await import("./services/auth.service.js");
-    const result = await approveUserRequest(data.requestId);
+    const result = await approveUserRequest(params.requestId);
     res.writeHead(200, { "Content-Type": "application/json" });
     res.end(JSON.stringify(result));
   })
 );
 
-router.post(
-  "/api/user-requests/reject",
-  authHandler(async (req, res) => {
-    const body = await getReqBody(req);
-    const data = JSON.parse(body || "{}");
+router.delete(
+  "/api/user-requests/:requestId",
+  authHandler(async (req, res, userId, params) => {
     const { rejectUserRequest } = await import("./services/auth.service.js");
-    const result = await rejectUserRequest(data.requestId);
+    const result = await rejectUserRequest(params.requestId);
     res.writeHead(200, { "Content-Type": "application/json" });
     res.end(JSON.stringify(result));
   })
 );
 
-router.post(
-  "/api/users/delete",
-  authHandler(async (req, res) => {
-    const body = await getReqBody(req);
-    const data = JSON.parse(body || "{}");
+router.delete(
+  "/api/users/:userId",
+  authHandler(async (req, res, userId, params) => {
     const { deleteUser } = await import("./services/auth.service.js");
-    const result = await deleteUser(data.userId);
+    const result = await deleteUser(params.userId);
     res.writeHead(200, { "Content-Type": "application/json" });
     res.end(JSON.stringify(result));
   })
