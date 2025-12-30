@@ -40,8 +40,8 @@ export class Dashboard implements OnInit, OnDestroy {
       },
     });
 
-    // Then start polling
-    this.metricsService.startPolling(2000);
+    // Then start polling (every 5 seconds for better performance)
+    this.metricsService.startPolling(5000);
     this.metricsSubscription = this.metricsService.metrics$.subscribe((data) => {
       if (data) {
         this.metrics = data;
