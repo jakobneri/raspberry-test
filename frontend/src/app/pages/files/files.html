@@ -1,12 +1,18 @@
+@if (isAuthenticated) {
 <app-sidebar />
+}
 
-<div class="main-content">
+<div class="main-content" [class.no-sidebar]="!isAuthenticated">
   <div class="container">
     <div class="page-header">
       <h1>📁 Files</h1>
+      @if (!isAuthenticated) {
+      <a href="/login" class="login-link">Login to upload files</a>
+      }
     </div>
 
-    <!-- Upload Area -->
+    <!-- Upload Area (only for authenticated users) -->
+    @if (isAuthenticated) {
     <div
       class="upload-area"
       [class.drag-over]="dragOver"
@@ -30,6 +36,7 @@
       </div>
       }
     </div>
+    }
 
     <!-- Files List -->
     <div class="card files-card">
@@ -52,7 +59,9 @@
             <button class="btn-download" (click)="downloadFile(file.name)" title="Download">
               ⬇️
             </button>
+            @if (isAuthenticated) {
             <button class="btn-delete" (click)="deleteFile(file.name)" title="Delete">🗑️</button>
+            }
           </div>
         </div>
         } @empty {

@@ -457,14 +457,11 @@ router.post(
   })
 );
 
-router.get(
-  "/api/files",
-  authHandler(async (req, res) => {
-    const files = filesService.listFiles();
-    res.writeHead(200, { "Content-Type": "application/json" });
-    res.end(JSON.stringify(files));
-  })
-);
+router.get("/api/files", async (req, res) => {
+  const files = filesService.listFiles();
+  res.writeHead(200, { "Content-Type": "application/json" });
+  res.end(JSON.stringify(files));
+});
 
 router.post(
   "/api/files/upload",
@@ -508,22 +505,19 @@ router.post(
   })
 );
 
-router.get(
-  "/api/files/download/:filename",
-  authHandler(async (req, res, userId, params) => {
-    try {
-      const filename = decodeURIComponent(params.filename);
-      const file = filesService.getFile(filename);
-      res.writeHead(200, {
-        "Content-Type": "application/octet-stream",
-        "Content-Disposition": `attachment; filename="${filename}"`,
-      });
-      res.end(file);
-    } catch (error) {
-      res.writeHead(404).end("File not found");
-    }
-  })
-);
+router.get("/api/files/download/:filename", async (req, res, params) => {
+  try {
+    const filename = decodeURIComponent(params.filename);
+    const file = filesService.getFile(filename);
+    res.writeHead(200, {
+      "Content-Type": "application/octet-stream",
+      "Content-Disposition": `attachment; filename="${filename}"`,
+    });
+    res.end(file);
+  } catch (error) {
+    res.writeHead(404).end("File not found");
+  }
+});
 
 router.delete(
   "/api/files/:filename",

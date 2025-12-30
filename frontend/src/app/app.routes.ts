@@ -2,7 +2,10 @@ import { Routes } from '@angular/router';
 import { authGuard } from './guards/auth-guard';
 
 export const routes: Routes = [
-  { path: '', redirectTo: '/login', pathMatch: 'full' },
+  {
+    path: '',
+    loadComponent: () => import('./pages/landing/landing').then((m) => m.Landing),
+  },
   {
     path: 'login',
     loadComponent: () => import('./pages/login/login').then((m) => m.Login),
@@ -20,7 +23,6 @@ export const routes: Routes = [
   {
     path: 'files',
     loadComponent: () => import('./pages/files/files').then((m) => m.Files),
-    canActivate: [authGuard],
   },
   {
     path: 'network-map',
@@ -36,5 +38,5 @@ export const routes: Routes = [
     loadComponent: () => import('./pages/game-admin/game-admin').then((m) => m.GameAdmin),
     canActivate: [authGuard],
   },
-  { path: '**', redirectTo: '/login' },
+  { path: '**', redirectTo: '/' },
 ];
