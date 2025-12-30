@@ -178,7 +178,7 @@ let activeSessions: Session[] = [];
 
 export const addSession = (userId: string, token: string): Session => {
   const session: Session = {
-    id: `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+    id: `session_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`,
     userId,
     token,
     createdAt: new Date().toISOString(),
@@ -273,7 +273,7 @@ export const createUserRequest = async (
 
     const salt = randomBytes(16).toString("hex");
     const hashedPassword = hashPassword(password, salt);
-    const id = `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    const id = `req_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
     const requestedAt = new Date().toISOString();
 
     await run(
@@ -356,6 +356,40 @@ export const rejectUserRequest = async (
 
   console.log(`[Auth] User request rejected: ${request.email}`);
   return { success: true, message: "User request rejected" };
+};
+
+export const createUser = async (
+  email: string,
+  password: string,
+  name: string
+): Promise<{ success: boolean; message: string; userId?: string }> => {
+  try {
+    // Validate email with Zod
+    emailSchema.parse(email);
+
+    // Check if email already exists
+    const existingUser = await get("SELECT id FROM users WHERE email = ?", [
+      email,
+    ]);
+    if (existingUser) {
+      return { success: false, message: "Email already registered" };
+    }
+
+    const salt = randomBytes(16).toString("hex");
+    const hashedPassword = hashPassword(password, salt);
+    const userId = `user_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
+
+    await run(
+      "INSERT INTO users (id, email, password, salt) VALUES (?, ?, ?, ?)",
+      [userId, email, hashedPassword, salt]
+    );
+
+    console.log(`[Auth] User created: ${email}`);
+    return { success: true, message: "User created successfully", userId };
+  } catch (error) {
+    console.error("[Auth] Error creating user:", error);
+    return { success: false, message: "Failed to create user" };
+  }
 };
 
 export const deleteUser = async (
