@@ -6,6 +6,10 @@
   margin-left: $sidebar-width;
   padding: $spacing-xl;
   min-height: 100vh;
+
+  &.no-sidebar {
+    margin-left: 0;
+  }
 }
 
 .container {
@@ -15,10 +19,24 @@
 
 .page-header {
   margin-bottom: $spacing-xl;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 
   h1 {
     color: $text-primary;
     margin: 0;
+  }
+
+  .login-link {
+    color: $accent-color;
+    text-decoration: none;
+    font-weight: 500;
+    transition: color $transition-fast;
+
+    &:hover {
+      color: color.adjust($accent-color, $lightness: 10%);
+    }
   }
 }
 

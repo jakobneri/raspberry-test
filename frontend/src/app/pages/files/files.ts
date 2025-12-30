@@ -2,6 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Sidebar } from '../../components/sidebar/sidebar';
 import { ApiService, FileItem } from '../../services/api';
+import { AuthService } from '../../services/auth';
 
 @Component({
   selector: 'app-files',
@@ -14,10 +15,14 @@ export class Files implements OnInit {
   loading = true;
   uploading = false;
   dragOver = false;
+  isAuthenticated = false;
 
-  constructor(private api: ApiService) {}
+  constructor(private api: ApiService, private auth: AuthService) {}
 
   ngOnInit(): void {
+    this.auth.isAuthenticated$.subscribe((isAuth) => {
+      this.isAuthenticated = isAuth;
+    });
     this.fetchFiles();
   }
 

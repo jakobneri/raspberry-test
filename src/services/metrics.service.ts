@@ -7,7 +7,7 @@ export interface SystemMetrics {
     usage: number;
     cores: number;
     speed: number;
-    temperature: number;
+    temp: number;
   };
   memory: {
     total: number;
@@ -81,7 +81,7 @@ export const getMetrics = async (): Promise<MetricsHistory> => {
       usage: Math.round(currentLoad.currentLoad * 10) / 10,
       cores: cpuData.cores,
       speed: cpuData.speed,
-      temperature: cpuTemp.main || cpuTemp.max || 0,
+      temp: cpuTemp.main || cpuTemp.max || 0,
     },
     memory: {
       total: Math.round((memData.total / 1024 / 1024 / 1024) * 100) / 100,
