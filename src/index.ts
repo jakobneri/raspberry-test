@@ -98,7 +98,7 @@ router.post("/api/login", async (req, res) => {
   console.log(`[AUTH] Successful login for user: ${user.id} (${email})`);
   const token = await createToken(user.id);
   sessionService.addSession(user.id, token);
-  res.setHeader("Set-Cookie", `jwt=${token}; HttpOnly; Path=/; Max-Age=900`);
+  res.setHeader("Set-Cookie", `jwt=${token}; HttpOnly; Path=/; Max-Age=900; SameSite=Lax`);
   res.writeHead(200, { "Content-Type": "application/json" });
   res.end(JSON.stringify({ success: true, userId: user.id }));
 });
@@ -692,7 +692,7 @@ router.post(
       sessionService.removeSession(cookieToken);
       clearTokenCache(cookieToken);
     }
-    res.setHeader("Set-Cookie", "jwt=; HttpOnly; Path=/; Max-Age=0");
+    res.setHeader("Set-Cookie", "jwt=; HttpOnly; Path=/; Max-Age=0; SameSite=Lax");
     res.writeHead(200, { "Content-Type": "application/json" });
     res.end(JSON.stringify({ success: true }));
   })
