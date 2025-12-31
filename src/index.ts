@@ -30,6 +30,16 @@ const router = new Router();
 // Angular build directory
 const ANGULAR_DIST = "frontend/dist/frontend/browser";
 
+// Configuration interface for env.json
+interface ServerEnvConfig {
+  JWT_SECRET?: string;
+  CLIENT_ID?: string;
+  TENANT_ID?: string;
+  CLIENT_SECRET?: string;
+  CLOUD_INSTANCE?: string;
+  ENABLE_SPEEDTEST?: boolean;
+}
+
 // MIME types for static files
 const MIME_TYPES: Record<string, string> = {
   ".html": "text/html",
@@ -641,7 +651,7 @@ router.post(
     console.log(`[ADMIN] Speedtest toggle: ${enabled} by user: ${userId}`);
 
     try {
-      let envConfig: any = {};
+      let envConfig: ServerEnvConfig = {};
       
       // Read existing config or create new one
       if (existsSync("config/env.json")) {

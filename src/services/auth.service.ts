@@ -1,6 +1,6 @@
 import { SignJWT, jwtVerify, type JWTPayload } from "jose";
 import { ConfidentialClientApplication, Configuration } from "@azure/msal-node";
-import { readFileSync } from "node:fs";
+import { readFileSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { createHash, randomBytes } from "node:crypto";
 import type { IncomingMessage } from "node:http";
@@ -51,6 +51,7 @@ interface EnvConfig {
   TENANT_ID?: string;
   CLIENT_SECRET?: string;
   CLOUD_INSTANCE?: string;
+  ENABLE_SPEEDTEST?: boolean;
 }
 
 // Load environment configuration with fallback to defaults
@@ -59,20 +60,42 @@ const loadEnvConfig = (): EnvConfig => {
   try {
     const config = JSON.parse(readFileSync(envPath, "utf-8"));
     return {
-      JWT_SECRET: config.JWT_SECRET || randomBytes(32).toString("hex"),
+      JWT_SECRET: config.JWT_SECRET || generateAndSaveSecret(envPath, config),
       CLIENT_ID: config.CLIENT_ID,
       TENANT_ID: config.TENANT_ID,
       CLIENT_SECRET: config.CLIENT_SECRET,
       CLOUD_INSTANCE: config.CLOUD_INSTANCE || "https://login.microsoftonline.com/",
+      ENABLE_SPEEDTEST: config.ENABLE_SPEEDTEST,
     };
   } catch (error) {
-    console.log("[Auth] config/env.json not found, using default configuration");
-    // Generate a random JWT secret for this session
-    return {
-      JWT_SECRET: randomBytes(32).toString("hex"),
+    console.log("[Auth] config/env.json not found, creating with default configuration");
+    // Generate and save a persistent JWT secret
+    const secret = randomBytes(32).toString("hex");
+    const newConfig: EnvConfig = {
+      JWT_SECRET: secret,
       CLOUD_INSTANCE: "https://login.microsoftonline.com/",
     };
+    try {
+      writeFileSync(envPath, JSON.stringify(newConfig, null, 2));
+      console.log("[Auth] Created config/env.json with generated JWT_SECRET");
+    } catch (writeError) {
+      console.error("[Auth] Failed to create config/env.json, using in-memory secret");
+    }
+    return newConfig;
   }
+};
+
+// Helper to generate and save a JWT secret if missing
+const generateAndSaveSecret = (envPath: string, config: any): string => {
+  const secret = randomBytes(32).toString("hex");
+  config.JWT_SECRET = secret;
+  try {
+    writeFileSync(envPath, JSON.stringify(config, null, 2));
+    console.log("[Auth] Generated and saved JWT_SECRET to config/env.json");
+  } catch (error) {
+    console.error("[Auth] Failed to save JWT_SECRET to config/env.json");
+  }
+  return secret;
 };
 
 const envConfig = loadEnvConfig();
