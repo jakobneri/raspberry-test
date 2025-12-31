@@ -257,11 +257,11 @@ const runScheduledSpeedTest = async () => {
 
   isRunning = true;
   try {
-    const result = await runSpeedTest(true);
+    const result = await runSpeedTest(true); // Run in silent mode
     addSpeedTestResult(result, true);
   } catch (error) {
-    // Silently handle errors during scheduled tests
-    // Errors are already logged in runSpeedTest when not silent
+    // Errors from runSpeedTest in silent mode won't be logged
+    // Only catastrophic errors that bypass runSpeedTest's error handling will appear here
   } finally {
     isRunning = false;
   }
