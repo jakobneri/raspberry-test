@@ -5,6 +5,16 @@
   margin-left: $sidebar-width;
   padding: $spacing-xl;
   min-height: 100vh;
+  
+  @include mobile {
+    margin-left: 0;
+    padding: $spacing-md;
+    padding-top: 60px; // Account for hamburger menu
+  }
+  
+  @include tablet-up {
+    padding: $spacing-lg;
+  }
 }
 
 .container {
@@ -46,6 +56,10 @@
 
 .system-info-card {
   @include card;
+  
+  @include mobile {
+    padding: $spacing-md;
+  }
 }
 
 .metric-header {
@@ -56,12 +70,20 @@
   .metric-icon {
     font-size: 28px;
     margin-right: $spacing-sm;
+    
+    @include mobile {
+      font-size: 24px;
+    }
   }
 
   .metric-title {
     font-size: 16px;
     color: $text-secondary;
     font-weight: 600;
+    
+    @include mobile {
+      font-size: 14px;
+    }
   }
 }
 
@@ -74,12 +96,20 @@
     font-size: 14px;
     color: $text-secondary;
     margin-bottom: $spacing-xs;
+    
+    @include mobile {
+      font-size: 12px;
+    }
   }
 
   .value {
     font-size: 28px;
     font-weight: bold;
     color: $accent-color;
+    
+    @include mobile {
+      font-size: 24px;
+    }
   }
 }
 
@@ -107,6 +137,16 @@
     color: $text-primary;
     font-weight: 600;
   }
+  
+  @include mobile {
+    font-size: 13px;
+    flex-wrap: wrap;
+    gap: $spacing-xs;
+    
+    span:last-child {
+      word-break: break-word;
+    }
+  }
 }
 
 .admin-buttons {
@@ -120,6 +160,11 @@
     flex: 1;
     @include button-base;
     padding: $spacing-sm;
+    
+    @include mobile {
+      padding: $spacing-md;
+      font-size: 14px;
+    }
   }
 
   .btn-restart {
@@ -146,4 +191,8 @@
   color: $text-secondary;
   margin-top: $spacing-lg;
   font-size: 14px;
+  
+  @include mobile {
+    font-size: 12px;
+  }
 }

@@ -12,6 +12,12 @@
   flex: 1;
   padding: $spacing-xl;
   margin-left: 250px;
+  
+  @include mobile {
+    margin-left: 0;
+    padding: $spacing-md;
+    padding-top: 60px; // Account for hamburger menu
+  }
 }
 
 .admin-header {
@@ -20,6 +26,14 @@
   h1 {
     color: $text-primary;
     font-size: 28px;
+    
+    @include mobile {
+      font-size: 24px;
+    }
+  }
+  
+  @include mobile {
+    margin-bottom: $spacing-lg;
   }
 }
 
@@ -27,12 +41,20 @@
   display: flex;
   flex-direction: column;
   gap: $spacing-xl;
+  
+  @include mobile {
+    gap: $spacing-lg;
+  }
 }
 
 // Settings Card
 .settings-card,
 .scores-card {
   @include card;
+  
+  @include mobile {
+    padding: $spacing-md;
+  }
 }
 
 .card-header {
@@ -42,6 +64,10 @@
   h2 {
     color: $text-primary;
     font-size: 20px;
+    
+    @include mobile {
+      font-size: 18px;
+    }
   }
 }
 
@@ -49,6 +75,10 @@
   display: flex;
   gap: $spacing-sm;
   margin-bottom: $spacing-lg;
+  
+  @include mobile {
+    flex-wrap: wrap;
+  }
 }
 
 .tab-btn {
@@ -68,6 +98,13 @@
     border-color: $accent-color;
     color: $text-primary;
   }
+  
+  @include mobile {
+    flex: 1;
+    min-width: 0;
+    padding: $spacing-sm $spacing-md;
+    font-size: 14px;
+  }
 }
 
 .settings-display {
@@ -83,11 +120,19 @@
 
     .label {
       color: $text-secondary;
+      
+      @include mobile {
+        font-size: 14px;
+      }
     }
 
     .value {
       color: $text-primary;
       font-weight: bold;
+      
+      @include mobile {
+        font-size: 14px;
+      }
     }
   }
 }
@@ -101,6 +146,10 @@
       color: $text-secondary;
       margin-bottom: $spacing-xs;
       font-size: 14px;
+      
+      @include mobile {
+        font-size: 13px;
+      }
     }
 
     input {
@@ -115,6 +164,10 @@
         outline: none;
         border-color: $accent-color;
       }
+      
+      @include mobile {
+        font-size: 16px; // Prevents zoom on iOS
+      }
     }
   }
 
@@ -122,12 +175,21 @@
     display: flex;
     gap: $spacing-sm;
     margin-top: $spacing-lg;
+    
+    @include mobile {
+      flex-direction: column-reverse;
+      
+      button {
+        width: 100%;
+      }
+    }
   }
 }
 
 // Scores Table
 .scores-table-container {
   overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .scores-table {
@@ -139,12 +201,22 @@
     padding: $spacing-md;
     text-align: left;
     border-bottom: 1px solid $border-color;
+    
+    @include mobile {
+      padding: $spacing-sm;
+      font-size: 13px;
+    }
   }
 
   th {
     color: $text-secondary;
     font-weight: 500;
     font-size: 14px;
+    
+    @include mobile {
+      font-size: 12px;
+      white-space: nowrap;
+    }
   }
 
   td {
@@ -153,10 +225,21 @@
 
   .rank {
     font-size: 18px;
+    
+    @include mobile {
+      font-size: 16px;
+    }
   }
 
   .name {
     font-weight: 500;
+    
+    @include mobile {
+      max-width: 120px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
   }
 
   .score {
@@ -166,6 +249,11 @@
 
   .date {
     color: $text-secondary;
+    
+    @include mobile {
+      font-size: 11px;
+      white-space: nowrap;
+    }
   }
 }
 
@@ -189,6 +277,11 @@
     background: rgba($danger-color, 0.2);
     color: $danger-color;
   }
+  
+  @include mobile {
+    font-size: 10px;
+    padding: 2px $spacing-xs;
+  }
 }
 
 .btn-icon {
@@ -203,12 +296,27 @@
   &:hover {
     opacity: 1;
   }
+  
+  @include mobile {
+    font-size: 18px;
+    padding: $spacing-sm;
+    min-width: 40px;
+    min-height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
 }
 
 .empty-state {
   text-align: center;
   padding: $spacing-xl;
   color: $text-secondary;
+  
+  @include mobile {
+    padding: $spacing-lg;
+    font-size: 14px;
+  }
 }
 
 // Buttons
@@ -247,6 +355,7 @@
 // Modal
 .modal-overlay {
   @include modal-overlay;
+  padding: $spacing-md; // Ensure content doesn't touch edges on mobile
 }
 
 .modal {
@@ -255,6 +364,11 @@
   width: 90%;
   max-width: 400px;
   box-shadow: $shadow-lg;
+  
+  @include mobile {
+    width: 100%;
+    max-width: calc(100% - #{$spacing-lg * 2});
+  }
 }
 
 .modal-header {
@@ -265,6 +379,10 @@
   h3 {
     color: $text-primary;
     margin: 0;
+    
+    @include mobile {
+      font-size: 18px;
+    }
   }
 
   .close-btn {
@@ -279,6 +397,10 @@
       color: $text-primary;
     }
   }
+  
+  @include mobile {
+    padding: $spacing-md;
+  }
 }
 
 .modal-body {
@@ -288,6 +410,11 @@
   strong {
     color: $text-primary;
   }
+  
+  @include mobile {
+    padding: $spacing-md;
+    font-size: 14px;
+  }
 }
 
 .modal-footer {
@@ -296,4 +423,13 @@
   display: flex;
   justify-content: flex-end;
   gap: $spacing-sm;
+  
+  @include mobile {
+    padding: $spacing-md;
+    flex-direction: column-reverse;
+    
+    button {
+      width: 100%;
+    }
+  }
 }
