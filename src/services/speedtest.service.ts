@@ -101,9 +101,10 @@ export const runSpeedTest = async (
       timestamp: new Date().toISOString(),
     };
   } catch (jsonError) {
-    if (!silent)
+    if (!silent) {
       console.log("[Speedtest] Official Speedtest CLI failed, trying legacy speedtest-cli...");
-    console.error("[Speedtest] JSON error:", jsonError);
+      console.error("[Speedtest] JSON error:", jsonError);
+    }
 
     // Fallback to legacy speedtest-cli (Python version)
     try {
@@ -141,11 +142,12 @@ export const runSpeedTest = async (
         timestamp: new Date().toISOString(),
       };
     } catch (legacyError) {
-      if (!silent)
+      if (!silent) {
         console.log(
           "[Speedtest] Legacy speedtest-cli failed, falling back to ping only..."
         );
-      console.error("[Speedtest] Legacy error:", legacyError);
+        console.error("[Speedtest] Legacy error:", legacyError);
+      }
 
       // Final fallback: ping only
       try {
@@ -170,8 +172,10 @@ export const runSpeedTest = async (
           timestamp: new Date().toISOString(),
         };
       } catch (pingError) {
-        console.error("[Speedtest] All methods failed");
-        console.error("[Speedtest] Ping error:", pingError);
+        if (!silent) {
+          console.error("[Speedtest] All methods failed");
+          console.error("[Speedtest] Ping error:", pingError);
+        }
         return {
           success: false,
           ping: null,
@@ -253,10 +257,11 @@ const runScheduledSpeedTest = async () => {
 
   isRunning = true;
   try {
-    const result = await runSpeedTest(true);
+    const result = await runSpeedTest(true); // Run in silent mode
     addSpeedTestResult(result, true);
   } catch (error) {
-    console.error("[Speedtest] Error running test:", error);
+    // Errors from runSpeedTest in silent mode won't be logged
+    // Only catastrophic errors that bypass runSpeedTest's error handling will appear here
   } finally {
     isRunning = false;
   }

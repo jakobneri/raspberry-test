@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { interval, Subscription } from 'rxjs';
 import { switchMap } from 'rxjs/operators';
@@ -20,13 +20,16 @@ export class SessionsCard implements OnInit, OnDestroy {
 
   private subscription?: Subscription;
 
-  constructor(private api: ApiService) {}
+  constructor(private api: ApiService, private cdr: ChangeDetectorRef) {}
 
   ngOnInit(): void {
     this.fetchSessions();
     this.subscription = interval(5000)
       .pipe(switchMap(() => this.api.getSessions()))
-      .subscribe((data) => this.updateSessionData(data));
+      .subscribe((data) => {
+        this.updateSessionData(data);
+        this.cdr.detectChanges(); // Explicitly trigger change detection
+      });
   }
 
   ngOnDestroy(): void {
@@ -34,7 +37,10 @@ export class SessionsCard implements OnInit, OnDestroy {
   }
 
   fetchSessions(): void {
-    this.api.getSessions().subscribe((data) => this.updateSessionData(data));
+    this.api.getSessions().subscribe((data) => {
+      this.updateSessionData(data);
+      this.cdr.detectChanges(); // Explicitly trigger change detection
+    });
   }
 
   private updateSessionData(data: SessionsResponse): void {
