@@ -53,6 +53,8 @@
         [value]="metrics?.network?.rx?.toFixed(1) ?? '--'"
         unit="KB/s ↓"
         [details]="networkDetails"
+        [clickable]="true"
+        (cardClick)="navigateToNetworkMap()"
       />
 
       <!-- System Load Card -->

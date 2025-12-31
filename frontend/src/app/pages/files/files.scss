@@ -14,7 +14,7 @@
   @include mobile {
     margin-left: 0;
     padding: $spacing-md;
-    padding-top: 60px; // Account for hamburger menu when authenticated
+    padding-top: 72px; // Account for hamburger menu with extra spacing
     
     &.no-sidebar {
       padding-top: $spacing-md;

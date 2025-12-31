@@ -30,6 +30,9 @@ const router = new Router();
 // Angular build directory
 const ANGULAR_DIST = "frontend/dist/frontend/browser";
 
+// In-memory storage for network devices
+let cachedNetworkDevices: any[] = [];
+
 // MIME types for static files
 const MIME_TYPES: Record<string, string> = {
   ".html": "text/html",
@@ -256,10 +259,9 @@ router.get(
 router.get(
   "/api/network/devices",
   authHandler(async (req, res) => {
-    // Return empty devices array as a placeholder
-    // In a real implementation, this could store scanned devices
+    // Return cached network devices
     res.writeHead(200, { "Content-Type": "application/json" });
-    res.end(JSON.stringify({ devices: [] }));
+    res.end(JSON.stringify({ devices: cachedNetworkDevices }));
   })
 );
 
@@ -270,8 +272,18 @@ router.post(
     const devices: any[] = [];
 
     await scanNetwork((device) => {
-      devices.push(device);
+      // Add status and lastSeen fields for compatibility with frontend
+      const deviceWithMeta = {
+        ...device,
+        status: device.alive ? 'online' : 'offline',
+        lastSeen: new Date().toISOString(),
+        mac: device.mac || 'Unknown',
+      };
+      devices.push(deviceWithMeta);
     });
+
+    // Update cached devices
+    cachedNetworkDevices = devices;
 
     res.writeHead(200, { "Content-Type": "application/json" });
     res.end(JSON.stringify({ devices }));
