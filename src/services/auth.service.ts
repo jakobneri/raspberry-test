@@ -45,7 +45,7 @@ export const validateUser = async (
 
 export const propUserId = "urn:app:userid";
 
-interface EnvConfig {
+export interface EnvConfig {
   JWT_SECRET: string;
   CLIENT_ID?: string;
   TENANT_ID?: string;
@@ -69,7 +69,7 @@ const loadEnvConfig = (): EnvConfig => {
   try {
     const config = JSON.parse(readFileSync(envPath, "utf-8"));
     return {
-      JWT_SECRET: config.JWT_SECRET || generateAndSaveSecret(envPath, config),
+      JWT_SECRET: config.JWT_SECRET ?? generateAndSaveSecret(envPath, config),
       CLIENT_ID: config.CLIENT_ID,
       TENANT_ID: config.TENANT_ID,
       CLIENT_SECRET: config.CLIENT_SECRET,

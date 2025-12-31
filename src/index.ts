@@ -16,6 +16,7 @@ import {
   getAppToken,
   getCookieToken,
   validateUser,
+  type EnvConfig,
 } from "./services/auth.service.js";
 import * as sessionService from "./services/auth.service.js";
 import * as scoreService from "./services/score.service.js";
@@ -30,16 +31,6 @@ const router = new Router();
 
 // Angular build directory
 const ANGULAR_DIST = "frontend/dist/frontend/browser";
-
-// Configuration interface for env.json
-interface ServerEnvConfig {
-  JWT_SECRET?: string;
-  CLIENT_ID?: string;
-  TENANT_ID?: string;
-  CLIENT_SECRET?: string;
-  CLOUD_INSTANCE?: string;
-  ENABLE_SPEEDTEST?: boolean;
-}
 
 // MIME types for static files
 const MIME_TYPES: Record<string, string> = {
@@ -653,7 +644,7 @@ router.post(
 
     try {
       const envPath = "config/env.json";
-      let envConfig: ServerEnvConfig = {};
+      let envConfig: Partial<EnvConfig> = {};
       
       // Read existing config or create new one
       if (existsSync(envPath)) {
