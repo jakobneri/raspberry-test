@@ -641,7 +641,13 @@ router.post(
     console.log(`[ADMIN] Speedtest toggle: ${enabled} by user: ${userId}`);
 
     try {
-      const envConfig = JSON.parse(readFileSync("config/env.json", "utf8"));
+      let envConfig: any = {};
+      
+      // Read existing config or create new one
+      if (existsSync("config/env.json")) {
+        envConfig = JSON.parse(readFileSync("config/env.json", "utf8"));
+      }
+      
       envConfig.ENABLE_SPEEDTEST = enabled;
       writeFileSync("config/env.json", JSON.stringify(envConfig, null, 2));
 
