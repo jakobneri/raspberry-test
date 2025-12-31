@@ -35,6 +35,8 @@
     <!-- Users Table -->
     <div class="card">
       <h2>Registered Users ({{ users.length }})</h2>
+      
+      <!-- Desktop Table View -->
       <table class="users-table">
         <thead>
           <tr>
@@ -59,6 +61,26 @@
           }
         </tbody>
       </table>
+      
+      <!-- Mobile Card View -->
+      <div class="users-mobile-list">
+        @for (user of users; track user.id) {
+        <div class="user-card">
+          <div class="user-header">
+            <span class="user-name">{{ user.email }}</span>
+            <button class="btn-delete" (click)="deleteUser(user.id)">🗑️</button>
+          </div>
+          <div class="user-details">
+            <div class="detail">
+              <span class="label">ID:</span>
+              <span class="value">{{ user.id }}</span>
+            </div>
+          </div>
+        </div>
+        } @empty {
+        <div class="empty-state">No users found</div>
+        }
+      </div>
     </div>
     }
   </div>
