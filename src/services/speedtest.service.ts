@@ -70,6 +70,12 @@ export const runSpeedTest = async (
     const { stdout } = await execAsync("speedtest --format=json --accept-license --accept-gdpr", {
       timeout: 90000,
     });
+    
+    // Check if stdout is empty or whitespace
+    if (!stdout || !stdout.trim()) {
+      throw new Error("Empty output from speedtest command");
+    }
+    
     const data = JSON.parse(stdout);
 
     // Official Ookla Speedtest CLI JSON structure (bandwidth in bits/s)
@@ -104,6 +110,12 @@ export const runSpeedTest = async (
       const { stdout } = await execAsync("speedtest-cli --json", {
         timeout: 90000,
       });
+      
+      // Check if stdout is empty or whitespace
+      if (!stdout || !stdout.trim()) {
+        throw new Error("Empty output from speedtest-cli command");
+      }
+      
       const data = JSON.parse(stdout);
 
       // Legacy speedtest-cli returns bandwidth in bytes/s
