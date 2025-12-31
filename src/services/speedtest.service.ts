@@ -50,21 +50,22 @@ export const runSpeedTest = async (
 ): Promise<SpeedTestResult> => {
   if (!silent) console.log("[Speedtest] Starting speed test...");
 
-  // Try speedtest-cli with JSON output
+  // Try official Ookla Speedtest CLI with JSON output
   try {
     if (!silent)
       console.log("[Speedtest] Running speedtest with JSON output...");
-    const { stdout } = await execAsync("speedtest --json", {
+    const { stdout } = await execAsync("speedtest --format=json --accept-license --accept-gdpr", {
       timeout: 90000,
     });
     const data = JSON.parse(stdout);
 
-    const ping = data.ping || null;
-    const download = data.download
-      ? Math.round((data.download / 1000000) * 100) / 100
-      : null; // Convert bytes/s to Mbit/s
-    const upload = data.upload
-      ? Math.round((data.upload / 1000000) * 100) / 100
+    // Official Ookla Speedtest CLI JSON structure
+    const ping = data.ping?.latency || null;
+    const download = data.download?.bandwidth
+      ? Math.round((data.download.bandwidth * 8 / 1000000) * 100) / 100
+      : null; // Convert bytes/s to Mbit/s (multiply by 8 for bits)
+    const upload = data.upload?.bandwidth
+      ? Math.round((data.upload.bandwidth * 8 / 1000000) * 100) / 100
       : null;
 
     if (!silent) {
@@ -82,29 +83,23 @@ export const runSpeedTest = async (
     };
   } catch (jsonError) {
     if (!silent)
-      console.log("[Speedtest] JSON mode failed, trying simple mode...");
+      console.log("[Speedtest] Official Speedtest CLI failed, trying legacy speedtest-cli...");
     console.error("[Speedtest] JSON error:", jsonError);
 
-    // Fallback to simple output
+    // Fallback to legacy speedtest-cli (Python version)
     try {
-      const { stdout } = await execAsync("speedtest --simple", {
+      const { stdout } = await execAsync("speedtest-cli --json", {
         timeout: 90000,
       });
-      const lines = stdout.split("\n");
+      const data = JSON.parse(stdout);
 
-      let ping = null;
-      let download = null;
-      let upload = null;
-
-      for (const line of lines) {
-        if (line.startsWith("Ping:")) {
-          ping = parseFloat(line.split(":")[1].trim().split(" ")[0]);
-        } else if (line.startsWith("Download:")) {
-          download = parseFloat(line.split(":")[1].trim().split(" ")[0]);
-        } else if (line.startsWith("Upload:")) {
-          upload = parseFloat(line.split(":")[1].trim().split(" ")[0]);
-        }
-      }
+      const ping = data.ping || null;
+      const download = data.download
+        ? Math.round((data.download / 1000000) * 100) / 100
+        : null; // Convert bytes/s to Mbit/s
+      const upload = data.upload
+        ? Math.round((data.upload / 1000000) * 100) / 100
+        : null;
 
       if (!silent) {
         console.log(
@@ -119,12 +114,12 @@ export const runSpeedTest = async (
         unit: "ms / Mbit/s",
         timestamp: new Date().toISOString(),
       };
-    } catch (simpleError) {
+    } catch (legacyError) {
       if (!silent)
         console.log(
-          "[Speedtest] Simple mode failed, falling back to ping only..."
+          "[Speedtest] Legacy speedtest-cli failed, falling back to ping only..."
         );
-      console.error("[Speedtest] Simple error:", simpleError);
+      console.error("[Speedtest] Legacy error:", legacyError);
 
       // Final fallback: ping only
       try {
@@ -145,7 +140,7 @@ export const runSpeedTest = async (
           upload: null,
           unit: "ms / Mbit/s",
           message:
-            "Full speedtest not available. Only ping test completed. Install: sudo apt-get install speedtest-cli",
+            "Full speedtest not available. Only ping test completed. Install official Ookla Speedtest CLI: https://www.speedtest.net/apps/cli",
           timestamp: new Date().toISOString(),
         };
       } catch (pingError) {
@@ -158,7 +153,7 @@ export const runSpeedTest = async (
           upload: null,
           unit: "ms / Mbit/s",
           message:
-            "Speed test failed. Install speedtest-cli: sudo apt-get install speedtest-cli",
+            "Speed test failed. Install official Ookla Speedtest CLI: https://www.speedtest.net/apps/cli",
           timestamp: new Date().toISOString(),
         };
       }
