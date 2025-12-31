@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Sidebar } from '../../components/sidebar/sidebar';
@@ -24,7 +24,7 @@ export class Users implements OnInit {
     password: '',
   };
 
-  constructor(private api: ApiService) {}
+  constructor(private api: ApiService, private cdr: ChangeDetectorRef) {}
 
   ngOnInit(): void {
     this.fetchUsers();
@@ -36,10 +36,12 @@ export class Users implements OnInit {
       next: (users) => {
         this.users = users;
         this.loading = false;
+        this.cdr.detectChanges();
       },
       error: (err) => {
         console.error('Error fetching users:', err);
         this.loading = false;
+        this.cdr.detectChanges();
       },
     });
   }
