@@ -1,5 +1,7 @@
 # Environment configuration
 config/env.json
+!config/env.example.json
+!config/.gitkeep
 
 # Database
 database.sqlite

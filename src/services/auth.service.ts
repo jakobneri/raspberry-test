@@ -53,8 +53,29 @@ interface EnvConfig {
   CLOUD_INSTANCE: string;
 }
 
-const envPath = resolve("./config/env.json");
-const envConfig: EnvConfig = JSON.parse(readFileSync(envPath, "utf-8"));
+// Load environment configuration with fallback
+const loadEnvConfig = (): EnvConfig => {
+  const envPath = resolve("./config/env.json");
+  try {
+    const config = JSON.parse(readFileSync(envPath, "utf-8"));
+    
+    // Validate JWT_SECRET exists
+    if (!config.JWT_SECRET) {
+      console.error("[Auth] ERROR: JWT_SECRET is missing in config/env.json");
+      console.error("[Auth] Please copy config/env.example.json to config/env.json and set JWT_SECRET");
+      process.exit(1);
+    }
+    
+    return config;
+  } catch (error) {
+    console.error("[Auth] ERROR: Failed to load config/env.json");
+    console.error("[Auth] Please copy config/env.example.json to config/env.json and configure it");
+    console.error("[Auth] Error details:", error instanceof Error ? error.message : error);
+    process.exit(1);
+  }
+};
+
+const envConfig: EnvConfig = loadEnvConfig();
 const jwtSecret = new TextEncoder().encode(envConfig.JWT_SECRET);
 
 // Token verification cache
