@@ -17,7 +17,10 @@ export interface SpeedTestConfig {
 const loadConfig = (): SpeedTestConfig => {
   try {
     if (existsSync(configPath)) {
-      return JSON.parse(readFileSync(configPath, "utf-8"));
+      const content = readFileSync(configPath, "utf-8").trim();
+      if (content) {
+        return JSON.parse(content);
+      }
     }
   } catch (error) {
     console.error("[Speedtest] Error loading config:", error);
