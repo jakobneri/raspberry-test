@@ -4,9 +4,8 @@ import {
   createWriteStream,
   writeFileSync,
   existsSync,
-  mkdirSync,
 } from "node:fs";
-import { extname, join, dirname } from "node:path";
+import { extname, join } from "node:path";
 import { Router } from "./router.js";
 import {
   createToken,
@@ -644,21 +643,16 @@ router.post(
 
     try {
       const envPath = "config/env.json";
-      let envConfig: Partial<EnvConfig> = {};
       
-      // Read existing config or create new one
-      if (existsSync(envPath)) {
-        envConfig = JSON.parse(readFileSync(envPath, "utf8"));
+      // Read existing config
+      if (!existsSync(envPath)) {
+        res.writeHead(500, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ success: false, message: "Config file not found" }));
+        return;
       }
       
+      const envConfig: Partial<EnvConfig> = JSON.parse(readFileSync(envPath, "utf8"));
       envConfig.ENABLE_SPEEDTEST = enabled;
-      
-      // Ensure config directory exists before writing
-      const configDir = dirname(envPath);
-      if (!existsSync(configDir)) {
-        mkdirSync(configDir, { recursive: true });
-      }
-      
       writeFileSync(envPath, JSON.stringify(envConfig, null, 2));
 
       if (enabled) speedTestService.startSpeedTestScheduler(60);

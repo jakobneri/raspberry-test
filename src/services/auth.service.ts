@@ -1,7 +1,7 @@
 import { SignJWT, jwtVerify, type JWTPayload } from "jose";
 import { ConfidentialClientApplication, Configuration } from "@azure/msal-node";
-import { readFileSync, writeFileSync, mkdirSync, existsSync } from "node:fs";
-import { resolve, dirname } from "node:path";
+import { readFileSync, existsSync } from "node:fs";
+import { resolve } from "node:path";
 import { createHash, randomBytes } from "node:crypto";
 import type { IncomingMessage } from "node:http";
 import { z } from "zod";
@@ -54,22 +54,33 @@ export interface EnvConfig {
   ENABLE_SPEEDTEST?: boolean;
 }
 
-// Helper to ensure directory exists and write config file safely
-const ensureConfigDirAndWrite = (filePath: string, content: string): void => {
-  const configDir = dirname(filePath);
-  if (!existsSync(configDir)) {
-    mkdirSync(configDir, { recursive: true });
-  }
-  writeFileSync(filePath, content);
-};
-
-// Load environment configuration with fallback to defaults
+// Load environment configuration
 const loadEnvConfig = (): EnvConfig => {
   const envPath = resolve("./config/env.json");
+  
+  // Check if file exists
+  if (!existsSync(envPath)) {
+    throw new Error(
+      `[Auth] FATAL: config/env.json not found at ${envPath}\n` +
+      `Please create this file with at least a JWT_SECRET field.\n` +
+      `Example: { "JWT_SECRET": "your-secret-key-here" }`
+    );
+  }
+
   try {
-    const config = JSON.parse(readFileSync(envPath, "utf-8"));
+    const configContent = readFileSync(envPath, "utf-8");
+    const config = JSON.parse(configContent);
+    
+    // Validate required field
+    if (!config.JWT_SECRET) {
+      throw new Error(
+        `[Auth] FATAL: JWT_SECRET is missing in config/env.json\n` +
+        `Please add a JWT_SECRET field to ${envPath}`
+      );
+    }
+    
     return {
-      JWT_SECRET: config.JWT_SECRET ?? generateAndSaveSecret(envPath, config),
+      JWT_SECRET: config.JWT_SECRET,
       CLIENT_ID: config.CLIENT_ID,
       TENANT_ID: config.TENANT_ID,
       CLIENT_SECRET: config.CLIENT_SECRET,
@@ -77,34 +88,15 @@ const loadEnvConfig = (): EnvConfig => {
       ENABLE_SPEEDTEST: config.ENABLE_SPEEDTEST,
     };
   } catch (error) {
-    console.log("[Auth] config/env.json not found, creating with default configuration");
-    // Generate and save a persistent JWT secret
-    const secret = randomBytes(32).toString("hex");
-    const newConfig: EnvConfig = {
-      JWT_SECRET: secret,
-      CLOUD_INSTANCE: "https://login.microsoftonline.com/",
-    };
-    try {
-      ensureConfigDirAndWrite(envPath, JSON.stringify(newConfig, null, 2));
-      console.log("[Auth] Created config/env.json with generated JWT_SECRET");
-    } catch (writeError) {
-      console.error("[Auth] Failed to create config/env.json, using in-memory secret");
+    if (error instanceof SyntaxError) {
+      throw new Error(
+        `[Auth] FATAL: config/env.json contains invalid JSON\n` +
+        `Please check the file syntax at ${envPath}\n` +
+        `Error: ${error.message}`
+      );
     }
-    return newConfig;
+    throw error;
   }
-};
-
-// Helper to generate and save a JWT secret if missing
-const generateAndSaveSecret = (envPath: string, config: Partial<EnvConfig>): string => {
-  const secret = randomBytes(32).toString("hex");
-  config.JWT_SECRET = secret;
-  try {
-    ensureConfigDirAndWrite(envPath, JSON.stringify(config, null, 2));
-    console.log("[Auth] Generated and saved JWT_SECRET to config/env.json");
-  } catch (error) {
-    console.error("[Auth] Failed to save JWT_SECRET to config/env.json");
-  }
-  return secret;
 };
 
 const envConfig = loadEnvConfig();
