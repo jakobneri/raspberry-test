@@ -46,8 +46,13 @@ export interface SpeedTestResult {
 }
 
 // Helper function to convert bandwidth from bytes/s to Mbit/s
-const convertBandwidthToMbits = (bytesPerSecond: number): number => {
-  return Math.round((bytesPerSecond * 8 / 1000000) * 100) / 100;
+const convertBytesToMbits = (bytesPerSecond: number): number => {
+  return Math.round((bytesPerSecond / 1000000) * 100) / 100;
+};
+
+// Helper function to convert bandwidth from bits/s to Mbit/s  
+const convertBitsToMbits = (bitsPerSecond: number): number => {
+  return Math.round((bitsPerSecond / 1000000) * 100) / 100;
 };
 
 export const runSpeedTest = async (
@@ -64,13 +69,13 @@ export const runSpeedTest = async (
     });
     const data = JSON.parse(stdout);
 
-    // Official Ookla Speedtest CLI JSON structure
+    // Official Ookla Speedtest CLI JSON structure (bandwidth in bits/s)
     const ping = data.ping?.latency || null;
     const download = data.download?.bandwidth
-      ? convertBandwidthToMbits(data.download.bandwidth)
+      ? convertBitsToMbits(data.download.bandwidth)
       : null;
     const upload = data.upload?.bandwidth
-      ? convertBandwidthToMbits(data.upload.bandwidth)
+      ? convertBitsToMbits(data.upload.bandwidth)
       : null;
 
     if (!silent) {
@@ -98,12 +103,13 @@ export const runSpeedTest = async (
       });
       const data = JSON.parse(stdout);
 
+      // Legacy speedtest-cli returns bandwidth in bytes/s
       const ping = data.ping || null;
       const download = data.download
-        ? Math.round((data.download / 1000000) * 100) / 100
-        : null; // Convert bytes/s to Mbit/s
+        ? convertBytesToMbits(data.download)
+        : null;
       const upload = data.upload
-        ? Math.round((data.upload / 1000000) * 100) / 100
+        ? convertBytesToMbits(data.upload)
         : null;
 
       if (!silent) {
