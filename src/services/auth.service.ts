@@ -66,7 +66,7 @@ interface CachedToken {
 const tokenCache = new Map<string, CachedToken>();
 const CACHE_TTL = 60000; // 60 seconds
 
-export const createToken = (userId: string) => {
+export const createToken = async (userId: string) => {
   console.log(`[Auth] Token created: ${userId}`);
   return new SignJWT({ [propUserId]: userId })
     .setProtectedHeader({ alg: "HS256" })
