@@ -45,6 +45,11 @@ export interface SpeedTestResult {
   timestamp: string;
 }
 
+// Helper function to convert bandwidth from bytes/s to Mbit/s
+const convertBandwidthToMbits = (bytesPerSecond: number): number => {
+  return Math.round((bytesPerSecond * 8 / 1000000) * 100) / 100;
+};
+
 export const runSpeedTest = async (
   silent: boolean = false
 ): Promise<SpeedTestResult> => {
@@ -62,10 +67,10 @@ export const runSpeedTest = async (
     // Official Ookla Speedtest CLI JSON structure
     const ping = data.ping?.latency || null;
     const download = data.download?.bandwidth
-      ? Math.round((data.download.bandwidth * 8 / 1000000) * 100) / 100
-      : null; // Convert bytes/s to Mbit/s (multiply by 8 for bits)
+      ? convertBandwidthToMbits(data.download.bandwidth)
+      : null;
     const upload = data.upload?.bandwidth
-      ? Math.round((data.upload.bandwidth * 8 / 1000000) * 100) / 100
+      ? convertBandwidthToMbits(data.upload.bandwidth)
       : null;
 
     if (!silent) {
