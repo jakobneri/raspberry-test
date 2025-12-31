@@ -47,14 +47,35 @@ export const propUserId = "urn:app:userid";
 
 interface EnvConfig {
   JWT_SECRET: string;
-  CLIENT_ID: string;
-  TENANT_ID: string;
-  CLIENT_SECRET: string;
-  CLOUD_INSTANCE: string;
+  CLIENT_ID?: string;
+  TENANT_ID?: string;
+  CLIENT_SECRET?: string;
+  CLOUD_INSTANCE?: string;
 }
 
-const envPath = resolve("./config/env.json");
-const envConfig: EnvConfig = JSON.parse(readFileSync(envPath, "utf-8"));
+// Load environment configuration with fallback to defaults
+const loadEnvConfig = (): EnvConfig => {
+  const envPath = resolve("./config/env.json");
+  try {
+    const config = JSON.parse(readFileSync(envPath, "utf-8"));
+    return {
+      JWT_SECRET: config.JWT_SECRET || randomBytes(32).toString("hex"),
+      CLIENT_ID: config.CLIENT_ID,
+      TENANT_ID: config.TENANT_ID,
+      CLIENT_SECRET: config.CLIENT_SECRET,
+      CLOUD_INSTANCE: config.CLOUD_INSTANCE || "https://login.microsoftonline.com/",
+    };
+  } catch (error) {
+    console.log("[Auth] config/env.json not found, using default configuration");
+    // Generate a random JWT secret for this session
+    return {
+      JWT_SECRET: randomBytes(32).toString("hex"),
+      CLOUD_INSTANCE: "https://login.microsoftonline.com/",
+    };
+  }
+};
+
+const envConfig = loadEnvConfig();
 const jwtSecret = new TextEncoder().encode(envConfig.JWT_SECRET);
 
 // Token verification cache
