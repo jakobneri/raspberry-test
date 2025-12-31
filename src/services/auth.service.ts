@@ -1,6 +1,6 @@
 import { SignJWT, jwtVerify, type JWTPayload } from "jose";
 import { ConfidentialClientApplication, Configuration } from "@azure/msal-node";
-import { readFileSync, existsSync } from "node:fs";
+import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { createHash, randomBytes } from "node:crypto";
 import type { IncomingMessage } from "node:http";
@@ -45,61 +45,16 @@ export const validateUser = async (
 
 export const propUserId = "urn:app:userid";
 
-export interface EnvConfig {
+interface EnvConfig {
   JWT_SECRET: string;
-  CLIENT_ID?: string;
-  TENANT_ID?: string;
-  CLIENT_SECRET?: string;
-  CLOUD_INSTANCE?: string;
-  ENABLE_SPEEDTEST?: boolean;
+  CLIENT_ID: string;
+  TENANT_ID: string;
+  CLIENT_SECRET: string;
+  CLOUD_INSTANCE: string;
 }
 
-// Load environment configuration
-const loadEnvConfig = (): EnvConfig => {
-  const envPath = resolve("./config/env.json");
-  
-  // Check if file exists
-  if (!existsSync(envPath)) {
-    throw new Error(
-      `[Auth] FATAL: config/env.json not found at ${envPath}\n` +
-      `Please create this file with at least a JWT_SECRET field.\n` +
-      `Example: { "JWT_SECRET": "your-secret-key-here" }`
-    );
-  }
-
-  try {
-    const configContent = readFileSync(envPath, "utf-8");
-    const config = JSON.parse(configContent);
-    
-    // Validate required field
-    if (!config.JWT_SECRET) {
-      throw new Error(
-        `[Auth] FATAL: JWT_SECRET is missing in config/env.json\n` +
-        `Please add a JWT_SECRET field to ${envPath}`
-      );
-    }
-    
-    return {
-      JWT_SECRET: config.JWT_SECRET,
-      CLIENT_ID: config.CLIENT_ID,
-      TENANT_ID: config.TENANT_ID,
-      CLIENT_SECRET: config.CLIENT_SECRET,
-      CLOUD_INSTANCE: config.CLOUD_INSTANCE || "https://login.microsoftonline.com/",
-      ENABLE_SPEEDTEST: config.ENABLE_SPEEDTEST,
-    };
-  } catch (error) {
-    if (error instanceof SyntaxError) {
-      throw new Error(
-        `[Auth] FATAL: config/env.json contains invalid JSON\n` +
-        `Please check the file syntax at ${envPath}\n` +
-        `Error: ${error.message}`
-      );
-    }
-    throw error;
-  }
-};
-
-const envConfig = loadEnvConfig();
+const envPath = resolve("./config/env.json");
+const envConfig: EnvConfig = JSON.parse(readFileSync(envPath, "utf-8"));
 const jwtSecret = new TextEncoder().encode(envConfig.JWT_SECRET);
 
 // Token verification cache

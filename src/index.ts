@@ -15,7 +15,6 @@ import {
   getAppToken,
   getCookieToken,
   validateUser,
-  type EnvConfig,
 } from "./services/auth.service.js";
 import * as sessionService from "./services/auth.service.js";
 import * as scoreService from "./services/score.service.js";
@@ -642,18 +641,9 @@ router.post(
     console.log(`[ADMIN] Speedtest toggle: ${enabled} by user: ${userId}`);
 
     try {
-      const envPath = "config/env.json";
-      
-      // Read existing config
-      if (!existsSync(envPath)) {
-        res.writeHead(500, { "Content-Type": "application/json" });
-        res.end(JSON.stringify({ success: false, message: "Config file not found" }));
-        return;
-      }
-      
-      const envConfig: Partial<EnvConfig> = JSON.parse(readFileSync(envPath, "utf8"));
+      const envConfig = JSON.parse(readFileSync("config/env.json", "utf8"));
       envConfig.ENABLE_SPEEDTEST = enabled;
-      writeFileSync(envPath, JSON.stringify(envConfig, null, 2));
+      writeFileSync("config/env.json", JSON.stringify(envConfig, null, 2));
 
       if (enabled) speedTestService.startSpeedTestScheduler(60);
       else speedTestService.stopSpeedTestScheduler();
