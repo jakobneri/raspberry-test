@@ -54,6 +54,15 @@ interface EnvConfig {
   ENABLE_SPEEDTEST?: boolean;
 }
 
+// Helper to ensure directory exists and write config file safely
+const ensureConfigDirAndWrite = (filePath: string, content: string): void => {
+  const configDir = dirname(filePath);
+  if (!existsSync(configDir)) {
+    mkdirSync(configDir, { recursive: true });
+  }
+  writeFileSync(filePath, content);
+};
+
 // Load environment configuration with fallback to defaults
 const loadEnvConfig = (): EnvConfig => {
   const envPath = resolve("./config/env.json");
@@ -76,12 +85,7 @@ const loadEnvConfig = (): EnvConfig => {
       CLOUD_INSTANCE: "https://login.microsoftonline.com/",
     };
     try {
-      // Ensure config directory exists
-      const configDir = dirname(envPath);
-      if (!existsSync(configDir)) {
-        mkdirSync(configDir, { recursive: true });
-      }
-      writeFileSync(envPath, JSON.stringify(newConfig, null, 2));
+      ensureConfigDirAndWrite(envPath, JSON.stringify(newConfig, null, 2));
       console.log("[Auth] Created config/env.json with generated JWT_SECRET");
     } catch (writeError) {
       console.error("[Auth] Failed to create config/env.json, using in-memory secret");
@@ -95,12 +99,7 @@ const generateAndSaveSecret = (envPath: string, config: Partial<EnvConfig>): str
   const secret = randomBytes(32).toString("hex");
   config.JWT_SECRET = secret;
   try {
-    // Ensure config directory exists
-    const configDir = dirname(envPath);
-    if (!existsSync(configDir)) {
-      mkdirSync(configDir, { recursive: true });
-    }
-    writeFileSync(envPath, JSON.stringify(config, null, 2));
+    ensureConfigDirAndWrite(envPath, JSON.stringify(config, null, 2));
     console.log("[Auth] Generated and saved JWT_SECRET to config/env.json");
   } catch (error) {
     console.error("[Auth] Failed to save JWT_SECRET to config/env.json");

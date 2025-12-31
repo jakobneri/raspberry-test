@@ -4,8 +4,9 @@ import {
   createWriteStream,
   writeFileSync,
   existsSync,
+  mkdirSync,
 } from "node:fs";
-import { extname, join } from "node:path";
+import { extname, join, dirname } from "node:path";
 import { Router } from "./router.js";
 import {
   createToken,
@@ -651,15 +652,23 @@ router.post(
     console.log(`[ADMIN] Speedtest toggle: ${enabled} by user: ${userId}`);
 
     try {
+      const envPath = "config/env.json";
       let envConfig: ServerEnvConfig = {};
       
       // Read existing config or create new one
-      if (existsSync("config/env.json")) {
-        envConfig = JSON.parse(readFileSync("config/env.json", "utf8"));
+      if (existsSync(envPath)) {
+        envConfig = JSON.parse(readFileSync(envPath, "utf8"));
       }
       
       envConfig.ENABLE_SPEEDTEST = enabled;
-      writeFileSync("config/env.json", JSON.stringify(envConfig, null, 2));
+      
+      // Ensure config directory exists before writing
+      const configDir = dirname(envPath);
+      if (!existsSync(configDir)) {
+        mkdirSync(configDir, { recursive: true });
+      }
+      
+      writeFileSync(envPath, JSON.stringify(envConfig, null, 2));
 
       if (enabled) speedTestService.startSpeedTestScheduler(60);
       else speedTestService.stopSpeedTestScheduler();
