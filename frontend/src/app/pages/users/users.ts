@@ -6,6 +6,7 @@ import { ApiService, User } from '../../services/api';
 
 @Component({
   selector: 'app-users',
+  standalone: true,
   imports: [CommonModule, FormsModule, Sidebar],
   templateUrl: './users.html',
   styleUrl: './users.scss',
