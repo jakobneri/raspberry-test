@@ -1,3 +1,6 @@
+@use '../../../styles/variables' as *;
+@use '../../../styles/mixins' as *;
+
 .landing-container {
   min-height: 100vh;
   display: flex;
@@ -5,6 +8,10 @@
   justify-content: center;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   padding: 2rem;
+  
+  @include mobile {
+    padding: 1rem;
+  }
 }
 
 .landing-content {
@@ -19,19 +26,40 @@
   color: white;
   margin-bottom: 0.5rem;
   text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  
+  @include mobile {
+    font-size: 2rem;
+  }
 }
 
 .landing-subtitle {
   font-size: 1.25rem;
   color: rgba(255, 255, 255, 0.9);
   margin-bottom: 3rem;
+  
+  @include mobile {
+    font-size: 1rem;
+    margin-bottom: 2rem;
+  }
 }
 
 .landing-cards {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
   gap: 2rem;
   margin-bottom: 3rem;
+  
+  // Mobile: 1 column
+  grid-template-columns: 1fr;
+  
+  // Tablet and up: auto-fit with min 280px
+  @include tablet-up {
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  }
+  
+  @include mobile {
+    gap: 1rem;
+    margin-bottom: 2rem;
+  }
 }
 
 .landing-card {
@@ -52,6 +80,10 @@
   .card-icon {
     font-size: 3rem;
     margin-bottom: 1rem;
+    
+    @include mobile {
+      font-size: 2.5rem;
+    }
   }
 
   h2 {
@@ -59,12 +91,24 @@
     font-weight: 600;
     color: #333;
     margin-bottom: 0.5rem;
+    
+    @include mobile {
+      font-size: 1.25rem;
+    }
   }
 
   p {
     color: #666;
     font-size: 0.95rem;
     line-height: 1.5;
+    
+    @include mobile {
+      font-size: 0.875rem;
+    }
+  }
+  
+  @include mobile {
+    padding: 1.5rem;
   }
 }
 
@@ -75,18 +119,8 @@
   p {
     margin: 0;
   }
-}
-
-@media (max-width: 768px) {
-  .landing-title {
-    font-size: 2rem;
-  }
-
-  .landing-subtitle {
-    font-size: 1rem;
-  }
-
-  .landing-cards {
-    grid-template-columns: 1fr;
+  
+  @include mobile {
+    font-size: 0.8rem;
   }
 }

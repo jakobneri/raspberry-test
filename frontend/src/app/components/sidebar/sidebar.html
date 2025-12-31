@@ -1,14 +1,27 @@
-<div class="sidebar">
+<!-- Mobile Hamburger Button -->
+<button class="mobile-menu-toggle" (click)="toggleMobileMenu()" aria-label="Toggle menu">
+  <span class="hamburger-icon">☰</span>
+</button>
+
+<!-- Mobile Overlay -->
+@if (isMobileMenuOpen) {
+<div class="mobile-overlay" (click)="closeMobileMenu()"></div>
+}
+
+<div class="sidebar" [class.mobile-open]="isMobileMenuOpen">
   <div class="sidebar-header">
     <h1>🥧 Pi Cockpit</h1>
     <div class="subtitle">Raspberry Pi Server</div>
+    <button class="mobile-close-btn" (click)="closeMobileMenu()" aria-label="Close menu">
+      ✕
+    </button>
   </div>
 
   <nav class="sidebar-nav">
     <div class="nav-section">
       <div class="nav-section-title">Admin Pages</div>
       @for (link of adminLinks; track link.path) {
-      <a [routerLink]="link.path" routerLinkActive="active" class="nav-link">
+      <a [routerLink]="link.path" routerLinkActive="active" class="nav-link" (click)="closeMobileMenu()">
         <span class="nav-link-icon">{{ link.icon }}</span>
         <span>{{ link.label }}</span>
       </a>
@@ -18,7 +31,7 @@
     <div class="nav-section">
       <div class="nav-section-title">Public Pages</div>
       @for (link of publicLinks; track link.path) {
-      <a [routerLink]="link.path" routerLinkActive="active" class="nav-link">
+      <a [routerLink]="link.path" routerLinkActive="active" class="nav-link" (click)="closeMobileMenu()">
         <span class="nav-link-icon">{{ link.icon }}</span>
         <span>{{ link.label }}</span>
       </a>
@@ -27,6 +40,6 @@
   </nav>
 
   <div class="sidebar-footer">
-    <button class="logout-btn" (click)="logout()">🚪 Logout</button>
+    <button class="logout-btn" (click)="logout(); closeMobileMenu()">🚪 Logout</button>
   </div>
 </div>

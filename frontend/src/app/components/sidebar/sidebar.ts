@@ -17,6 +17,7 @@ interface NavLink {
 })
 export class Sidebar {
   @Input() currentPage: string = '';
+  isMobileMenuOpen = false;
 
   adminLinks: NavLink[] = [
     { path: '/cockpit', icon: '📊', label: 'Dashboard' },
@@ -32,5 +33,13 @@ export class Sidebar {
 
   logout(): void {
     this.authService.logout();
+  }
+
+  toggleMobileMenu(): void {
+    this.isMobileMenuOpen = !this.isMobileMenuOpen;
+  }
+
+  closeMobileMenu(): void {
+    this.isMobileMenuOpen = false;
   }
 }

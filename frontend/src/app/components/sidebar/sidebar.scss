@@ -1,6 +1,53 @@
 @use '../../../styles/variables' as *;
 @use '../../../styles/mixins' as *;
 
+// Mobile Menu Toggle Button
+.mobile-menu-toggle {
+  display: none;
+  position: fixed;
+  top: $spacing-md;
+  left: $spacing-md;
+  z-index: 1001;
+  background: $sidebar-bg;
+  border: 1px solid $border-color;
+  border-radius: $border-radius-sm;
+  padding: $spacing-sm $spacing-md;
+  color: $text-primary;
+  font-size: 24px;
+  cursor: pointer;
+  box-shadow: $shadow-md;
+  
+  @include mobile {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  &:hover {
+    background: $nav-hover;
+  }
+}
+
+.hamburger-icon {
+  line-height: 1;
+}
+
+// Mobile Overlay
+.mobile-overlay {
+  display: none;
+  
+  @include mobile {
+    display: block;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 999;
+  }
+}
+
 .sidebar {
   width: $sidebar-width;
   background: $sidebar-bg;
@@ -13,11 +60,21 @@
   bottom: 0;
   z-index: 1000;
   border-right: 1px solid $border-color;
+  
+  @include mobile {
+    transform: translateX(-100%);
+    transition: transform $transition-normal;
+    
+    &.mobile-open {
+      transform: translateX(0);
+    }
+  }
 }
 
 .sidebar-header {
   padding: $spacing-lg;
   border-bottom: 1px solid $border-color;
+  position: relative;
 
   h1 {
     font-size: 24px;
@@ -28,6 +85,28 @@
   .subtitle {
     font-size: 12px;
     color: $text-secondary;
+  }
+  
+  .mobile-close-btn {
+    display: none;
+    
+    @include mobile {
+      display: block;
+      position: absolute;
+      top: $spacing-md;
+      right: $spacing-md;
+      background: transparent;
+      border: none;
+      color: $text-secondary;
+      font-size: 24px;
+      cursor: pointer;
+      padding: $spacing-xs;
+      line-height: 1;
+      
+      &:hover {
+        color: $text-primary;
+      }
+    }
   }
 }
 

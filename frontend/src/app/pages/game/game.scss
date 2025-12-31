@@ -6,6 +6,10 @@
   min-height: 100vh;
   background: $bg-color;
   padding: $spacing-xl;
+  
+  @include mobile {
+    padding: $spacing-md;
+  }
 }
 
 .game-header {
@@ -15,6 +19,14 @@
   h1 {
     color: $text-primary;
     font-size: 32px;
+    
+    @include mobile {
+      font-size: 24px;
+    }
+  }
+  
+  @include mobile {
+    margin-bottom: $spacing-lg;
   }
 }
 
@@ -23,10 +35,19 @@
   justify-content: center;
   gap: $spacing-xl;
   flex-wrap: wrap;
+  
+  @include mobile {
+    flex-direction: column;
+    gap: $spacing-lg;
+  }
 }
 
 .game-area {
   @include card;
+  
+  @include mobile {
+    padding: $spacing-md;
+  }
 }
 
 .score-display {
@@ -37,6 +58,10 @@
   .high-score {
     font-size: 18px;
     font-weight: bold;
+    
+    @include mobile {
+      font-size: 16px;
+    }
   }
 
   .score {
@@ -53,6 +78,13 @@
   background: #1a1a2e;
   border: 2px solid $border-color;
   border-radius: $border-radius-sm;
+  
+  // Make game board responsive
+  @include mobile {
+    max-width: 100%;
+    height: auto !important;
+    aspect-ratio: 1; // Keep it square
+  }
 }
 
 .snake-segment {
@@ -69,6 +101,10 @@
   position: absolute;
   @include flex-center;
   font-size: 16px;
+  
+  @include mobile {
+    font-size: 14px;
+  }
 }
 
 .game-overlay {
@@ -89,11 +125,19 @@
 
   h2 {
     margin-bottom: $spacing-md;
+    
+    @include mobile {
+      font-size: 20px;
+    }
   }
 
   p {
     color: $text-secondary;
     margin-bottom: $spacing-lg;
+    
+    @include mobile {
+      font-size: 14px;
+    }
   }
 }
 
@@ -105,6 +149,15 @@
     color: $text-primary;
     margin-bottom: $spacing-lg;
     text-align: center;
+    
+    @include mobile {
+      font-size: 20px;
+    }
+  }
+  
+  @include mobile {
+    width: 100%;
+    padding: $spacing-md;
   }
 }
 
@@ -124,16 +177,34 @@
   .rank {
     width: 40px;
     font-size: 18px;
+    
+    @include mobile {
+      width: 32px;
+      font-size: 16px;
+    }
   }
 
   .name {
     flex: 1;
     color: $text-primary;
+    word-break: break-word;
+    
+    @include mobile {
+      font-size: 14px;
+    }
   }
 
   .points {
     font-weight: bold;
     color: $accent-color;
+    
+    @include mobile {
+      font-size: 14px;
+    }
+  }
+  
+  @include mobile {
+    padding: $spacing-sm;
   }
 }
 
@@ -141,4 +212,8 @@
   text-align: center;
   color: $text-secondary;
   padding: $spacing-lg;
+  
+  @include mobile {
+    font-size: 14px;
+  }
 }
