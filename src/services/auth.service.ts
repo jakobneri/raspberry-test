@@ -1,7 +1,7 @@
 import { SignJWT, jwtVerify, type JWTPayload } from "jose";
 import { ConfidentialClientApplication, Configuration } from "@azure/msal-node";
-import { readFileSync, writeFileSync } from "node:fs";
-import { resolve } from "node:path";
+import { readFileSync, writeFileSync, mkdirSync, existsSync } from "node:fs";
+import { resolve, dirname } from "node:path";
 import { createHash, randomBytes } from "node:crypto";
 import type { IncomingMessage } from "node:http";
 import { z } from "zod";
@@ -76,6 +76,11 @@ const loadEnvConfig = (): EnvConfig => {
       CLOUD_INSTANCE: "https://login.microsoftonline.com/",
     };
     try {
+      // Ensure config directory exists
+      const configDir = dirname(envPath);
+      if (!existsSync(configDir)) {
+        mkdirSync(configDir, { recursive: true });
+      }
       writeFileSync(envPath, JSON.stringify(newConfig, null, 2));
       console.log("[Auth] Created config/env.json with generated JWT_SECRET");
     } catch (writeError) {
@@ -86,10 +91,15 @@ const loadEnvConfig = (): EnvConfig => {
 };
 
 // Helper to generate and save a JWT secret if missing
-const generateAndSaveSecret = (envPath: string, config: any): string => {
+const generateAndSaveSecret = (envPath: string, config: Partial<EnvConfig>): string => {
   const secret = randomBytes(32).toString("hex");
   config.JWT_SECRET = secret;
   try {
+    // Ensure config directory exists
+    const configDir = dirname(envPath);
+    if (!existsSync(configDir)) {
+      mkdirSync(configDir, { recursive: true });
+    }
     writeFileSync(envPath, JSON.stringify(config, null, 2));
     console.log("[Auth] Generated and saved JWT_SECRET to config/env.json");
   } catch (error) {
