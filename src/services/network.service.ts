@@ -26,6 +26,34 @@ const ping = async (ip: string): Promise<boolean> => {
   }
 };
 
+const getHostname = async (ip: string): Promise<string | undefined> => {
+  try {
+    const { stdout } = await execAsync(`host ${ip}`);
+    const match = stdout.match(/pointer\s+(.+)\./);
+    return match ? match[1] : undefined;
+  } catch {
+    return undefined;
+  }
+};
+
+const getMacAddress = async (ip: string): Promise<string | undefined> => {
+  try {
+    // Use arp to get MAC address
+    const { stdout } = await execAsync(`arp -n ${ip}`);
+    const lines = stdout.split('\n');
+    for (const line of lines) {
+      if (line.includes(ip)) {
+        // Extract MAC address from arp output
+        const match = line.match(/([0-9a-fA-F]{2}:[0-9a-fA-F]{2}:[0-9a-fA-F]{2}:[0-9a-fA-F]{2}:[0-9a-fA-F]{2}:[0-9a-fA-F]{2})/);
+        return match ? match[1] : undefined;
+      }
+    }
+    return undefined;
+  } catch {
+    return undefined;
+  }
+};
+
 export const scanNetwork = async (
   onDeviceFound: (device: NetworkDevice) => void
 ): Promise<void> => {
@@ -43,8 +71,13 @@ export const scanNetwork = async (
   );
   const myIp = defaultIface.ip4;
 
-  // Emit self immediately
-  onDeviceFound({ ip: myIp, alive: true, hostname: "Raspberry Pi (Self)" });
+  // Emit self immediately with MAC address
+  onDeviceFound({ 
+    ip: myIp, 
+    alive: true, 
+    hostname: "Raspberry Pi (Self)",
+    mac: defaultIface.mac || "Unknown"
+  });
 
   // Scan 1-254 in batches
   const batchSize = 20;
@@ -60,7 +93,12 @@ export const scanNetwork = async (
         if (ip === myIp) return;
         const alive = await ping(ip);
         if (alive) {
-          onDeviceFound({ ip, alive: true });
+          // Try to get additional device info
+          const [hostname, mac] = await Promise.all([
+            getHostname(ip),
+            getMacAddress(ip)
+          ]);
+          onDeviceFound({ ip, alive: true, hostname, mac });
         }
       })
     );
