@@ -53,8 +53,36 @@ interface EnvConfig {
   CLOUD_INSTANCE: string;
 }
 
-const envPath = resolve("./config/env.json");
-const envConfig: EnvConfig = JSON.parse(readFileSync(envPath, "utf-8"));
+// Load environment configuration with fallback
+const loadEnvConfig = (): EnvConfig => {
+  const envPath = resolve("./config/env.json");
+  try {
+    const config = JSON.parse(readFileSync(envPath, "utf-8"));
+    
+    // Validate JWT_SECRET exists and is not empty/whitespace
+    if (!config.JWT_SECRET || !config.JWT_SECRET.trim()) {
+      console.error("[Auth] ERROR: JWT_SECRET is missing or empty in config/env.json");
+      console.error("[Auth] Please copy config/env.example.json to config/env.json and set JWT_SECRET");
+      process.exit(1);
+    }
+    
+    // Validate JWT_SECRET is sufficiently strong (at least 32 characters)
+    if (config.JWT_SECRET.trim().length < 32) {
+      console.error("[Auth] ERROR: JWT_SECRET must be at least 32 characters long");
+      console.error("[Auth] Generate a secure secret: node -e \"console.log(require('crypto').randomBytes(32).toString('hex'))\"");
+      process.exit(1);
+    }
+    
+    return config;
+  } catch (error) {
+    console.error("[Auth] ERROR: Failed to load config/env.json");
+    console.error("[Auth] Please copy config/env.example.json to config/env.json and configure it");
+    console.error("[Auth] Error details:", error instanceof Error ? error.message : error);
+    process.exit(1);
+  }
+};
+
+const envConfig: EnvConfig = loadEnvConfig();
 const jwtSecret = new TextEncoder().encode(envConfig.JWT_SECRET);
 
 // Token verification cache

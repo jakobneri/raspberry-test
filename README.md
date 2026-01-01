@@ -199,16 +199,39 @@ The start script automatically restarts the server if it crashes (exit code 42).
 
 ## 📝 Environment Configuration
 
-Create `env.json` with your Azure SSO credentials:
+**Required:** Create `config/env.json` file before starting the server.
+
+### Quick Setup
+
+Copy the example configuration:
+```bash
+cp config/env.example.json config/env.json
+```
+
+### Configuration File
+
+Edit `config/env.json` with the following structure:
 
 ```json
 {
-  "CLIENT_ID": "your-client-id",
-  "TENANT_ID": "your-tenant-id",
-  "CLIENT_SECRET": "your-client-secret",
+  "JWT_SECRET": "your-secret-key-change-this-in-production",
+  "CLIENT_ID": "",
+  "TENANT_ID": "",
+  "CLIENT_SECRET": "",
   "CLOUD_INSTANCE": "https://login.microsoftonline.com/"
 }
 ```
+
+### Configuration Fields
+
+- **JWT_SECRET** (Required): A secret key for signing JWT tokens. Use a strong random string (min 32 characters recommended).
+  - Generate a secure secret: `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"`
+- **CLIENT_ID** (Optional): Azure AD Application (client) ID - only required for Azure SSO
+- **TENANT_ID** (Optional): Azure AD Directory (tenant) ID - only required for Azure SSO
+- **CLIENT_SECRET** (Optional): Azure AD Client secret - only required for Azure SSO
+- **CLOUD_INSTANCE** (Optional): Azure cloud instance URL - defaults to public cloud
+
+⚠️ **Important:** The server will not start without a valid `config/env.json` file with JWT_SECRET set.
 
 ## 🎮 Default Users
 
