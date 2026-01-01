@@ -59,10 +59,17 @@ const loadEnvConfig = (): EnvConfig => {
   try {
     const config = JSON.parse(readFileSync(envPath, "utf-8"));
     
-    // Validate JWT_SECRET exists
-    if (!config.JWT_SECRET) {
-      console.error("[Auth] ERROR: JWT_SECRET is missing in config/env.json");
+    // Validate JWT_SECRET exists and is not empty/whitespace
+    if (!config.JWT_SECRET || !config.JWT_SECRET.trim()) {
+      console.error("[Auth] ERROR: JWT_SECRET is missing or empty in config/env.json");
       console.error("[Auth] Please copy config/env.example.json to config/env.json and set JWT_SECRET");
+      process.exit(1);
+    }
+    
+    // Validate JWT_SECRET is sufficiently strong (at least 32 characters)
+    if (config.JWT_SECRET.trim().length < 32) {
+      console.error("[Auth] ERROR: JWT_SECRET must be at least 32 characters long");
+      console.error("[Auth] Generate a secure secret: node -e \"console.log(require('crypto').randomBytes(32).toString('hex'))\"");
       process.exit(1);
     }
     
