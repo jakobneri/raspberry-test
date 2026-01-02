@@ -4,11 +4,22 @@
 .terminal-card {
   @include card;
   grid-column: span 2;
+  
+  @include mobile {
+    grid-column: span 1;
+    padding: $spacing-md;
+  }
 }
 
 .terminal-header {
   @include flex-between;
   margin-bottom: $spacing-md;
+  
+  @include mobile {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: $spacing-sm;
+  }
 }
 
 .terminal-title {
@@ -20,6 +31,14 @@
 
   .icon {
     font-size: 24px;
+    
+    @include mobile {
+      font-size: 20px;
+    }
+  }
+  
+  @include mobile {
+    font-size: 14px;
   }
 }
 
@@ -31,12 +50,29 @@
     padding: $spacing-xs $spacing-sm;
     font-size: 12px;
     min-width: 80px;
+    
+    @include mobile {
+      font-size: 14px;
+    }
   }
 
   .btn-clear {
     @include button-secondary;
     padding: $spacing-xs $spacing-sm;
     font-size: 12px;
+    
+    @include mobile {
+      font-size: 14px;
+      padding: $spacing-sm;
+    }
+  }
+  
+  @include mobile {
+    width: 100%;
+    
+    select {
+      flex: 1;
+    }
   }
 }
 
@@ -50,6 +86,12 @@
   font-family: 'Consolas', 'Monaco', monospace;
   font-size: 12px;
   @include custom-scrollbar;
+  
+  @include mobile {
+    font-size: 11px;
+    padding: $spacing-sm;
+    height: 180px;
+  }
 }
 
 .log-line {
@@ -74,4 +116,9 @@
   color: $text-secondary;
   text-align: center;
   padding: $spacing-xl;
+  
+  @include mobile {
+    padding: $spacing-lg;
+    font-size: 14px;
+  }
 }

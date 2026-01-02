@@ -1,10 +1,25 @@
 @use '../../../styles/variables' as *;
 @use '../../../styles/mixins' as *;
+@use 'sass:color';
 
 .main-content {
   margin-left: $sidebar-width;
   padding: $spacing-xl;
   min-height: 100vh;
+
+  &.no-sidebar {
+    margin-left: 0;
+  }
+  
+  @include mobile {
+    margin-left: 0;
+    padding: $spacing-md;
+    padding-top: 72px; // Account for hamburger menu with extra spacing
+    
+    &.no-sidebar {
+      padding-top: $spacing-md;
+    }
+  }
 }
 
 .container {
@@ -14,10 +29,38 @@
 
 .page-header {
   margin-bottom: $spacing-xl;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 
   h1 {
     color: $text-primary;
     margin: 0;
+    
+    @include mobile {
+      font-size: 24px;
+    }
+  }
+
+  .login-link {
+    color: $accent-color;
+    text-decoration: none;
+    font-weight: 500;
+    transition: color $transition-fast;
+
+    &:hover {
+      color: color.adjust($accent-color, $lightness: 10%);
+    }
+    
+    @include mobile {
+      font-size: 14px;
+    }
+  }
+  
+  @include mobile {
+    margin-bottom: $spacing-lg;
+    flex-wrap: wrap;
+    gap: $spacing-sm;
   }
 }
 
@@ -32,6 +75,11 @@
     border-color: $accent-color;
     background: rgba($accent-color, 0.05);
   }
+  
+  @include mobile {
+    padding: $spacing-md;
+    margin-bottom: $spacing-lg;
+  }
 }
 
 .upload-content {
@@ -41,11 +89,23 @@
     font-size: 48px;
     display: block;
     margin-bottom: $spacing-md;
+    
+    @include mobile {
+      font-size: 36px;
+    }
   }
 
   p {
     color: $text-secondary;
     margin-bottom: $spacing-md;
+    
+    @include mobile {
+      font-size: 14px;
+    }
+  }
+  
+  @include mobile {
+    padding: $spacing-lg;
   }
 }
 
@@ -61,12 +121,24 @@
   span {
     color: $text-secondary;
   }
+  
+  @include mobile {
+    padding: $spacing-lg;
+  }
 }
 
 .files-card {
   h2 {
     color: $text-primary;
     margin-bottom: $spacing-lg;
+    
+    @include mobile {
+      font-size: 20px;
+    }
+  }
+  
+  @include mobile {
+    padding: $spacing-md;
   }
 }
 
@@ -85,33 +157,53 @@
   transition: background $transition-fast;
 
   &:hover {
-    background: lighten($bg-color, 5%);
+    background: color.adjust($bg-color, $lightness: 5%);
+  }
+  
+  @include mobile {
+    padding: $spacing-sm;
   }
 }
 
 .file-icon {
   font-size: 32px;
   margin-right: $spacing-md;
+  
+  @include mobile {
+    font-size: 24px;
+    margin-right: $spacing-sm;
+  }
 }
 
 .file-info {
   flex: 1;
+  min-width: 0; // Allows text truncation
 
   .file-name {
     color: $text-primary;
     font-weight: 500;
     margin-bottom: $spacing-xs;
+    word-break: break-word;
+    
+    @include mobile {
+      font-size: 14px;
+    }
   }
 
   .file-meta {
     color: $text-secondary;
     font-size: 12px;
+    
+    @include mobile {
+      font-size: 11px;
+    }
   }
 }
 
 .file-actions {
   display: flex;
   gap: $spacing-sm;
+  flex-shrink: 0;
 
   button {
     background: none;
@@ -125,6 +217,16 @@
     &:hover {
       background: rgba($accent-color, 0.1);
     }
+    
+    @include mobile {
+      font-size: 18px;
+      padding: $spacing-sm;
+      min-width: 44px; // Better touch target
+      min-height: 44px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
   }
 }
 
@@ -136,9 +238,21 @@
     font-size: 64px;
     display: block;
     margin-bottom: $spacing-md;
+    
+    @include mobile {
+      font-size: 48px;
+    }
   }
 
   p {
     color: $text-secondary;
+    
+    @include mobile {
+      font-size: 14px;
+    }
+  }
+  
+  @include mobile {
+    padding: $spacing-xl;
   }
 }

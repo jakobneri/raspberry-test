@@ -1,0 +1,126 @@
+@use '../../../styles/variables' as *;
+@use '../../../styles/mixins' as *;
+
+.landing-container {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding: 2rem;
+  
+  @include mobile {
+    padding: 1rem;
+  }
+}
+
+.landing-content {
+  max-width: 1200px;
+  width: 100%;
+  text-align: center;
+}
+
+.landing-title {
+  font-size: 3rem;
+  font-weight: 700;
+  color: white;
+  margin-bottom: 0.5rem;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  
+  @include mobile {
+    font-size: 2rem;
+  }
+}
+
+.landing-subtitle {
+  font-size: 1.25rem;
+  color: rgba(255, 255, 255, 0.9);
+  margin-bottom: 3rem;
+  
+  @include mobile {
+    font-size: 1rem;
+    margin-bottom: 2rem;
+  }
+}
+
+.landing-cards {
+  display: grid;
+  gap: 2rem;
+  margin-bottom: 3rem;
+  
+  // Mobile: 1 column
+  grid-template-columns: 1fr;
+  
+  // Tablet and up: auto-fit with min 280px
+  @include tablet-up {
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  }
+  
+  @include mobile {
+    gap: 1rem;
+    margin-bottom: 2rem;
+  }
+}
+
+.landing-card {
+  background: white;
+  border-radius: 12px;
+  padding: 2rem;
+  text-decoration: none;
+  color: inherit;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  cursor: pointer;
+
+  &:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+  }
+
+  .card-icon {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+    
+    @include mobile {
+      font-size: 2.5rem;
+    }
+  }
+
+  h2 {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 0.5rem;
+    
+    @include mobile {
+      font-size: 1.25rem;
+    }
+  }
+
+  p {
+    color: #666;
+    font-size: 0.95rem;
+    line-height: 1.5;
+    
+    @include mobile {
+      font-size: 0.875rem;
+    }
+  }
+  
+  @include mobile {
+    padding: 1.5rem;
+  }
+}
+
+.landing-footer {
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 0.9rem;
+
+  p {
+    margin: 0;
+  }
+  
+  @include mobile {
+    font-size: 0.8rem;
+  }
+}

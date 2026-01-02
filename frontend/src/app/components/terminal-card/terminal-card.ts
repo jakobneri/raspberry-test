@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, ElementRef, ViewChild } from '@angular/core';
+import { Component, OnInit, OnDestroy, ElementRef, ViewChild, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Subscription } from 'rxjs';
@@ -18,7 +18,11 @@ export class TerminalCard implements OnInit, OnDestroy {
   logLevel: string = 'info';
   private subscription?: Subscription;
 
-  constructor(private websocket: WebsocketService, private api: ApiService) {}
+  constructor(
+    private websocket: WebsocketService,
+    private api: ApiService,
+    private cdr: ChangeDetectorRef
+  ) {}
 
   ngOnInit(): void {
     this.websocket.connectToLogs();
@@ -29,6 +33,7 @@ export class TerminalCard implements OnInit, OnDestroy {
         this.logs.shift();
       }
       this.scrollToBottom();
+      this.cdr.detectChanges(); // Explicitly trigger change detection
     });
   }
 

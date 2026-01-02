@@ -30,6 +30,9 @@ const router = new Router();
 // Angular build directory
 const ANGULAR_DIST = "frontend/dist/frontend/browser";
 
+// In-memory storage for network devices
+let cachedNetworkDevices: any[] = [];
+
 // MIME types for static files
 const MIME_TYPES: Record<string, string> = {
   ".html": "text/html",
@@ -95,7 +98,7 @@ router.post("/api/login", async (req, res) => {
   console.log(`[AUTH] Successful login for user: ${user.id} (${email})`);
   const token = await createToken(user.id);
   sessionService.addSession(user.id, token);
-  res.setHeader("Set-Cookie", `jwt=${token}; HttpOnly; Path=/; Max-Age=900`);
+  res.setHeader("Set-Cookie", `jwt=${token}; HttpOnly; Path=/; Max-Age=900; SameSite=Lax`);
   res.writeHead(200, { "Content-Type": "application/json" });
   res.end(JSON.stringify({ success: true, userId: user.id }));
 });
@@ -229,6 +232,18 @@ router.get(
   })
 );
 
+router.post(
+  "/api/users",
+  authHandler(async (req, res) => {
+    const body = await getReqBody(req);
+    const data = JSON.parse(body || "{}");
+    const { createUser } = await import("./services/auth.service.js");
+    const result = await createUser(data.email, data.password, data.name || "");
+    res.writeHead(200, { "Content-Type": "application/json" });
+    res.end(JSON.stringify(result));
+  })
+);
+
 router.get(
   "/api/user-requests",
   authHandler(async (req, res) => {
@@ -242,22 +257,36 @@ router.get(
 );
 
 router.get(
+  "/api/network/devices",
+  authHandler(async (req, res) => {
+    // Return cached network devices
+    res.writeHead(200, { "Content-Type": "application/json" });
+    res.end(JSON.stringify({ devices: cachedNetworkDevices }));
+  })
+);
+
+router.post(
   "/api/network/scan",
   authHandler(async (req, res) => {
-    res.writeHead(200, {
-      "Content-Type": "text/event-stream",
-      "Cache-Control": "no-cache",
-      Connection: "keep-alive",
-    });
-
     const { scanNetwork } = await import("./services/network.service.js");
+    const devices: any[] = [];
 
     await scanNetwork((device) => {
-      res.write(`data: ${JSON.stringify(device)}\n\n`);
+      // Add status and lastSeen fields for compatibility with frontend
+      const deviceWithMeta = {
+        ...device,
+        status: device.alive ? 'online' : 'offline',
+        lastSeen: new Date().toISOString(),
+        mac: device.mac || 'Unknown',
+      };
+      devices.push(deviceWithMeta);
     });
 
-    res.write("event: done\ndata: {}\n\n");
-    res.end();
+    // Update cached devices
+    cachedNetworkDevices = devices;
+
+    res.writeHead(200, { "Content-Type": "application/json" });
+    res.end(JSON.stringify({ devices }));
   })
 );
 
@@ -271,36 +300,30 @@ router.delete(
 );
 
 router.post(
-  "/api/user-requests/approve",
-  authHandler(async (req, res) => {
-    const body = await getReqBody(req);
-    const data = JSON.parse(body || "{}");
+  "/api/user-requests/:requestId/approve",
+  authHandler(async (req, res, userId, params) => {
     const { approveUserRequest } = await import("./services/auth.service.js");
-    const result = await approveUserRequest(data.requestId);
+    const result = await approveUserRequest(params.requestId);
     res.writeHead(200, { "Content-Type": "application/json" });
     res.end(JSON.stringify(result));
   })
 );
 
-router.post(
-  "/api/user-requests/reject",
-  authHandler(async (req, res) => {
-    const body = await getReqBody(req);
-    const data = JSON.parse(body || "{}");
+router.delete(
+  "/api/user-requests/:requestId",
+  authHandler(async (req, res, userId, params) => {
     const { rejectUserRequest } = await import("./services/auth.service.js");
-    const result = await rejectUserRequest(data.requestId);
+    const result = await rejectUserRequest(params.requestId);
     res.writeHead(200, { "Content-Type": "application/json" });
     res.end(JSON.stringify(result));
   })
 );
 
-router.post(
-  "/api/users/delete",
-  authHandler(async (req, res) => {
-    const body = await getReqBody(req);
-    const data = JSON.parse(body || "{}");
+router.delete(
+  "/api/users/:userId",
+  authHandler(async (req, res, userId, params) => {
     const { deleteUser } = await import("./services/auth.service.js");
-    const result = await deleteUser(data.userId);
+    const result = await deleteUser(params.userId);
     res.writeHead(200, { "Content-Type": "application/json" });
     res.end(JSON.stringify(result));
   })
@@ -309,9 +332,9 @@ router.post(
 router.get(
   "/api/metrics",
   authHandler(async (req, res) => {
-    const metrics = await metricsService.getMetrics();
+    const metricsData = await metricsService.getMetrics();
     res.writeHead(200, { "Content-Type": "application/json" });
-    res.end(JSON.stringify(metrics));
+    res.end(JSON.stringify(metricsData.current));
   })
 );
 
@@ -457,14 +480,11 @@ router.post(
   })
 );
 
-router.get(
-  "/api/files",
-  authHandler(async (req, res) => {
-    const files = filesService.listFiles();
-    res.writeHead(200, { "Content-Type": "application/json" });
-    res.end(JSON.stringify(files));
-  })
-);
+router.get("/api/files", async (req, res) => {
+  const files = filesService.listFiles();
+  res.writeHead(200, { "Content-Type": "application/json" });
+  res.end(JSON.stringify(files));
+});
 
 router.post(
   "/api/files/upload",
@@ -508,22 +528,19 @@ router.post(
   })
 );
 
-router.get(
-  "/api/files/download/:filename",
-  authHandler(async (req, res, userId, params) => {
-    try {
-      const filename = decodeURIComponent(params.filename);
-      const file = filesService.getFile(filename);
-      res.writeHead(200, {
-        "Content-Type": "application/octet-stream",
-        "Content-Disposition": `attachment; filename="${filename}"`,
-      });
-      res.end(file);
-    } catch (error) {
-      res.writeHead(404).end("File not found");
-    }
-  })
-);
+router.get("/api/files/download/:filename", async (req, res, params) => {
+  try {
+    const filename = decodeURIComponent(params.filename);
+    const file = filesService.getFile(filename);
+    res.writeHead(200, {
+      "Content-Type": "application/octet-stream",
+      "Content-Disposition": `attachment; filename="${filename}"`,
+    });
+    res.end(file);
+  } catch (error) {
+    res.writeHead(404).end("File not found");
+  }
+});
 
 router.delete(
   "/api/files/:filename",
@@ -675,7 +692,7 @@ router.post(
       sessionService.removeSession(cookieToken);
       clearTokenCache(cookieToken);
     }
-    res.setHeader("Set-Cookie", "jwt=; HttpOnly; Path=/; Max-Age=0");
+    res.setHeader("Set-Cookie", "jwt=; HttpOnly; Path=/; Max-Age=0; SameSite=Lax");
     res.writeHead(200, { "Content-Type": "application/json" });
     res.end(JSON.stringify({ success: true }));
   })

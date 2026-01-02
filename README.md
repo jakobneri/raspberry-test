@@ -2,6 +2,29 @@
 
 A TypeScript-based server manager for Raspberry Pi with monitoring, file sharing, and administration features.
 
+## 📋 System Requirements
+
+### Speedtest Functionality
+
+For network speed testing, you need to install the official Ookla Speedtest CLI:
+
+**On Raspberry Pi / Debian / Ubuntu:**
+```bash
+# Install dependencies
+sudo apt-get install curl
+
+# Download and install official Ookla Speedtest CLI
+curl -s https://packagecloud.io/install/repositories/ookla/speedtest-cli/script.deb.sh | sudo bash
+sudo apt-get install speedtest
+```
+
+**Alternative: Legacy speedtest-cli (not recommended due to HTTP 403 errors):**
+```bash
+sudo apt-get install speedtest-cli
+```
+
+For more information, visit: https://www.speedtest.net/apps/cli
+
 ## 🚀 Quick Start
 
 ### Development (Windows)
@@ -126,6 +149,15 @@ The project uses modern TypeScript with:
 - Connect to WiFi
 - View connection status
 
+### Network Speed Testing
+
+- Run manual speed tests
+- Automatic scheduled speed tests
+- Speed test history tracking
+- Download/upload speed measurement
+- Ping latency measurement
+- Supports official Ookla Speedtest CLI
+
 ### Administration
 
 - Server restart
@@ -167,16 +199,39 @@ The start script automatically restarts the server if it crashes (exit code 42).
 
 ## 📝 Environment Configuration
 
-Create `env.json` with your Azure SSO credentials:
+**Required:** Create `config/env.json` file before starting the server.
+
+### Quick Setup
+
+Copy the example configuration:
+```bash
+cp config/env.example.json config/env.json
+```
+
+### Configuration File
+
+Edit `config/env.json` with the following structure:
 
 ```json
 {
-  "CLIENT_ID": "your-client-id",
-  "TENANT_ID": "your-tenant-id",
-  "CLIENT_SECRET": "your-client-secret",
+  "JWT_SECRET": "your-secret-key-change-this-in-production",
+  "CLIENT_ID": "",
+  "TENANT_ID": "",
+  "CLIENT_SECRET": "",
   "CLOUD_INSTANCE": "https://login.microsoftonline.com/"
 }
 ```
+
+### Configuration Fields
+
+- **JWT_SECRET** (Required): A secret key for signing JWT tokens. Use a strong random string (min 32 characters recommended).
+  - Generate a secure secret: `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"`
+- **CLIENT_ID** (Optional): Azure AD Application (client) ID - only required for Azure SSO
+- **TENANT_ID** (Optional): Azure AD Directory (tenant) ID - only required for Azure SSO
+- **CLIENT_SECRET** (Optional): Azure AD Client secret - only required for Azure SSO
+- **CLOUD_INSTANCE** (Optional): Azure cloud instance URL - defaults to public cloud
+
+⚠️ **Important:** The server will not start without a valid `config/env.json` file with JWT_SECRET set.
 
 ## 🎮 Default Users
 
@@ -218,6 +273,10 @@ Access the cockpit at `/cockpit` to view:
 - `GET /api/system-info` - System information
 - `GET /api/sessions` - Active sessions
 - `POST /api/speedtest` - Run speed test
+- `GET /api/speedtest/history` - Get speed test history
+- `POST /api/speedtest/history/clear` - Clear speed test history
+- `GET /api/speedtest/interval` - Get scheduler configuration
+- `POST /api/speedtest/interval` - Update scheduler configuration
 - `GET /api/wifi/status` - WiFi status
 - `GET /api/wifi/scan` - Scan networks
 - `POST /api/wifi/connect` - Connect to WiFi

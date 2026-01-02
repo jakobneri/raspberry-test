@@ -53,8 +53,36 @@ interface EnvConfig {
   CLOUD_INSTANCE: string;
 }
 
-const envPath = resolve("./config/env.json");
-const envConfig: EnvConfig = JSON.parse(readFileSync(envPath, "utf-8"));
+// Load environment configuration with fallback
+const loadEnvConfig = (): EnvConfig => {
+  const envPath = resolve("./config/env.json");
+  try {
+    const config = JSON.parse(readFileSync(envPath, "utf-8"));
+    
+    // Validate JWT_SECRET exists and is not empty/whitespace
+    if (!config.JWT_SECRET || !config.JWT_SECRET.trim()) {
+      console.error("[Auth] ERROR: JWT_SECRET is missing or empty in config/env.json");
+      console.error("[Auth] Please copy config/env.example.json to config/env.json and set JWT_SECRET");
+      process.exit(1);
+    }
+    
+    // Validate JWT_SECRET is sufficiently strong (at least 32 characters)
+    if (config.JWT_SECRET.trim().length < 32) {
+      console.error("[Auth] ERROR: JWT_SECRET must be at least 32 characters long");
+      console.error("[Auth] Generate a secure secret: node -e \"console.log(require('crypto').randomBytes(32).toString('hex'))\"");
+      process.exit(1);
+    }
+    
+    return config;
+  } catch (error) {
+    console.error("[Auth] ERROR: Failed to load config/env.json");
+    console.error("[Auth] Please copy config/env.example.json to config/env.json and configure it");
+    console.error("[Auth] Error details:", error instanceof Error ? error.message : error);
+    process.exit(1);
+  }
+};
+
+const envConfig: EnvConfig = loadEnvConfig();
 const jwtSecret = new TextEncoder().encode(envConfig.JWT_SECRET);
 
 // Token verification cache
@@ -66,7 +94,7 @@ interface CachedToken {
 const tokenCache = new Map<string, CachedToken>();
 const CACHE_TTL = 60000; // 60 seconds
 
-export const createToken = (userId: string) => {
+export const createToken = async (userId: string) => {
   console.log(`[Auth] Token created: ${userId}`);
   return new SignJWT({ [propUserId]: userId })
     .setProtectedHeader({ alg: "HS256" })
@@ -178,7 +206,7 @@ let activeSessions: Session[] = [];
 
 export const addSession = (userId: string, token: string): Session => {
   const session: Session = {
-    id: `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+    id: `session_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`,
     userId,
     token,
     createdAt: new Date().toISOString(),
@@ -273,7 +301,7 @@ export const createUserRequest = async (
 
     const salt = randomBytes(16).toString("hex");
     const hashedPassword = hashPassword(password, salt);
-    const id = `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    const id = `req_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
     const requestedAt = new Date().toISOString();
 
     await run(
@@ -356,6 +384,40 @@ export const rejectUserRequest = async (
 
   console.log(`[Auth] User request rejected: ${request.email}`);
   return { success: true, message: "User request rejected" };
+};
+
+export const createUser = async (
+  email: string,
+  password: string,
+  name: string
+): Promise<{ success: boolean; message: string; userId?: string }> => {
+  try {
+    // Validate email with Zod
+    emailSchema.parse(email);
+
+    // Check if email already exists
+    const existingUser = await get("SELECT id FROM users WHERE email = ?", [
+      email,
+    ]);
+    if (existingUser) {
+      return { success: false, message: "Email already registered" };
+    }
+
+    const salt = randomBytes(16).toString("hex");
+    const hashedPassword = hashPassword(password, salt);
+    const userId = `user_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
+
+    await run(
+      "INSERT INTO users (id, email, password, salt) VALUES (?, ?, ?, ?)",
+      [userId, email, hashedPassword, salt]
+    );
+
+    console.log(`[Auth] User created: ${email}`);
+    return { success: true, message: "User created successfully", userId };
+  } catch (error) {
+    console.error("[Auth] Error creating user:", error);
+    return { success: false, message: "Failed to create user" };
+  }
 };
 
 export const deleteUser = async (

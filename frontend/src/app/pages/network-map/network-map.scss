@@ -11,6 +11,12 @@
   flex: 1;
   padding: $spacing-xl;
   margin-left: 250px;
+  
+  @include mobile {
+    margin-left: 0;
+    padding: $spacing-md;
+    padding-top: 72px; // Account for hamburger menu with extra spacing
+  }
 }
 
 .network-header {
@@ -18,26 +24,56 @@
 
   .header-content {
     @include flex-between;
+    
+    @include mobile {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: $spacing-md;
+    }
   }
 
   h1 {
     color: $text-primary;
     font-size: 28px;
+    
+    @include mobile {
+      font-size: 24px;
+    }
   }
 
   .last-scan {
     color: $text-secondary;
     font-size: 14px;
     margin-top: $spacing-sm;
+    
+    @include mobile {
+      font-size: 13px;
+    }
+  }
+  
+  @include mobile {
+    margin-bottom: $spacing-lg;
   }
 }
 
 // Stats Row
 .stats-row {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   gap: $spacing-lg;
   margin-bottom: $spacing-xl;
+  
+  // Mobile: 1 column
+  grid-template-columns: 1fr;
+  
+  // Tablet and up: 3 columns
+  @include tablet-up {
+    grid-template-columns: repeat(3, 1fr);
+  }
+  
+  @include mobile {
+    gap: $spacing-md;
+    margin-bottom: $spacing-lg;
+  }
 }
 
 .stat-card {
@@ -48,6 +84,10 @@
 
   .stat-icon {
     font-size: 32px;
+    
+    @include mobile {
+      font-size: 28px;
+    }
   }
 
   .stat-info {
@@ -59,11 +99,19 @@
     font-size: 28px;
     font-weight: bold;
     color: $text-primary;
+    
+    @include mobile {
+      font-size: 24px;
+    }
   }
 
   .stat-label {
     color: $text-secondary;
     font-size: 14px;
+    
+    @include mobile {
+      font-size: 13px;
+    }
   }
 
   &.online .stat-value {
@@ -73,6 +121,10 @@
   &.offline .stat-value {
     color: $error-color;
   }
+  
+  @include mobile {
+    padding: $spacing-md;
+  }
 }
 
 // Devices Section
@@ -80,13 +132,33 @@
   h2 {
     color: $text-primary;
     margin-bottom: $spacing-lg;
+    
+    @include mobile {
+      font-size: 20px;
+    }
   }
 }
 
 .devices-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   gap: $spacing-lg;
+  
+  // Mobile: 1 column
+  grid-template-columns: 1fr;
+  
+  // Tablet: 2 columns
+  @include tablet-up {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  // Desktop: 3 columns
+  @include desktop-up {
+    grid-template-columns: repeat(3, 1fr);
+  }
+  
+  @include mobile {
+    gap: $spacing-md;
+  }
 }
 
 .device-card {
@@ -100,6 +172,10 @@
   &.offline {
     border-left: 3px solid $error-color;
     opacity: 0.7;
+  }
+  
+  @include mobile {
+    padding: $spacing-md;
   }
 }
 
@@ -130,12 +206,25 @@
     font-size: 12px;
     color: $text-secondary;
     text-transform: uppercase;
+    
+    @include mobile {
+      font-size: 11px;
+    }
+  }
+  
+  @include mobile {
+    top: $spacing-sm;
+    right: $spacing-sm;
   }
 }
 
 .device-icon {
   font-size: 48px;
   margin-bottom: $spacing-md;
+  
+  @include mobile {
+    font-size: 36px;
+  }
 }
 
 .device-info {
@@ -145,12 +234,22 @@
     color: $text-primary;
     font-size: 18px;
     margin-bottom: $spacing-xs;
+    word-break: break-word;
+    
+    @include mobile {
+      font-size: 16px;
+    }
   }
 
   .device-ip {
     color: $accent-color;
     font-family: monospace;
     font-size: 14px;
+    word-break: break-all;
+    
+    @include mobile {
+      font-size: 13px;
+    }
   }
 }
 
@@ -175,6 +274,14 @@
     .value {
       color: $text-primary;
       font-family: monospace;
+      word-break: break-all;
+      text-align: right;
+    }
+    
+    @include mobile {
+      font-size: 12px;
+      flex-wrap: wrap;
+      gap: $spacing-xs;
     }
   }
 }
@@ -190,6 +297,14 @@
   p {
     color: $text-secondary;
     margin-top: $spacing-md;
+  }
+  
+  @include mobile {
+    padding: $spacing-xl;
+    
+    p {
+      font-size: 14px;
+    }
   }
 }
 
@@ -207,6 +322,11 @@
   &:disabled {
     opacity: 0.6;
     cursor: not-allowed;
+  }
+  
+  @include mobile {
+    padding: $spacing-md $spacing-lg;
+    font-size: 16px;
   }
 }
 

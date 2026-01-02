@@ -7,7 +7,7 @@ export interface SystemMetrics {
     usage: number;
     cores: number;
     speed: number;
-    temperature: number;
+    temp: number;
   };
   memory: {
     total: number;
@@ -50,8 +50,20 @@ export interface MetricsHistory {
 }
 
 let metricsHistory: SystemMetrics[] = [];
+let cachedMetrics: SystemMetrics | null = null;
+let lastFetch: number = 0;
+const CACHE_DURATION_MS = 1000; // Cache for 1 second
 
 export const getMetrics = async (): Promise<MetricsHistory> => {
+  // Return cached metrics if they're fresh (less than CACHE_DURATION_MS old)
+  const now = Date.now();
+  if (cachedMetrics && now - lastFetch < CACHE_DURATION_MS) {
+    return {
+      current: cachedMetrics,
+      history: metricsHistory,
+    };
+  }
+
   const [
     cpuData,
     memData,
@@ -81,7 +93,7 @@ export const getMetrics = async (): Promise<MetricsHistory> => {
       usage: Math.round(currentLoad.currentLoad * 10) / 10,
       cores: cpuData.cores,
       speed: cpuData.speed,
-      temperature: cpuTemp.main || cpuTemp.max || 0,
+      temp: cpuTemp.main || cpuTemp.max || 0,
     },
     memory: {
       total: Math.round((memData.total / 1024 / 1024 / 1024) * 100) / 100,
@@ -158,6 +170,10 @@ export const getMetrics = async (): Promise<MetricsHistory> => {
   if (metricsHistory.length > 60) {
     metricsHistory.shift();
   }
+
+  // Update cache
+  cachedMetrics = metrics;
+  lastFetch = now;
 
   return {
     current: metrics,

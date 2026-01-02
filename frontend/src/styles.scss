@@ -24,14 +24,29 @@ body {
 // Global Button Styles
 .btn-primary {
   @include button-primary;
+  
+  @include mobile {
+    padding: $spacing-md $spacing-lg;
+    font-size: 16px; // Better touch target on mobile
+  }
 }
 
 .btn-danger {
   @include button-danger;
+  
+  @include mobile {
+    padding: $spacing-md $spacing-lg;
+    font-size: 16px;
+  }
 }
 
 .btn-secondary {
   @include button-secondary;
+  
+  @include mobile {
+    padding: $spacing-md $spacing-lg;
+    font-size: 16px;
+  }
 }
 
 // Global Input Styles
@@ -49,9 +64,21 @@ textarea {
 // Grid Utilities
 .metrics-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
   gap: $spacing-lg;
   margin-bottom: $spacing-lg;
+  
+  // Mobile: 1 column
+  grid-template-columns: 1fr;
+  
+  // Tablet: 2 columns
+  @include tablet-up {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  // Desktop: 3 columns
+  @include desktop-up {
+    grid-template-columns: repeat(3, 1fr);
+  }
 }
 
 // Flex Utilities

@@ -1,10 +1,17 @@
 @use '../../../styles/variables' as *;
 @use '../../../styles/mixins' as *;
+@use 'sass:color';
 
 .main-content {
   margin-left: $sidebar-width;
   padding: $spacing-xl;
   min-height: 100vh;
+  
+  @include mobile {
+    margin-left: 0;
+    padding: $spacing-md;
+    padding-top: 72px; // Account for hamburger menu with extra spacing
+  }
 }
 
 .container {
@@ -19,6 +26,17 @@
   h1 {
     color: $text-primary;
     margin: 0;
+    
+    @include mobile {
+      font-size: 24px;
+    }
+  }
+  
+  @include mobile {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: $spacing-md;
+    margin-bottom: $spacing-lg;
   }
 }
 
@@ -28,6 +46,10 @@
   h2 {
     color: $text-primary;
     margin-bottom: $spacing-md;
+    
+    @include mobile {
+      font-size: 20px;
+    }
   }
 }
 
@@ -47,24 +69,47 @@
     display: flex;
     flex-direction: column;
     gap: $spacing-xs;
+    flex: 1;
+    min-width: 0;
 
     strong {
       color: $text-primary;
+      word-break: break-word;
     }
 
     span {
       color: $text-secondary;
       font-size: 14px;
+      word-break: break-word;
+      
+      @include mobile {
+        font-size: 13px;
+      }
     }
 
     .date {
       font-size: 12px;
+      
+      @include mobile {
+        font-size: 11px;
+      }
     }
   }
 
   .request-actions {
     display: flex;
     gap: $spacing-sm;
+    flex-shrink: 0;
+    
+    @include mobile {
+      flex-direction: column;
+    }
+  }
+  
+  @include mobile {
+    flex-direction: column;
+    gap: $spacing-md;
+    padding: $spacing-sm $spacing-md;
   }
 }
 
@@ -74,7 +119,12 @@
   color: white;
 
   &:hover {
-    background: darken($success-color, 10%);
+    background: color.adjust($success-color, $lightness: -10%);
+  }
+  
+  @include mobile {
+    width: 100%;
+    justify-content: center;
   }
 }
 
@@ -86,11 +136,21 @@
   &:hover {
     background: $danger-hover;
   }
+  
+  @include mobile {
+    width: 100%;
+    justify-content: center;
+  }
 }
 
 .users-table {
   width: 100%;
   border-collapse: collapse;
+  
+  // Hide table on mobile and show card-style layout instead
+  @include mobile {
+    display: none;
+  }
 
   th,
   td {
@@ -111,6 +171,58 @@
 
   tbody tr:hover {
     background: rgba($accent-color, 0.05);
+  }
+}
+
+// Mobile card layout for users
+.users-mobile-list {
+  display: none;
+  
+  @include mobile {
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-md;
+  }
+}
+
+.user-card {
+  @include card;
+  
+  @include mobile {
+    padding: $spacing-md;
+  }
+  
+  .user-header {
+    @include flex-between;
+    margin-bottom: $spacing-sm;
+    
+    .user-name {
+      color: $text-primary;
+      font-weight: 600;
+      font-size: 16px;
+    }
+  }
+  
+  .user-details {
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-xs;
+    margin-bottom: $spacing-md;
+    
+    .detail {
+      display: flex;
+      gap: $spacing-xs;
+      font-size: 14px;
+      
+      .label {
+        color: $text-secondary;
+      }
+      
+      .value {
+        color: $text-primary;
+        word-break: break-word;
+      }
+    }
   }
 }
 
@@ -138,12 +250,27 @@
   &:hover {
     transform: scale(1.1);
   }
+  
+  @include mobile {
+    font-size: 20px;
+    padding: $spacing-sm;
+    min-width: 44px;
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
 }
 
 .empty-state {
   text-align: center;
   color: $text-secondary;
   padding: $spacing-xl !important;
+  
+  @include mobile {
+    padding: $spacing-lg !important;
+    font-size: 14px;
+  }
 }
 
 .form-group {
@@ -154,6 +281,16 @@
     margin-bottom: $spacing-xs;
     color: $text-secondary;
     font-size: 14px;
+    
+    @include mobile {
+      font-size: 13px;
+    }
+  }
+  
+  input, select {
+    @include mobile {
+      font-size: 16px; // Prevents zoom on iOS
+    }
   }
 }
 
@@ -162,6 +299,14 @@
   gap: $spacing-md;
   justify-content: flex-end;
   margin-top: $spacing-lg;
+  
+  @include mobile {
+    flex-direction: column-reverse;
+    
+    button {
+      width: 100%;
+    }
+  }
 }
 
 h2 {

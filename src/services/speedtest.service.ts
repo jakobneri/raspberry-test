@@ -17,7 +17,10 @@ export interface SpeedTestConfig {
 const loadConfig = (): SpeedTestConfig => {
   try {
     if (existsSync(configPath)) {
-      return JSON.parse(readFileSync(configPath, "utf-8"));
+      const content = readFileSync(configPath, "utf-8").trim();
+      if (content) {
+        return JSON.parse(content);
+      }
     }
   } catch (error) {
     console.error("[Speedtest] Error loading config:", error);
@@ -45,26 +48,43 @@ export interface SpeedTestResult {
   timestamp: string;
 }
 
+// Helper function to convert bandwidth from bytes/s to Mbit/s
+const convertBytesToMbits = (bytesPerSecond: number): number => {
+  return Math.round((bytesPerSecond / 1000000) * 100) / 100;
+};
+
+// Helper function to convert bandwidth from bits/s to Mbit/s  
+const convertBitsToMbits = (bitsPerSecond: number): number => {
+  return Math.round((bitsPerSecond / 1000000) * 100) / 100;
+};
+
 export const runSpeedTest = async (
   silent: boolean = false
 ): Promise<SpeedTestResult> => {
   if (!silent) console.log("[Speedtest] Starting speed test...");
 
-  // Try speedtest-cli with JSON output
+  // Try official Ookla Speedtest CLI with JSON output
   try {
     if (!silent)
       console.log("[Speedtest] Running speedtest with JSON output...");
-    const { stdout } = await execAsync("speedtest --json", {
+    const { stdout } = await execAsync("speedtest --format=json --accept-license --accept-gdpr", {
       timeout: 90000,
     });
+    
+    // Check if stdout is empty or whitespace
+    if (!stdout || !stdout.trim()) {
+      throw new Error("Empty output from speedtest command");
+    }
+    
     const data = JSON.parse(stdout);
 
-    const ping = data.ping || null;
-    const download = data.download
-      ? Math.round((data.download / 1000000) * 100) / 100
-      : null; // Convert bytes/s to Mbit/s
-    const upload = data.upload
-      ? Math.round((data.upload / 1000000) * 100) / 100
+    // Official Ookla Speedtest CLI JSON structure (bandwidth in bits/s)
+    const ping = data.ping?.latency || null;
+    const download = data.download?.bandwidth
+      ? convertBitsToMbits(data.download.bandwidth)
+      : null;
+    const upload = data.upload?.bandwidth
+      ? convertBitsToMbits(data.upload.bandwidth)
       : null;
 
     if (!silent) {
@@ -81,30 +101,32 @@ export const runSpeedTest = async (
       timestamp: new Date().toISOString(),
     };
   } catch (jsonError) {
-    if (!silent)
-      console.log("[Speedtest] JSON mode failed, trying simple mode...");
-    console.error("[Speedtest] JSON error:", jsonError);
+    if (!silent) {
+      console.log("[Speedtest] Official Speedtest CLI failed, trying legacy speedtest-cli...");
+      console.error("[Speedtest] JSON error:", jsonError);
+    }
 
-    // Fallback to simple output
+    // Fallback to legacy speedtest-cli (Python version)
     try {
-      const { stdout } = await execAsync("speedtest --simple", {
+      const { stdout } = await execAsync("speedtest-cli --json", {
         timeout: 90000,
       });
-      const lines = stdout.split("\n");
-
-      let ping = null;
-      let download = null;
-      let upload = null;
-
-      for (const line of lines) {
-        if (line.startsWith("Ping:")) {
-          ping = parseFloat(line.split(":")[1].trim().split(" ")[0]);
-        } else if (line.startsWith("Download:")) {
-          download = parseFloat(line.split(":")[1].trim().split(" ")[0]);
-        } else if (line.startsWith("Upload:")) {
-          upload = parseFloat(line.split(":")[1].trim().split(" ")[0]);
-        }
+      
+      // Check if stdout is empty or whitespace
+      if (!stdout || !stdout.trim()) {
+        throw new Error("Empty output from speedtest-cli command");
       }
+      
+      const data = JSON.parse(stdout);
+
+      // Legacy speedtest-cli returns bandwidth in bytes/s
+      const ping = data.ping || null;
+      const download = data.download
+        ? convertBytesToMbits(data.download)
+        : null;
+      const upload = data.upload
+        ? convertBytesToMbits(data.upload)
+        : null;
 
       if (!silent) {
         console.log(
@@ -119,12 +141,13 @@ export const runSpeedTest = async (
         unit: "ms / Mbit/s",
         timestamp: new Date().toISOString(),
       };
-    } catch (simpleError) {
-      if (!silent)
+    } catch (legacyError) {
+      if (!silent) {
         console.log(
-          "[Speedtest] Simple mode failed, falling back to ping only..."
+          "[Speedtest] Legacy speedtest-cli failed, falling back to ping only..."
         );
-      console.error("[Speedtest] Simple error:", simpleError);
+        console.error("[Speedtest] Legacy error:", legacyError);
+      }
 
       // Final fallback: ping only
       try {
@@ -145,12 +168,14 @@ export const runSpeedTest = async (
           upload: null,
           unit: "ms / Mbit/s",
           message:
-            "Full speedtest not available. Only ping test completed. Install: sudo apt-get install speedtest-cli",
+            "Full speedtest not available. Only ping test completed. Install official Ookla Speedtest CLI: https://www.speedtest.net/apps/cli",
           timestamp: new Date().toISOString(),
         };
       } catch (pingError) {
-        console.error("[Speedtest] All methods failed");
-        console.error("[Speedtest] Ping error:", pingError);
+        if (!silent) {
+          console.error("[Speedtest] All methods failed");
+          console.error("[Speedtest] Ping error:", pingError);
+        }
         return {
           success: false,
           ping: null,
@@ -158,7 +183,7 @@ export const runSpeedTest = async (
           upload: null,
           unit: "ms / Mbit/s",
           message:
-            "Speed test failed. Install speedtest-cli: sudo apt-get install speedtest-cli",
+            "Speed test failed. Install official Ookla Speedtest CLI: https://www.speedtest.net/apps/cli",
           timestamp: new Date().toISOString(),
         };
       }
@@ -232,10 +257,11 @@ const runScheduledSpeedTest = async () => {
 
   isRunning = true;
   try {
-    const result = await runSpeedTest(true);
+    const result = await runSpeedTest(true); // Run in silent mode
     addSpeedTestResult(result, true);
   } catch (error) {
-    console.error("[Speedtest] Error running test:", error);
+    // Errors from runSpeedTest in silent mode won't be logged
+    // Only catastrophic errors that bypass runSpeedTest's error handling will appear here
   } finally {
     isRunning = false;
   }

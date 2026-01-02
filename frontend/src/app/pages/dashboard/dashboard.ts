@@ -1,5 +1,6 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { Router } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { Sidebar } from '../../components/sidebar/sidebar';
 import { MetricCard } from '../../components/metric-card/metric-card';
@@ -23,7 +24,12 @@ export class Dashboard implements OnInit, OnDestroy {
 
   private metricsSubscription?: Subscription;
 
-  constructor(private metricsService: MetricsService, private api: ApiService) {}
+  constructor(
+    private metricsService: MetricsService,
+    private api: ApiService,
+    private cdr: ChangeDetectorRef,
+    private router: Router
+  ) {}
 
   ngOnInit(): void {
     // Fetch initial data directly first
@@ -32,22 +38,25 @@ export class Dashboard implements OnInit, OnDestroy {
         this.metrics = data;
         this.lastUpdate = new Date().toLocaleString('de-DE');
         this.loading = false;
+        this.cdr.detectChanges(); // Explicitly trigger change detection
       },
       error: (err) => {
         console.error('Error fetching metrics:', err);
         this.error = 'Failed to load metrics';
         this.loading = false;
+        this.cdr.detectChanges(); // Explicitly trigger change detection
       },
     });
 
-    // Then start polling
-    this.metricsService.startPolling(2000);
+    // Then start polling (every 5 seconds for better performance)
+    this.metricsService.startPolling(5000);
     this.metricsSubscription = this.metricsService.metrics$.subscribe((data) => {
       if (data) {
         this.metrics = data;
         this.lastUpdate = new Date().toLocaleString('de-DE');
         this.loading = false;
         this.error = null;
+        this.cdr.detectChanges(); // Explicitly trigger change detection
       }
     });
 
@@ -61,7 +70,10 @@ export class Dashboard implements OnInit, OnDestroy {
 
   fetchSystemInfo(): void {
     this.api.getSystemInfo().subscribe({
-      next: (info) => (this.systemInfo = info),
+      next: (info) => {
+        this.systemInfo = info;
+        this.cdr.detectChanges(); // Explicitly trigger change detection
+      },
       error: (err) => console.error('Error fetching system info:', err),
     });
   }
@@ -139,5 +151,9 @@ export class Dashboard implements OnInit, OnDestroy {
         error: () => alert('Error shutting down server'),
       });
     }
+  }
+
+  navigateToNetworkMap(): void {
+    this.router.navigate(['/network-map']);
   }
 }

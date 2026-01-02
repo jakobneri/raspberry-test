@@ -18,9 +18,9 @@
         @for (request of userRequests; track request.id) {
         <div class="request-item">
           <div class="request-info">
-            <strong>{{ request.name }}</strong>
+            <strong>{{ request.name || 'Unknown' }}</strong>
             <span>{{ request.email }}</span>
-            <span class="date">{{ formatDate(request.createdAt) }}</span>
+            <span class="date">{{ request.requested_at ? formatDate(request.requested_at) : 'N/A' }}</span>
           </div>
           <div class="request-actions">
             <button class="btn-approve" (click)="approveRequest(request.id)">✓ Approve</button>
@@ -35,38 +35,52 @@
     <!-- Users Table -->
     <div class="card">
       <h2>Registered Users ({{ users.length }})</h2>
+      
+      <!-- Desktop Table View -->
       <table class="users-table">
         <thead>
           <tr>
-            <th>Name</th>
+            <th>ID</th>
             <th>Email</th>
-            <th>Role</th>
-            <th>Created</th>
             <th>Actions</th>
           </tr>
         </thead>
         <tbody>
           @for (user of users; track user.id) {
           <tr>
-            <td>{{ user.name }}</td>
+            <td>{{ user.id }}</td>
             <td>{{ user.email }}</td>
-            <td>
-              <span class="role-badge" [class.admin]="user.role === 'admin'">
-                {{ user.role }}
-              </span>
-            </td>
-            <td>{{ formatDate(user.createdAt) }}</td>
             <td>
               <button class="btn-delete" (click)="deleteUser(user.id)">🗑️</button>
             </td>
           </tr>
           } @empty {
           <tr>
-            <td colspan="5" class="empty-state">No users found</td>
+            <td colspan="3" class="empty-state">No users found</td>
           </tr>
           }
         </tbody>
       </table>
+      
+      <!-- Mobile Card View -->
+      <div class="users-mobile-list">
+        @for (user of users; track user.id) {
+        <div class="user-card">
+          <div class="user-header">
+            <span class="user-name">{{ user.email }}</span>
+            <button class="btn-delete" (click)="deleteUser(user.id)">🗑️</button>
+          </div>
+          <div class="user-details">
+            <div class="detail">
+              <span class="label">ID:</span>
+              <span class="value">{{ user.id }}</span>
+            </div>
+          </div>
+        </div>
+        } @empty {
+        <div class="empty-state">No users found</div>
+        }
+      </div>
     </div>
     }
   </div>
@@ -89,20 +103,12 @@
 
       <div class="form-group">
         <label for="email">Email</label>
-        <input type="email" id="email" [(ngModel)]="newUser.email" name="email" />
+        <input type="email" id="email" [(ngModel)]="newUser.email" name="email" required />
       </div>
 
       <div class="form-group">
         <label for="password">Password</label>
-        <input type="password" id="password" [(ngModel)]="newUser.password" name="password" />
-      </div>
-
-      <div class="form-group">
-        <label for="role">Role</label>
-        <select id="role" [(ngModel)]="newUser.role" name="role">
-          <option value="user">User</option>
-          <option value="admin">Admin</option>
-        </select>
+        <input type="password" id="password" [(ngModel)]="newUser.password" name="password" required />
       </div>
 
       <div class="modal-actions">
