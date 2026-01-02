@@ -55,6 +55,7 @@ export class AuthService {
         tap((response) => {
           if (response.success) {
             this.isAuthenticatedSubject.next(true);
+            this.authCheckComplete$.next(true);
           }
         }),
         catchError((err) => {
