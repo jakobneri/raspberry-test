@@ -730,20 +730,20 @@ const runManualSpeedtest = async () => {
 
 const toggleAutoUpdate = async () => {
   const settings = await getSettings();
+  const newState = !settings.autoUpdate;
+  
   console.log(`\n--- Auto-Update Configuration ---`);
-  console.log(`Current Status: ${settings.autoUpdate ? `${colors.green}Enabled${colors.reset}` : `${colors.red}Disabled${colors.reset}`}`);
-
-  const input = await question("\nEnable Auto-Update? (y/n): ");
-
-  if (input.toLowerCase() === "y") {
-    await setAutoUpdate(true);
+  console.log(`Previous Status: ${settings.autoUpdate ? `${colors.green}Enabled${colors.reset}` : `${colors.red}Disabled${colors.reset}`}`);
+  
+  await setAutoUpdate(newState);
+  
+  console.log(`New Status: ${newState ? `${colors.green}Enabled${colors.reset}` : `${colors.red}Disabled${colors.reset}`}`);
+  
+  if (newState) {
     console.log(`${colors.green}✓ Auto-update enabled${colors.reset}`);
     console.log(`\nThe server will automatically check for updates from the main branch on startup.`);
-  } else if (input.toLowerCase() === "n") {
-    await setAutoUpdate(false);
-    console.log(`${colors.yellow}Auto-update disabled${colors.reset}`);
   } else {
-    console.log("Cancelled.");
+    console.log(`${colors.yellow}✓ Auto-update disabled${colors.reset}`);
   }
 };
 
