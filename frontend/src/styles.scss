@@ -66,6 +66,8 @@ textarea {
   display: grid;
   gap: $spacing-lg;
   margin-bottom: $spacing-lg;
+  width: 100%;
+  box-sizing: border-box;
   
   // Mobile: 1 column
   grid-template-columns: 1fr;
