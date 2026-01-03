@@ -199,7 +199,7 @@ export class NetworkMap implements OnInit, AfterViewInit, OnDestroy {
         },
         edges: {
           color: { color: '#6c6f7f', inherit: false },
-          smooth: { enabled: true, type: 'dynamic' },
+          smooth: { enabled: true, type: 'dynamic', roundness: 0.5 },
           width: 1.5,
         },
         interaction: { hover: true },
