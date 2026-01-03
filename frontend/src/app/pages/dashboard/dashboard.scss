@@ -2,9 +2,9 @@
 @use '../../../styles/mixins' as *;
 
 .main-content {
-    justify-content: flex-start;
-    gap: $spacing-sm;
-    width: 100%;
+  justify-content: flex-start;
+  gap: $spacing-sm;
+  width: 100%;
 }
 
 .error-state {
