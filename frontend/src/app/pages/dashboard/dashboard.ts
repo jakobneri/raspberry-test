@@ -153,10 +153,6 @@ export class Dashboard implements OnInit, OnDestroy {
     }
   }
 
-  navigateToNetworkMap(): void {
-    this.router.navigate(['/network-map']);
-  }
-
   loadSettings(): void {
     this.api.getSettings().subscribe({
       next: (settings) => {
@@ -170,15 +166,15 @@ export class Dashboard implements OnInit, OnDestroy {
   toggleAutoUpdate(event: Event): void {
     const target = event.target as HTMLInputElement;
     const enabled = target.checked;
-    
+
     this.api.toggleAutoUpdate(enabled).subscribe({
       next: () => {
         this.autoUpdateEnabled = enabled;
         const status = enabled ? 'enabled' : 'disabled';
-        const message = enabled 
-          ? 'Auto-update enabled. The server will check for updates from the main branch on startup and automatically install new dependencies.' 
+        const message = enabled
+          ? 'Auto-update enabled. The server will check for updates from the main branch on startup and automatically install new dependencies.'
           : 'Auto-update disabled. The server will no longer check for updates on startup.';
-        
+
         console.log(`Auto-update ${status}: ${message}`);
         alert(`✓ Auto-update ${status}`);
         this.cdr.detectChanges();
