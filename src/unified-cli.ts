@@ -50,52 +50,62 @@ class InteractiveMenu {
     this.parent = parent;
   }
 
-  public async show() {
-    this.selectedIndex = 0;
-    process.stdin.setRawMode(true);
-    process.stdin.resume();
-    readline.emitKeypressEvents(process.stdin);
+  public async show(): Promise<void> {
+    while (true) {
+      this.selectedIndex = 0;
+      this.render();
 
-    this.render();
+      const shouldExit = await new Promise<boolean>((resolve) => {
+        process.stdin.setRawMode(true);
+        process.stdin.resume();
+        readline.emitKeypressEvents(process.stdin);
 
-    return new Promise<void>((resolve) => {
-      const keyHandler = async (str: string, key: readline.Key) => {
-        if (key.ctrl && key.name === "c") {
-          process.exit(0);
-        }
+        const keyHandler = async (str: string, key: readline.Key) => {
+          if (key.ctrl && key.name === "c") {
+            process.stdin.removeListener("keypress", keyHandler);
+            process.stdin.setRawMode(false);
+            process.exit(0);
+          }
 
-        if (str && /^[1-9]$/.test(str)) {
-          const index = parseInt(str, 10) - 1;
-          if (index >= 0 && index < this.items.length) {
-            this.selectedIndex = index;
+          if (str && /^[1-9]$/.test(str)) {
+            const index = parseInt(str, 10) - 1;
+            if (index >= 0 && index < this.items.length) {
+              this.selectedIndex = index;
+              const item = this.items[this.selectedIndex];
+              process.stdin.removeListener("keypress", keyHandler);
+              process.stdin.setRawMode(false);
+              const exit = await this.handleSelection(item);
+              resolve(exit);
+              return;
+            }
+          }
+
+          if (key.name === "up") {
+            this.selectedIndex =
+              (this.selectedIndex - 1 + this.items.length) % this.items.length;
+            this.render();
+          } else if (key.name === "down") {
+            this.selectedIndex = (this.selectedIndex + 1) % this.items.length;
+            this.render();
+          } else if (key.name === "return") {
             const item = this.items[this.selectedIndex];
             process.stdin.removeListener("keypress", keyHandler);
             process.stdin.setRawMode(false);
-            await this.handleSelection(item, resolve);
-            return;
+            const exit = await this.handleSelection(item);
+            resolve(exit);
           }
-        }
+        };
 
-        if (key.name === "up") {
-          this.selectedIndex =
-            (this.selectedIndex - 1 + this.items.length) % this.items.length;
-          this.render();
-        } else if (key.name === "down") {
-          this.selectedIndex = (this.selectedIndex + 1) % this.items.length;
-          this.render();
-        } else if (key.name === "return") {
-          const item = this.items[this.selectedIndex];
-          process.stdin.removeListener("keypress", keyHandler);
-          process.stdin.setRawMode(false);
-          await this.handleSelection(item, resolve);
-        }
-      };
+        process.stdin.on("keypress", keyHandler);
+      });
 
-      process.stdin.on("keypress", keyHandler);
-    });
+      if (shouldExit) {
+        return;
+      }
+    }
   }
 
-  private async handleSelection(item: MenuItem, resolve: () => void) {
+  private async handleSelection(item: MenuItem): Promise<boolean> {
     if (item.submenu) {
       const subMenu = new InteractiveMenu(
         item.label,
@@ -110,8 +120,7 @@ class InteractiveMenu {
         this
       );
       await subMenu.show();
-      this.show();
-      resolve();
+      return false; // Don't exit, show this menu again
     } else if (item.action) {
       console.clear();
       await item.action();
@@ -124,10 +133,9 @@ class InteractiveMenu {
         );
         process.stdin.setRawMode(false);
       }
-      this.show();
-      resolve();
+      return false; // Don't exit, show this menu again
     } else {
-      resolve();
+      return true; // Exit this menu (for "← Back" option)
     }
   }
 
@@ -617,9 +625,12 @@ const approveRequest = async () => {
 const showSystemStatus = async () => {
   console.log("\n--- System Status ---");
   try {
+    process.stdout.write(`\n${colors.gray}Fetching system metrics...${colors.reset}`);
     const metrics = await getMetrics();
+    process.stdout.write(`\r${' '.repeat(50)}\r`); // Clear the loading message
     const { cpu, memory, disk, os, system } = metrics.current;
 
+    console.log(`${colors.cyan}System Information:${colors.reset}`);
     console.log(`Hostname: ${os.hostname}`);
     console.log(`OS: ${os.distro} ${os.release} (${os.platform})`);
     console.log(
@@ -627,6 +638,7 @@ const showSystemStatus = async () => {
         (system.uptime % 3600) / 60
       )}m`
     );
+    console.log(`\n${colors.cyan}Performance:${colors.reset}`);
     console.log(`CPU Temp: ${cpu.temp}°C`);
     console.log(`CPU Load: ${cpu.usage}%`);
     console.log(
@@ -636,7 +648,8 @@ const showSystemStatus = async () => {
       `Disk: ${disk.used}GB / ${disk.totalSize}GB (${disk.usagePercent}%)`
     );
   } catch (error) {
-    console.error("Error fetching system metrics:", error);
+    console.error(`${colors.red}Error fetching system metrics:${colors.reset}`, error);
+    console.log(`\n${colors.yellow}This might be due to missing system utilities or permissions.${colors.reset}`);
   }
 };
 
