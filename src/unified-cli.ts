@@ -1,4 +1,3 @@
-#!/usr/bin/env node
 import readline from "node:readline";
 import { randomBytes } from "node:crypto";
 import { exec, spawn } from "node:child_process";
@@ -204,8 +203,10 @@ const pullUpdates = async (): Promise<boolean> => {
   console.log(`${colors.yellow}📥 Pulling latest changes from repository...${colors.reset}`);
 
   // Check for local changes
-  const { stdout: diffOutput } = await execCommand("git diff-index --quiet HEAD -- || echo 'changes'");
-  if (diffOutput.trim() === "changes") {
+  const { code: diffCode } = await execCommand("git diff-index --quiet HEAD --");
+  const hasChanges = diffCode !== 0;
+  
+  if (hasChanges) {
     console.log(`${colors.yellow}⚠️  Local changes detected!${colors.reset}`);
     const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
     const branchName = `local-changes-${timestamp}`;
@@ -328,7 +329,16 @@ const checkSpeedtestCli = async (): Promise<void> => {
   const { code } = await execCommand("command -v speedtest-cli");
   if (code !== 0) {
     console.log(`${colors.yellow}📡 speedtest-cli not found, installing...${colors.reset}`);
-    const { code: pipCode } = await execCommand("pip3 install speedtest-cli || pip install speedtest-cli");
+    
+    // Try pip3 first
+    const { code: pip3Code } = await execCommand("pip3 install speedtest-cli");
+    if (pip3Code === 0) {
+      console.log(`${colors.green}✓ speedtest-cli installed!${colors.reset}`);
+      return;
+    }
+    
+    // Fallback to pip
+    const { code: pipCode } = await execCommand("pip install speedtest-cli");
     if (pipCode === 0) {
       console.log(`${colors.green}✓ speedtest-cli installed!${colors.reset}`);
     } else {
@@ -379,8 +389,14 @@ const startServer = async (skipUpdate: boolean = false) => {
   await checkSpeedtestCli();
 
   // Get local IP
-  const { stdout: ipOutput } = await execCommand("hostname -I 2>/dev/null | awk '{print $1}' || echo 'localhost'");
-  const localIp = ipOutput.trim() || "localhost";
+  const { stdout: ipOutput } = await execCommand("hostname -I 2>/dev/null");
+  let localIp = ipOutput.trim().split(' ')[0];
+  
+  if (!localIp) {
+    // Fallback for macOS
+    const { stdout: macIp } = await execCommand("ipconfig getifaddr en0 2>/dev/null");
+    localIp = macIp.trim() || "localhost";
+  }
 
   console.log(`${colors.green}═══════════════════════════════════════${colors.reset}`);
   console.log(`${colors.green}   Server starting on:${colors.reset}\n`);

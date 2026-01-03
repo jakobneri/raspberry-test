@@ -176,15 +176,18 @@ export class Dashboard implements OnInit, OnDestroy {
     this.api.toggleAutoUpdate(enabled).subscribe({
       next: () => {
         this.autoUpdateEnabled = enabled;
+        const status = enabled ? 'enabled' : 'disabled';
         const message = enabled 
-          ? 'Auto-update enabled. Server will check for updates on startup.' 
-          : 'Auto-update disabled.';
-        alert(message);
+          ? 'Auto-update enabled. The server will check for updates from the main branch on startup and automatically install new dependencies.' 
+          : 'Auto-update disabled. The server will no longer check for updates on startup.';
+        
+        console.log(`Auto-update ${status}: ${message}`);
+        alert(`✓ Auto-update ${status}`);
         this.cdr.detectChanges();
       },
       error: (err) => {
         console.error('Error toggling auto-update:', err);
-        alert('Failed to update auto-update setting');
+        alert('✗ Failed to update auto-update setting. Please try again.');
         // Revert checkbox
         target.checked = !enabled;
       },

@@ -15,16 +15,19 @@ const initSettingsTable = () => {
       );
     `);
 
-    // Initialize default auto-update setting if not exists
-    const autoUpdateSetting = db
+    // Initialize default auto-update setting using INSERT OR IGNORE
+    db.prepare(
+      "INSERT OR IGNORE INTO system_settings (key, value) VALUES ('autoUpdate', 'false')"
+    ).run();
+
+    const setting = db
       .prepare("SELECT value FROM system_settings WHERE key = 'autoUpdate'")
       .get() as { value: string } | undefined;
 
-    if (!autoUpdateSetting) {
-      db.prepare(
-        "INSERT INTO system_settings (key, value) VALUES ('autoUpdate', 'false')"
-      ).run();
-      console.log("[Settings] Initialized auto-update setting to false");
+    if (setting && setting.value === "false") {
+      console.log("[Settings] Auto-update setting initialized to false");
+    } else if (setting) {
+      console.log(`[Settings] Auto-update setting loaded: ${setting.value}`);
     }
   } catch (error) {
     console.error("[Settings] Initialization error:", error);
