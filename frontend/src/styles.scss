@@ -68,6 +68,7 @@ textarea {
   margin-bottom: $spacing-lg;
   width: 100%;
   box-sizing: border-box;
+  grid-auto-rows: 1fr;
   
   // Mobile: 1 column
   grid-template-columns: 1fr;
@@ -80,6 +81,12 @@ textarea {
   // Desktop: 3 columns
   @include desktop-up {
     grid-template-columns: repeat(3, 1fr);
+  }
+  
+  // Make all grid items (cards) equal height
+  > * {
+    display: flex;
+    flex-direction: column;
   }
 }
 
