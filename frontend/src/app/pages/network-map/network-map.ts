@@ -129,15 +129,17 @@ export class NetworkMap implements OnInit {
 
   get topologyNodes() {
     const count = this.devices.length || 1;
-    const perRing = 8;
+    const goldenAngle = Math.PI * (3 - Math.sqrt(5)); // ~137.5°
+    const minRadius = 12;
+    const maxRadius = 42;
+
     return this.devices.map((device, index) => {
-      const ring = Math.floor(index / perRing);
-      const position = index % perRing;
-      const angle = (position / perRing) * Math.PI * 2 + ring * 0.2; // stagger rings
-      const radius = 18 + ring * 12; // percentage of container
+      const t = (index + 1) / (count + 1);
+      const radius = minRadius + (maxRadius - minRadius) * Math.sqrt(t);
+      const angle = index * goldenAngle;
       const x = 50 + radius * Math.cos(angle);
       const y = 50 + radius * Math.sin(angle);
-      return { ...device, x, y, ring };
+      return { ...device, x, y };
     });
   }
 
