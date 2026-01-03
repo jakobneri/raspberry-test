@@ -28,6 +28,8 @@ let currentConfig: LedConfig = {
 };
 
 // Simple mutex lock for config updates to prevent race conditions
+// Note: This simple boolean flag works for most cases but is not perfectly thread-safe
+// in high-concurrency scenarios. For production, consider using a proper semaphore/queue.
 let updateInProgress = false;
 
 // ========== LED AVAILABILITY CHECK ==========
@@ -173,13 +175,18 @@ const loadLedConfigFromDb = async (): Promise<LedConfig> => {
     );
     if (row && row.value) {
       const parsed = JSON.parse(row.value);
-      // Validate parsed data has required fields
+      // Validate parsed data has required fields with valid values
+      const validModes = ["none", "mmc0", "actpwr", "heartbeat", "default"];
+      const validLedTypes = ["PWR", "ACT"];
+      
       if (
         parsed &&
         typeof parsed === "object" &&
         typeof parsed.enabled === "boolean" &&
         typeof parsed.mode === "string" &&
-        typeof parsed.ledType === "string"
+        validModes.includes(parsed.mode) &&
+        typeof parsed.ledType === "string" &&
+        validLedTypes.includes(parsed.ledType)
       ) {
         return parsed as LedConfig;
       }
