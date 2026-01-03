@@ -94,6 +94,17 @@ export class NetworkMap implements OnInit {
     return status === 'online' ? 'online' : 'offline';
   }
 
+  get topologyNodes() {
+    const count = this.devices.length || 1;
+    const radius = 32; // percentage of container
+    return this.devices.map((device, index) => {
+      const angle = (index / count) * Math.PI * 2;
+      const x = 50 + radius * Math.cos(angle);
+      const y = 50 + radius * Math.sin(angle);
+      return { ...device, x, y };
+    });
+  }
+
   formatLastSeen(dateStr: string): string {
     const date = new Date(dateStr);
     const now = new Date();

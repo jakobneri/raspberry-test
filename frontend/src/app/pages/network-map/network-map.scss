@@ -11,7 +11,7 @@
   flex: 1;
   padding: $spacing-xl;
   margin-left: 250px;
-  
+
   @include mobile {
     margin-left: 0;
     padding: $spacing-md;
@@ -24,7 +24,7 @@
 
   .header-content {
     @include flex-between;
-    
+
     @include mobile {
       flex-direction: column;
       align-items: flex-start;
@@ -35,7 +35,7 @@
   h1 {
     color: $text-primary;
     font-size: 28px;
-    
+
     @include mobile {
       font-size: 24px;
     }
@@ -45,12 +45,12 @@
     color: $text-secondary;
     font-size: 14px;
     margin-top: $spacing-sm;
-    
+
     @include mobile {
       font-size: 13px;
     }
   }
-  
+
   @include mobile {
     margin-bottom: $spacing-lg;
   }
@@ -61,15 +61,15 @@
   display: grid;
   gap: $spacing-lg;
   margin-bottom: $spacing-xl;
-  
+
   // Mobile: 1 column
   grid-template-columns: 1fr;
-  
+
   // Tablet and up: 3 columns
   @include tablet-up {
     grid-template-columns: repeat(3, 1fr);
   }
-  
+
   @include mobile {
     gap: $spacing-md;
     margin-bottom: $spacing-lg;
@@ -84,7 +84,7 @@
 
   .stat-icon {
     font-size: 32px;
-    
+
     @include mobile {
       font-size: 28px;
     }
@@ -99,7 +99,7 @@
     font-size: 28px;
     font-weight: bold;
     color: $text-primary;
-    
+
     @include mobile {
       font-size: 24px;
     }
@@ -108,7 +108,7 @@
   .stat-label {
     color: $text-secondary;
     font-size: 14px;
-    
+
     @include mobile {
       font-size: 13px;
     }
@@ -121,7 +121,7 @@
   &.offline .stat-value {
     color: $error-color;
   }
-  
+
   @include mobile {
     padding: $spacing-md;
   }
@@ -132,30 +132,141 @@
   h2 {
     color: $text-primary;
     margin-bottom: $spacing-lg;
-    
+
     @include mobile {
       font-size: 20px;
     }
   }
 }
 
+// Topology
+.topology-section {
+  margin-bottom: $spacing-xl;
+
+  h2 {
+    color: $text-primary;
+    margin-bottom: $spacing-md;
+  }
+}
+
+.topology-card {
+  position: relative;
+  @include card;
+  height: 420px;
+  overflow: hidden;
+
+  @include mobile {
+    height: 360px;
+  }
+}
+
+.topology-lines {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.topology-line {
+  stroke: $border-color;
+  stroke-width: 0.6;
+  opacity: 0.6;
+}
+
+.topology-center {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 120px;
+  height: 120px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid $border-color;
+  @include flex-center;
+  flex-direction: column;
+  gap: $spacing-xs;
+  text-align: center;
+  color: $text-primary;
+
+  .hub-icon {
+    font-size: 32px;
+  }
+
+  .hub-label {
+    font-weight: 600;
+    letter-spacing: 0.2px;
+  }
+}
+
+.topology-node {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  padding: $spacing-sm $spacing-md;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid $border-color;
+  min-width: 140px;
+  text-align: center;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.24);
+  backdrop-filter: blur(4px);
+
+  .node-icon {
+    font-size: 24px;
+    margin-bottom: $spacing-xs;
+  }
+
+  .node-host {
+    color: $text-primary;
+    font-weight: 600;
+    margin-bottom: 2px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .node-ip {
+    color: $accent-color;
+    font-family: monospace;
+    font-size: 13px;
+  }
+
+  .node-mac {
+    color: $text-secondary;
+    font-family: monospace;
+    font-size: 11px;
+  }
+
+  &.online {
+    border-color: rgba($success-color, 0.5);
+    box-shadow: 0 0 12px rgba($success-color, 0.35);
+  }
+
+  &.offline {
+    border-color: rgba($error-color, 0.5);
+    box-shadow: 0 0 12px rgba($error-color, 0.35);
+    opacity: 0.8;
+  }
+}
+
 .devices-grid {
   display: grid;
   gap: $spacing-lg;
-  
+
   // Mobile: 1 column
   grid-template-columns: 1fr;
-  
+
   // Tablet: 2 columns
   @include tablet-up {
     grid-template-columns: repeat(2, 1fr);
   }
-  
+
   // Desktop: 3 columns
   @include desktop-up {
     grid-template-columns: repeat(3, 1fr);
   }
-  
+
   @include mobile {
     gap: $spacing-md;
   }
@@ -173,7 +284,7 @@
     border-left: 3px solid $error-color;
     opacity: 0.7;
   }
-  
+
   @include mobile {
     padding: $spacing-md;
   }
@@ -206,12 +317,12 @@
     font-size: 12px;
     color: $text-secondary;
     text-transform: uppercase;
-    
+
     @include mobile {
       font-size: 11px;
     }
   }
-  
+
   @include mobile {
     top: $spacing-sm;
     right: $spacing-sm;
@@ -221,7 +332,7 @@
 .device-icon {
   font-size: 48px;
   margin-bottom: $spacing-md;
-  
+
   @include mobile {
     font-size: 36px;
   }
@@ -235,7 +346,7 @@
     font-size: 18px;
     margin-bottom: $spacing-xs;
     word-break: break-word;
-    
+
     @include mobile {
       font-size: 16px;
     }
@@ -246,7 +357,7 @@
     font-family: monospace;
     font-size: 14px;
     word-break: break-all;
-    
+
     @include mobile {
       font-size: 13px;
     }
@@ -277,7 +388,7 @@
       word-break: break-all;
       text-align: right;
     }
-    
+
     @include mobile {
       font-size: 12px;
       flex-wrap: wrap;
@@ -298,10 +409,10 @@
     color: $text-secondary;
     margin-top: $spacing-md;
   }
-  
+
   @include mobile {
     padding: $spacing-xl;
-    
+
     p {
       font-size: 14px;
     }
@@ -323,7 +434,7 @@
     opacity: 0.6;
     cursor: not-allowed;
   }
-  
+
   @include mobile {
     padding: $spacing-md $spacing-lg;
     font-size: 16px;

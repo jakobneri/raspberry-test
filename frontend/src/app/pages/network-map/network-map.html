@@ -43,6 +43,38 @@
       </div>
     </div>
 
+    <!-- Topology Map -->
+    <section class="topology-section">
+      <h2>Topology</h2>
+      <div class="topology-card">
+        <svg class="topology-lines" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid meet">
+          @for (node of topologyNodes; track node.mac) {
+          <line x1="50" y1="50" [attr.x2]="node.x" [attr.y2]="node.y" class="topology-line" />
+          }
+        </svg>
+
+        <div class="topology-center">
+          <div class="hub-icon">🛰️</div>
+          <div class="hub-label">Gateway</div>
+        </div>
+
+        @for (node of topologyNodes; track node.mac) {
+        <div
+          class="topology-node"
+          [class.online]="node.status === 'online'"
+          [class.offline]="node.status === 'offline'"
+          [style.left]="node.x + '%'"
+          [style.top]="node.y + '%'"
+        >
+          <div class="node-icon">🖥️</div>
+          <div class="node-host">{{ node.hostname || 'Unknown' }}</div>
+          <div class="node-ip">{{ node.ip }}</div>
+          <div class="node-mac">{{ node.mac }}</div>
+        </div>
+        }
+      </div>
+    </section>
+
     <!-- Devices Grid -->
     <section class="devices-section">
       <h2>Discovered Devices</h2>
