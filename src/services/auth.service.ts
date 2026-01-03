@@ -59,21 +59,29 @@ const loadEnvConfig = (): EnvConfig => {
   const envPath = resolve("./config/env.json");
   try {
     const config = JSON.parse(readFileSync(envPath, "utf-8"));
-    
+
     // Validate JWT_SECRET exists and is not empty/whitespace
     if (!config.JWT_SECRET || !config.JWT_SECRET.trim()) {
-      console.error("[Auth] ERROR: JWT_SECRET is missing or empty in config/env.json");
-      console.error("[Auth] Please copy config/env.example.json to config/env.json and set JWT_SECRET");
+      console.error(
+        "[Auth] ERROR: JWT_SECRET is missing or empty in config/env.json"
+      );
+      console.error(
+        "[Auth] Please copy config/env.example.json to config/env.json and set JWT_SECRET"
+      );
       process.exit(1);
     }
-    
+
     // Validate JWT_SECRET is sufficiently strong (at least 32 characters)
     if (config.JWT_SECRET.trim().length < 32) {
-      console.error("[Auth] ERROR: JWT_SECRET must be at least 32 characters long");
-      console.error("[Auth] Generate a secure secret: node -e \"console.log(require('crypto').randomBytes(32).toString('hex'))\"");
+      console.error(
+        "[Auth] ERROR: JWT_SECRET must be at least 32 characters long"
+      );
+      console.error(
+        "[Auth] Generate a secure secret: node -e \"console.log(require('crypto').randomBytes(32).toString('hex'))\""
+      );
       process.exit(1);
     }
-    
+
     // Default SSO to enabled unless explicitly set to false
     if (config.SSO_ENABLED === undefined) {
       config.SSO_ENABLED = true;
@@ -82,8 +90,13 @@ const loadEnvConfig = (): EnvConfig => {
     return config;
   } catch (error) {
     console.error("[Auth] ERROR: Failed to load config/env.json");
-    console.error("[Auth] Please copy config/env.example.json to config/env.json and configure it");
-    console.error("[Auth] Error details:", error instanceof Error ? error.message : error);
+    console.error(
+      "[Auth] Please copy config/env.example.json to config/env.json and configure it"
+    );
+    console.error(
+      "[Auth] Error details:",
+      error instanceof Error ? error.message : error
+    );
     process.exit(1);
   }
 };
@@ -312,7 +325,9 @@ export const createUserRequest = async (
 
     const salt = randomBytes(16).toString("hex");
     const hashedPassword = hashPassword(password, salt);
-    const id = `req_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
+    const id = `req_${Date.now()}_${Math.random()
+      .toString(36)
+      .substring(2, 11)}`;
     const requestedAt = new Date().toISOString();
 
     await run(
@@ -416,7 +431,9 @@ export const createUser = async (
 
     const salt = randomBytes(16).toString("hex");
     const hashedPassword = hashPassword(password, salt);
-    const userId = `user_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
+    const userId = `user_${Date.now()}_${Math.random()
+      .toString(36)
+      .substring(2, 11)}`;
 
     await run(
       "INSERT INTO users (id, email, password, salt) VALUES (?, ?, ?, ?)",
