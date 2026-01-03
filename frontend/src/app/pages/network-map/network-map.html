@@ -46,10 +46,23 @@
     <!-- Topology Map -->
     <section class="topology-section">
       <h2>Topology</h2>
+      <div class="topology-legend">
+        <span class="legend-item wired"><span class="dot"></span>Wired</span>
+        <span class="legend-item wireless"><span class="dot"></span>Wireless</span>
+        <span class="legend-item unknown"><span class="dot"></span>Unknown</span>
+      </div>
       <div class="topology-card">
         <svg class="topology-lines" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid meet">
           @for (node of topologyNodes; track node.mac) {
-          <line x1="50" y1="50" [attr.x2]="node.x" [attr.y2]="node.y" class="topology-line" />
+          <line
+            x1="50"
+            y1="50"
+            [attr.x2]="node.x"
+            [attr.y2]="node.y"
+            class="topology-line"
+            [class.wireless]="node.connection === 'wireless'"
+            [class.wired]="node.connection === 'wired'"
+          />
           }
         </svg>
 
@@ -63,6 +76,8 @@
           class="topology-node"
           [class.online]="node.status === 'online'"
           [class.offline]="node.status === 'offline'"
+          [class.wireless]="node.connection === 'wireless'"
+          [class.wired]="node.connection === 'wired'"
           [style.left]="node.x + '%'"
           [style.top]="node.y + '%'"
         >
@@ -70,6 +85,15 @@
           <div class="node-host">{{ node.hostname || 'Unknown' }}</div>
           <div class="node-ip">{{ node.ip }}</div>
           <div class="node-mac">{{ node.mac }}</div>
+          <div class="node-type">
+            {{
+              node.connection === 'wired'
+                ? 'Wired'
+                : node.connection === 'wireless'
+                ? 'Wireless'
+                : 'Unknown'
+            }}
+          </div>
         </div>
         }
       </div>

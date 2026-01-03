@@ -147,6 +147,42 @@
     color: $text-primary;
     margin-bottom: $spacing-md;
   }
+
+  .topology-legend {
+    display: flex;
+    gap: $spacing-md;
+    color: $text-secondary;
+    font-size: 13px;
+    margin-bottom: $spacing-sm;
+
+    .legend-item {
+      display: inline-flex;
+      align-items: center;
+      gap: $spacing-xs;
+
+      .dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        box-shadow: 0 0 8px currentColor;
+      }
+
+      &.wired .dot {
+        color: $accent-color;
+        background: $accent-color;
+      }
+
+      &.wireless .dot {
+        color: $success-color;
+        background: $success-color;
+      }
+
+      &.unknown .dot {
+        color: $text-secondary;
+        background: $text-secondary;
+      }
+    }
+  }
 }
 
 .topology-card {
@@ -172,6 +208,17 @@
   stroke: $border-color;
   stroke-width: 0.6;
   opacity: 0.6;
+
+  &.wired {
+    stroke: rgba($accent-color, 0.55);
+    opacity: 0.9;
+  }
+
+  &.wireless {
+    stroke: rgba($success-color, 0.55);
+    opacity: 0.9;
+    stroke-dasharray: 2.5 2;
+  }
 }
 
 .topology-center {
@@ -238,6 +285,18 @@
     font-size: 11px;
   }
 
+  .node-type {
+    margin-top: $spacing-xs;
+    padding: 2px 8px;
+    border-radius: 999px;
+    display: inline-block;
+    font-size: 11px;
+    letter-spacing: 0.2px;
+    color: $text-primary;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid $border-color;
+  }
+
   &.online {
     border-color: rgba($success-color, 0.5);
     box-shadow: 0 0 12px rgba($success-color, 0.35);
@@ -247,6 +306,16 @@
     border-color: rgba($error-color, 0.5);
     box-shadow: 0 0 12px rgba($error-color, 0.35);
     opacity: 0.8;
+  }
+
+  &.wired {
+    border-color: rgba($accent-color, 0.6);
+    box-shadow: 0 0 14px rgba($accent-color, 0.35);
+  }
+
+  &.wireless {
+    border-color: rgba($success-color, 0.6);
+    box-shadow: 0 0 14px rgba($success-color, 0.35);
   }
 }
 

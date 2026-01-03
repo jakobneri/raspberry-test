@@ -10,6 +10,7 @@ interface NetworkDevice {
   vendor?: string;
   status: 'online' | 'offline';
   lastSeen: string;
+  connection?: 'wired' | 'wireless' | 'unknown';
 }
 
 @Component({
@@ -44,6 +45,7 @@ export class NetworkMap implements OnInit {
         vendor: device.vendor,
         status: device.status === 'offline' ? 'offline' : 'online',
         lastSeen: device.lastSeen || new Date().toISOString(),
+        connection: device.connection || 'unknown',
       };
       return normalized;
     });
@@ -127,12 +129,15 @@ export class NetworkMap implements OnInit {
 
   get topologyNodes() {
     const count = this.devices.length || 1;
-    const radius = 32; // percentage of container
+    const perRing = 8;
     return this.devices.map((device, index) => {
-      const angle = (index / count) * Math.PI * 2;
+      const ring = Math.floor(index / perRing);
+      const position = index % perRing;
+      const angle = (position / perRing) * Math.PI * 2 + ring * 0.2; // stagger rings
+      const radius = 18 + ring * 12; // percentage of container
       const x = 50 + radius * Math.cos(angle);
       const y = 50 + radius * Math.sin(angle);
-      return { ...device, x, y };
+      return { ...device, x, y, ring };
     });
   }
 
