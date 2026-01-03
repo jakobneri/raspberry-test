@@ -8,6 +8,11 @@ import {
   getSchedulerConfig,
   updateSchedulerConfig,
 } from "./services/speedtest.service.js";
+import {
+  getLedStatus,
+  updateLedConfig,
+  initLedService,
+} from "./services/led.service.js";
 
 // ========== MENU SYSTEM ==========
 
@@ -441,6 +446,64 @@ const runManualSpeedtest = async () => {
   }
 };
 
+const configureLed = async () => {
+  const status = await getLedStatus();
+
+  console.log("\n--- Power LED Configuration ---");
+  console.log(`LED Control Available: ${status.available ? "Yes" : "No"}`);
+
+  if (!status.available) {
+    console.log(
+      "\nLED control is not available on this system. This feature requires a Raspberry Pi."
+    );
+    return;
+  }
+
+  console.log(`Current Status: ${status.config.enabled ? "Enabled" : "Disabled"}`);
+  console.log(`Current Mode: ${status.config.mode}`);
+  console.log(`Current Trigger: ${status.currentTrigger || "unknown"}`);
+  console.log(`Available Triggers: ${status.availableTriggers.join(", ")}`);
+
+  const enableInput = await question(
+    "\nEnable LED activity display? (y/n/keep): "
+  );
+
+  let enabled = status.config.enabled;
+  if (enableInput.toLowerCase() === "y") enabled = true;
+  if (enableInput.toLowerCase() === "n") enabled = false;
+
+  let mode = status.config.mode;
+  if (enabled) {
+    console.log("\nAvailable modes:");
+    console.log("  mmc0      - Blink on SD card activity");
+    console.log("  heartbeat - Heartbeat pattern");
+    console.log("  actpwr    - Activity + Power");
+
+    const modeInput = await question(
+      "Enter mode (mmc0/heartbeat/actpwr) or press Enter to keep current: "
+    );
+
+    if (
+      modeInput &&
+      ["mmc0", "heartbeat", "actpwr"].includes(modeInput.toLowerCase())
+    ) {
+      mode = modeInput.toLowerCase() as any;
+    }
+  } else if (!enabled) {
+    mode = "default"; // Restore default when disabling
+  }
+
+  const result = await updateLedConfig({ enabled, mode });
+
+  if (result.success) {
+    console.log("\n✅ LED configuration updated successfully!");
+    console.log(`Enabled: ${result.config.enabled}`);
+    console.log(`Mode: ${result.config.mode}`);
+  } else {
+    console.log(`\n❌ Failed to update LED configuration: ${result.error}`);
+  }
+};
+
 // ========== MAIN ==========
 
 const mainMenu: MenuItem[] = [
@@ -461,6 +524,7 @@ const mainMenu: MenuItem[] = [
       { label: "📊 View System Status", action: showSystemStatus },
       { label: "👥 View Active Sessions", action: listSessions },
       { label: "🚫 Revoke All Sessions", action: revokeSessions },
+      { label: "💡 Configure Power LED", action: configureLed },
     ],
   },
   {
@@ -483,6 +547,9 @@ const mainMenu: MenuItem[] = [
 const main = async () => {
   // Wait for DB init
   await new Promise((resolve) => setTimeout(resolve, 100));
+
+  // Initialize LED service
+  await initLedService();
 
   const menu = new InteractiveMenu(
     "🥧 Raspberry Pi Server Manager",

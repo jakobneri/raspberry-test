@@ -260,3 +260,103 @@
     font-size: 12px;
   }
 }
+
+// LED Control Card
+.led-control-card {
+  @include card;
+
+  @include mobile {
+    padding: $spacing-md;
+  }
+}
+
+.led-status {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-sm;
+  margin-bottom: $spacing-md;
+
+  .status-badge {
+    padding: 4px 12px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 600;
+    background: $border-color;
+    color: $text-secondary;
+
+    &.enabled {
+      background: rgba($success-color, 0.15);
+      color: $success-color;
+    }
+  }
+}
+
+.led-controls {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-md;
+  padding-top: $spacing-md;
+  border-top: 1px solid $border-color;
+
+  .btn-toggle {
+    @include button-base;
+    padding: $spacing-sm $spacing-md;
+    background: $card-background;
+    border: 2px solid $border-color;
+    color: $text-primary;
+    font-weight: 600;
+
+    &:hover:not(:disabled) {
+      background: $accent-color;
+      color: white;
+      border-color: $accent-color;
+    }
+
+    &.active {
+      background: $success-color;
+      color: white;
+      border-color: $success-color;
+
+      &:hover:not(:disabled) {
+        background: darken($success-color, 10%);
+      }
+    }
+
+    &:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+  }
+
+  .led-modes {
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-xs;
+
+    label {
+      font-size: 14px;
+      color: $text-secondary;
+      font-weight: 600;
+    }
+
+    select {
+      padding: $spacing-sm;
+      border: 1px solid $border-color;
+      border-radius: $border-radius;
+      background: $card-background;
+      color: $text-primary;
+      font-size: 14px;
+      cursor: pointer;
+
+      &:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+
+      &:focus {
+        outline: none;
+        border-color: $accent-color;
+      }
+    }
+  }
+}

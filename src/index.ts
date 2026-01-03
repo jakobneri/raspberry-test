@@ -24,6 +24,7 @@ import * as systemService from "./services/system.service.js";
 import * as networkService from "./services/network.service.js";
 import * as speedTestService from "./services/speedtest.service.js";
 import * as settingsService from "./services/settings.service.js";
+import * as ledService from "./services/led.service.js";
 
 const PORT = 3000;
 const router = new Router();
@@ -690,6 +691,72 @@ router.post(
   })
 );
 
+// ========== LED ROUTES ==========
+
+router.get(
+  "/api/led/status",
+  authHandler(async (req, res) => {
+    try {
+      const status = await ledService.getLedStatus();
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(JSON.stringify(status));
+    } catch (error) {
+      res.writeHead(500, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ error: "Failed to get LED status" }));
+    }
+  })
+);
+
+router.post(
+  "/api/led/config",
+  authHandler(async (req, res, userId) => {
+    try {
+      const body = await getReqBody(req);
+      const data = JSON.parse(body || "{}");
+
+      console.log(`[LED] User ${userId} updating LED config:`, data);
+
+      // Validate input data
+      if (data.enabled !== undefined && typeof data.enabled !== "boolean") {
+        res.writeHead(400, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ error: "enabled must be a boolean" }));
+        return;
+      }
+
+      if (data.mode !== undefined) {
+        const validModes = ["none", "mmc0", "actpwr", "heartbeat", "default"];
+        if (!validModes.includes(data.mode)) {
+          res.writeHead(400, { "Content-Type": "application/json" });
+          res.end(
+            JSON.stringify({
+              error: `Invalid mode. Must be one of: ${validModes.join(", ")}`,
+            })
+          );
+          return;
+        }
+      }
+
+      if (data.ledType !== undefined) {
+        if (data.ledType !== "PWR" && data.ledType !== "ACT") {
+          res.writeHead(400, { "Content-Type": "application/json" });
+          res.end(
+            JSON.stringify({ error: "ledType must be either 'PWR' or 'ACT'" })
+          );
+          return;
+        }
+      }
+
+      const result = await ledService.updateLedConfig(data);
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(JSON.stringify(result));
+    } catch (error) {
+      console.error("[LED] Error updating config:", error);
+      res.writeHead(500, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ error: "Failed to update LED configuration" }));
+    }
+  })
+);
+
 const server = http.createServer(async (req, res) => {
   const url = req.url || "";
   const urlPath = url.split("?")[0]; // Remove query string
@@ -813,3 +880,8 @@ try {
 } catch (e) {
   console.log("[Speedtest] Scheduler disabled (default)");
 }
+
+// Initialize LED service
+ledService.initLedService().catch((err) => {
+  console.error("[LED] Failed to initialize LED service:", err);
+});

@@ -22,6 +22,10 @@ export class Dashboard implements OnInit, OnDestroy {
   error: string | null = null;
   autoUpdateEnabled = false;
 
+  // LED configuration
+  ledStatus: any = null;
+  ledLoading = false;
+
   private metricsSubscription?: Subscription;
 
   constructor(
@@ -60,6 +64,7 @@ export class Dashboard implements OnInit, OnDestroy {
     });
 
     this.fetchSystemInfo();
+    this.fetchLedStatus();
     this.loadSettings();
   }
 
@@ -75,6 +80,63 @@ export class Dashboard implements OnInit, OnDestroy {
         this.cdr.detectChanges(); // Explicitly trigger change detection
       },
       error: (err) => console.error('Error fetching system info:', err),
+    });
+  }
+
+  fetchLedStatus(): void {
+    this.api.getLedStatus().subscribe({
+      next: (status) => {
+        this.ledStatus = status;
+        this.cdr.detectChanges();
+      },
+      error: (err) => console.error('Error fetching LED status:', err),
+    });
+  }
+
+  toggleLed(): void {
+    if (!this.ledStatus || this.ledLoading) return;
+
+    this.ledLoading = true;
+    const newEnabled = !this.ledStatus.config.enabled;
+
+    this.api.updateLedConfig({ enabled: newEnabled }).subscribe({
+      next: (result) => {
+        if (result.success) {
+          // Refresh full LED status to avoid stale properties like currentTrigger/availableTriggers
+          this.fetchLedStatus();
+        }
+        this.ledLoading = false;
+        this.cdr.detectChanges();
+      },
+      error: (err) => {
+        console.error('Error toggling LED:', err);
+        alert('Failed to toggle LED');
+        this.ledLoading = false;
+        this.cdr.detectChanges();
+      },
+    });
+  }
+
+  changeLedMode(mode: string): void {
+    if (!this.ledStatus || this.ledLoading) return;
+
+    this.ledLoading = true;
+
+    this.api.updateLedConfig({ mode, enabled: true }).subscribe({
+      next: (result) => {
+        if (result.success) {
+          // Refresh full LED status to avoid stale properties like currentTrigger/availableTriggers
+          this.fetchLedStatus();
+        }
+        this.ledLoading = false;
+        this.cdr.detectChanges();
+      },
+      error: (err) => {
+        console.error('Error changing LED mode:', err);
+        alert('Failed to change LED mode');
+        this.ledLoading = false;
+        this.cdr.detectChanges();
+      },
     });
   }
 

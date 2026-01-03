@@ -182,6 +182,14 @@ The project uses modern TypeScript with:
 - Connect to WiFi
 - View connection status
 
+### Power LED Control
+
+- Configure Raspberry Pi power LED as activity indicator
+- Multiple modes: SD card activity, heartbeat, activity+power
+- Configurable via Dashboard and CLI
+- Persistent configuration across restarts
+- See [LED Feature Documentation](docs/LED_FEATURE.md) for details
+
 ### Network Speed Testing
 
 - Run manual speed tests
@@ -317,6 +325,8 @@ Access the cockpit at `/cockpit` to view:
 - `GET /api/wifi/status` - WiFi status
 - `GET /api/wifi/scan` - Scan networks
 - `POST /api/wifi/connect` - Connect to WiFi
+- `GET /api/led/status` - Get LED status and configuration
+- `POST /api/led/config` - Update LED configuration
 - `GET /api/files` - List files
 - `POST /api/files/upload` - Upload file
 - `GET /api/files/download/:filename` - Download file

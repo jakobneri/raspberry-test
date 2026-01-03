@@ -112,6 +112,61 @@
         </div>
       </div>
 
+      <!-- LED Control Card -->
+      @if (ledStatus && ledStatus.available) {
+      <div class="metric-card led-control-card">
+        <div class="metric-header">
+          <div class="metric-icon">💡</div>
+          <div class="metric-title">Power LED</div>
+        </div>
+
+        <div class="led-status">
+          <div class="detail-row">
+            <span>Status</span>
+            <span class="status-badge" [class.enabled]="ledStatus.config.enabled">
+              {{ ledStatus.config.enabled ? 'Enabled' : 'Disabled' }}
+            </span>
+          </div>
+          @if (ledStatus.config.enabled) {
+          <div class="detail-row">
+            <span>Mode</span>
+            <span>{{ ledStatus.config.mode }}</span>
+          </div>
+          <div class="detail-row">
+            <span>Current</span>
+            <span>{{ ledStatus.currentTrigger || '--' }}</span>
+          </div>
+          }
+        </div>
+
+        <div class="led-controls">
+          <button
+            class="btn-toggle"
+            [class.active]="ledStatus.config.enabled"
+            [disabled]="ledLoading"
+            (click)="toggleLed()"
+          >
+            {{ ledStatus.config.enabled ? '✓ Enabled' : 'Enable Activity Display' }}
+          </button>
+
+          @if (ledStatus.config.enabled) {
+          <div class="led-modes">
+            <label>Activity Mode:</label>
+            <select
+              [value]="ledStatus.config.mode"
+              (change)="changeLedMode($any($event.target).value)"
+              [disabled]="ledLoading"
+            >
+              <option value="mmc0">SD Card Activity</option>
+              <option value="heartbeat">Heartbeat</option>
+              <option value="actpwr">Activity + Power</option>
+            </select>
+          </div>
+          }
+        </div>
+      </div>
+      }
+
       <!-- Sessions Card -->
       <app-sessions-card />
 
