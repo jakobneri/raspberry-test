@@ -58,7 +58,7 @@
       </div>
       } @else {
       <div class="devices-grid">
-        @for (device of devices; track device.mac) {
+        @for (device of devices; track index; let index = $index) {
         <div class="device-card" [class]="getStatusColor(device.status)">
           <div class="device-status">
             <span class="status-dot" [class]="device.status"></span>

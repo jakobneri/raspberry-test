@@ -32,13 +32,27 @@ export class NetworkMap implements OnInit {
     this.loadDevices();
   }
 
+  private normalizeDevices(devices: any[] = []): NetworkDevice[] {
+    return devices.map((device, idx) => {
+      const normalized: NetworkDevice = {
+        ip: device.ip || `unknown-${idx}`,
+        mac: device.mac || 'Unknown',
+        hostname: device.hostname || 'Unknown',
+        vendor: device.vendor,
+        status: device.status === 'offline' ? 'offline' : 'online',
+        lastSeen: device.lastSeen || new Date().toISOString(),
+      };
+      return normalized;
+    });
+  }
+
   loadDevices() {
     console.log('[NetworkMap] Loading cached network devices...');
     this.loading = true;
     this.api.getNetworkDevices().subscribe({
       next: (data) => {
         console.log('[NetworkMap] Devices loaded:', data);
-        this.devices = data.devices || [];
+        this.devices = this.normalizeDevices(data.devices);
         console.log(`[NetworkMap] Found ${this.devices.length} devices`);
         this.loading = false;
       },
@@ -56,7 +70,7 @@ export class NetworkMap implements OnInit {
     this.api.scanNetwork().subscribe({
       next: (data) => {
         console.log('[NetworkMap] Network scan completed:', data);
-        this.devices = data.devices || [];
+        this.devices = this.normalizeDevices(data.devices);
         console.log(`[NetworkMap] Scan found ${this.devices.length} devices`);
         this.lastScan = new Date();
         this.scanning = false;
