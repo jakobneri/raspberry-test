@@ -495,20 +495,42 @@ const startServer = async (skipUpdate: boolean = false) => {
 const createUser = async () => {
   console.log("\n--- Create New User ---");
   const email = await question("Email: ");
-  
-  console.log(`\n--- Auto-Update Configuration ---`);
-  console.log(`Previous Status: ${settings.autoUpdate ? `${colors.green}Enabled${colors.reset}` : `${colors.red}Disabled${colors.reset}`}`);
-  
-  await setAutoUpdate(newState);
-  
-  console.log(`New Status: ${newState ? `${colors.green}Enabled${colors.reset}` : `${colors.red}Disabled${colors.reset}`}`);
-  
-  if (newState) {
-    console.log(`${colors.green}✓ Auto-update enabled${colors.reset}`);
-    console.log(`\nThe server will automatically check for updates from the main branch on startup.`);
-  } else {
-    console.log(`${colors.yellow}✓ Auto-update disabled${colors.reset}`);
+  const password = await question("Password: ");
+
+  if (!email || !password) {
+    console.log("Error: Email and password are required.");
+    return;
   }
+
+  try {
+    const existing = await get("SELECT id FROM users WHERE email = ?", [email]);
+    if (existing) {
+      console.log("Error: User with this email already exists.");
+      return;
+    }
+
+    const salt = randomBytes(16).toString("hex");
+    const hashedPassword = hashPassword(password, salt);
+    const id = `user_${Date.now()}`;
+
+    await run(
+      "INSERT INTO users (id, email, password, salt) VALUES (?, ?, ?, ?)",
+      [id, email, hashedPassword, salt]
+    );
+
+    console.log(`Success: User '${email}' created.`);
+  } catch (error) {
+    console.error("Error creating user:", error);
+  }
+};
+
+const listUsers = async () => {
+  console.log("\n--- Registered Users ---");
+  try {
+    const users = await all<{ id: string; email: string }>(
+      "SELECT id, email FROM users"
+    );
+
     if (users.length === 0) {
       console.log("No users found.");
       return;
