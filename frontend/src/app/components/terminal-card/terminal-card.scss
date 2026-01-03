@@ -3,10 +3,8 @@
 
 .terminal-card {
   @include card;
-  grid-column: span 2;
   
   @include mobile {
-    grid-column: span 1;
     padding: $spacing-md;
   }
 }
