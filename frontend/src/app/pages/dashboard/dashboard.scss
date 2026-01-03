@@ -57,6 +57,31 @@
 .system-info-card {
   @include card;
 
+  .uptime-display {
+    text-align: center;
+    margin-bottom: $spacing-md;
+    
+    .label {
+      display: block;
+      color: $text-secondary;
+      font-size: 12px;
+      margin-bottom: $spacing-xs;
+      text-transform: uppercase;
+      font-weight: 600;
+    }
+
+    .value {
+      display: block;
+      font-size: 28px;
+      font-weight: bold;
+      color: $accent-color;
+
+      @include mobile {
+        font-size: 24px;
+      }
+    }
+  }
+
   .picker-row {
     display: flex;
     align-items: center;
@@ -65,17 +90,16 @@
 
     select {
       padding: $spacing-sm $spacing-md;
-      border-radius: $border-radius-md;
-      border: 1px solid rgba($accent-color, 0.4);
-      background: rgba(#0f1628, 0.8);
+      border-radius: $border-radius-sm;
+      border: 1px solid $border-color;
+      background: $input-bg;
       color: $text-primary;
-      font-weight: 600;
-      min-width: 180px;
+      font-size: 14px;
+      min-width: 160px;
 
       &:focus {
         outline: none;
         border-color: $accent-color;
-        box-shadow: 0 0 0 3px rgba($accent-color, 0.15);
       }
 
       &:disabled {
@@ -86,18 +110,7 @@
 
     .hint {
       color: $text-secondary;
-      font-size: 12px;
-    }
-  }
-
-  .value {
-    font-size: 28px;
-    font-weight: bold;
-    color: $accent-color;
-    margin-bottom: $spacing-xs;
-
-    @include mobile {
-      font-size: 24px;
+      font-size: 11px;
     }
   }
 }
@@ -253,50 +266,28 @@
 // LED Control Card
 .led-control-card {
   @include card;
-  position: relative;
-  overflow: hidden;
-  background: linear-gradient(140deg, #0b1220 0%, #0f1628 50%, #0c101e 100%);
-  border: 1px solid rgba($accent-color, 0.35);
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.35);
-  isolation: isolate;
-
-  &.unavailable {
-    border-color: rgba($danger-color, 0.4);
-  }
 
   @include mobile {
     padding: $spacing-lg $spacing-md;
   }
 }
 
-.led-sheen {
-  position: absolute;
-  inset: 0;
-  background: radial-gradient(circle at 20% 20%, rgba(#22d3ee, 0.08), transparent 45%),
-    radial-gradient(circle at 80% 10%, rgba($accent-color, 0.12), transparent 40%),
-    radial-gradient(circle at 50% 90%, rgba($success-color, 0.08), transparent 45%);
-  filter: blur(6px);
-  z-index: -1;
-}
-
 .led-header {
-  display: grid;
-  grid-template-columns: auto 1fr auto;
+  display: flex;
   align-items: center;
   gap: $spacing-sm;
+  margin-bottom: $spacing-md;
 
   .metric-icon {
-    background: rgba($accent-color, 0.12);
-    padding: 10px;
-    border-radius: 12px;
-    border: 1px solid rgba($accent-color, 0.25);
+    font-size: 28px;
+    margin-right: $spacing-sm;
   }
 
   .metric-title {
-    font-size: 18px;
-    font-weight: 700;
-    color: $text-primary;
-    letter-spacing: 0.5px;
+    font-size: 16px;
+    color: $text-secondary;
+    font-weight: 600;
+    flex: 1;
   }
 
   .led-chips {
@@ -305,24 +296,23 @@
     flex-wrap: wrap;
 
     .chip {
-      padding: 6px 10px;
-      border-radius: 999px;
-      font-size: 12px;
-      font-weight: 700;
-      letter-spacing: 0.3px;
-      background: rgba($text-secondary, 0.12);
-      border: 1px solid rgba($border-color, 0.8);
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 600;
+      background: rgba($text-secondary, 0.1);
+      border: 1px solid $border-color;
       color: $text-secondary;
 
       &.good {
         background: rgba($success-color, 0.15);
-        border-color: rgba($success-color, 0.4);
+        border-color: rgba($success-color, 0.3);
         color: $success-color;
       }
 
       &.bad {
         background: rgba($danger-color, 0.15);
-        border-color: rgba($danger-color, 0.45);
+        border-color: rgba($danger-color, 0.3);
         color: $danger-color;
       }
     }
@@ -330,76 +320,82 @@
 }
 
 .led-error {
-  margin: $spacing-md 0;
-  padding: $spacing-sm $spacing-md;
-  border-radius: $border-radius-md;
-  background: rgba($danger-color, 0.12);
-  border: 1px solid rgba($danger-color, 0.4);
-  color: $danger-color;
-  font-weight: 600;
+  margin: $spacing-sm 0;
+  padding: $spacing-sm;
+  border-radius: $border-radius-sm;
+  background: rgba($text-secondary, 0.05);
+  border: 1px solid rgba($text-secondary, 0.2);
+  color: $text-secondary;
+  font-size: 13px;
 }
 
 .led-status-grid {
   margin-top: $spacing-md;
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
   gap: $spacing-md;
 
   .stat {
     padding: $spacing-md;
     border-radius: $border-radius-md;
-    background: rgba(#1a2336, 0.6);
-    border: 1px solid rgba($accent-color, 0.2);
+    background: $bg-color;
+    border: 1px solid $border-color;
 
     .label {
       color: $text-secondary;
-      font-size: 13px;
-      letter-spacing: 0.2px;
+      font-size: 12px;
+      margin-bottom: $spacing-xs;
     }
 
     .value {
-      margin-top: $spacing-xs;
-      font-size: 18px;
-      font-weight: 700;
+      font-size: 16px;
+      font-weight: 600;
       color: $text-primary;
+      margin-bottom: $spacing-xs;
     }
 
     .hint {
-      margin-top: 4px;
       color: $text-secondary;
-      font-size: 12px;
+      font-size: 11px;
+      line-height: 1.4;
     }
   }
 }
 
 .led-controls {
   margin-top: $spacing-lg;
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  display: flex;
+  flex-direction: column;
   gap: $spacing-md;
   padding: $spacing-md;
-  border-radius: $border-radius-lg;
-  background: rgba(#101624, 0.7);
-  border: 1px solid rgba($accent-color, 0.18);
+  border-radius: $border-radius-md;
+  background: $bg-color;
+  border: 1px solid $border-color;
+
+  @include tablet-up {
+    display: grid;
+    grid-template-columns: minmax(200px, auto) 1fr;
+    align-items: start;
+  }
 
   .btn-toggle {
     @include button-base;
-    justify-content: flex-start;
-    gap: $spacing-sm;
     width: 100%;
-    background: linear-gradient(120deg, #16a34a, #22d3ee);
+    background: $accent-color;
     color: white;
-    font-weight: 700;
-    border: 1px solid rgba(#22d3ee, 0.35);
-    box-shadow: 0 10px 30px rgba(#22d3ee, 0.2);
+    font-weight: 600;
 
     &.active {
-      background: linear-gradient(120deg, #eab308, #22d3ee);
-      border-color: rgba(#eab308, 0.4);
+      background: $success-color;
     }
 
     &:hover:not(:disabled) {
-      filter: brightness(1.05);
+      filter: brightness(1.1);
+    }
+
+    &:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
     }
   }
 
@@ -409,11 +405,10 @@
     gap: $spacing-xs;
 
     label {
-      font-size: 13px;
+      font-size: 12px;
       color: $text-secondary;
-      font-weight: 700;
+      font-weight: 600;
       text-transform: uppercase;
-      letter-spacing: 0.4px;
     }
 
     .picker-row {
@@ -424,23 +419,27 @@
 
       select {
         padding: $spacing-sm $spacing-md;
-        border-radius: $border-radius-md;
-        border: 1px solid rgba($accent-color, 0.4);
-        background: rgba(#0f1628, 0.8);
+        border-radius: $border-radius-sm;
+        border: 1px solid $border-color;
+        background: $input-bg;
         color: $text-primary;
-        font-weight: 600;
-        min-width: 180px;
+        font-size: 14px;
+        min-width: 160px;
 
         &:focus {
           outline: none;
           border-color: $accent-color;
-          box-shadow: 0 0 0 3px rgba($accent-color, 0.15);
+        }
+
+        &:disabled {
+          opacity: 0.6;
+          cursor: not-allowed;
         }
       }
 
       .hint {
         color: $text-secondary;
-        font-size: 12px;
+        font-size: 11px;
       }
     }
   }
@@ -449,12 +448,13 @@
 .led-triggers {
   margin-top: $spacing-md;
   padding-top: $spacing-md;
-  border-top: 1px solid rgba($border-color, 0.8);
+  border-top: 1px solid $border-color;
 
   .label {
     color: $text-secondary;
-    font-size: 13px;
+    font-size: 12px;
     margin-bottom: $spacing-xs;
+    font-weight: 600;
   }
 
   .chips {
@@ -463,17 +463,18 @@
     gap: $spacing-xs;
 
     .chip {
-      padding: 6px 10px;
-      border-radius: 10px;
+      padding: 4px 8px;
+      border-radius: 4px;
       background: rgba($text-secondary, 0.1);
       color: $text-primary;
-      border: 1px solid rgba($border-color, 0.9);
-      font-size: 12px;
+      border: 1px solid $border-color;
+      font-size: 11px;
 
       &.active {
-        background: rgba($accent-color, 0.2);
-        border-color: rgba($accent-color, 0.6);
+        background: rgba($accent-color, 0.15);
+        border-color: $accent-color;
         color: $accent-color;
+        font-weight: 600;
       }
     }
   }
@@ -483,19 +484,21 @@
   margin-top: $spacing-md;
   padding: $spacing-md;
   border-radius: $border-radius-md;
-  border: 1px dashed rgba($danger-color, 0.5);
-  background: rgba($danger-color, 0.08);
+  border: 1px solid rgba($text-secondary, 0.3);
+  background: rgba($text-secondary, 0.05);
 
   .title {
-    font-weight: 700;
+    font-weight: 600;
     margin-bottom: $spacing-xs;
     color: $text-primary;
+    font-size: 14px;
   }
 
   p {
     margin: 0;
     color: $text-secondary;
-    line-height: 1.6;
+    line-height: 1.5;
+    font-size: 13px;
   }
 }
 
