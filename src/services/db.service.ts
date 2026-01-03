@@ -47,6 +47,11 @@ const initDb = () => {
         requested_at TEXT,
         status TEXT
       );
+      CREATE TABLE IF NOT EXISTS settings (
+        key TEXT PRIMARY KEY,
+        value TEXT,
+        updated_at TEXT
+      );
     `);
 
     // Check if users table is empty
