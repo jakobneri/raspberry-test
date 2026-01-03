@@ -23,6 +23,7 @@ import * as filesService from "./services/files.service.js";
 import * as systemService from "./services/system.service.js";
 import * as networkService from "./services/network.service.js";
 import * as speedTestService from "./services/speedtest.service.js";
+import * as settingsService from "./services/settings.service.js";
 
 const PORT = 3000;
 const router = new Router();
@@ -551,6 +552,30 @@ router.post(
       JSON.stringify({ success: true, message: "Server shutting down..." })
     );
     systemService.shutdown();
+  })
+);
+
+// ========== SETTINGS ROUTES ==========
+
+router.get(
+  "/api/settings",
+  authHandler(async (req, res, userId) => {
+    const settings = await settingsService.getSettings();
+    res.writeHead(200, { "Content-Type": "application/json" });
+    res.end(JSON.stringify(settings));
+  })
+);
+
+router.post(
+  "/api/settings/auto-update",
+  authHandler(async (req, res, userId) => {
+    const params = await parseBody(req);
+    const enabled = params.get("enabled") === "true";
+    console.log(`[Settings] Auto-update set to ${enabled} by user: ${userId}`);
+
+    await settingsService.setAutoUpdate(enabled);
+    res.writeHead(200, { "Content-Type": "application/json" });
+    res.end(JSON.stringify({ success: true, autoUpdate: enabled }));
   })
 );
 
