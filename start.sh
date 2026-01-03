@@ -307,11 +307,12 @@ show_menu() {
                     ;;
             esac
         elif [[ $key =~ ^[1-9]$ ]]; then
-            # Number key pressed
+            # Number key pressed - validate against actual number of options
             local num=$((key - 1))
             if [ $num -ge 0 ] && [ $num -lt ${#options[@]} ]; then
                 return $num
             fi
+            # If invalid number, ignore and stay in loop
         elif [[ $key == "" ]]; then
             # Enter key pressed
             return $selected

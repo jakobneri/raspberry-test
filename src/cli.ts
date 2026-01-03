@@ -125,12 +125,14 @@ class InteractiveMenu {
     console.log(`║  ${this.title.padEnd(39)}  ║`);
     console.log(`╚═══════════════════════════════════════════╝\n`);
     this.items.forEach((item, index) => {
+      // Show numbers 1-9 for first 9 items only
       const num = index < 9 ? `${index + 1}. ` : "   ";
       const cursor = index === this.selectedIndex ? "▶ " : "  ";
       const color = index === this.selectedIndex ? "\x1b[36m" : "\x1b[0m"; // Cyan for selected
       console.log(`${color}${cursor}${num}${item.label}\x1b[0m`);
     });
-    console.log("\n\x1b[90m(Use ↑↓ arrows or numbers 1-9, Enter to select)\x1b[0m");
+    const maxNum = Math.min(this.items.length, 9);
+    console.log(`\n\x1b[90m(Use ↑↓ arrows or numbers 1-${maxNum}, Enter to select)\x1b[0m`);
   }
 }
 
