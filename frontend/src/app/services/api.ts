@@ -176,14 +176,6 @@ export class ApiService {
     return this.http.get(`${this.baseUrl}/network/details`);
   }
 
-  getNetworkDevices(): Observable<{ devices: any[] }> {
-    return this.http.get<{ devices: any[] }>(`${this.baseUrl}/network/devices`);
-  }
-
-  scanNetwork(): Observable<{ devices: any[] }> {
-    return this.http.post<{ devices: any[] }>(`${this.baseUrl}/network/scan`, {});
-  }
-
   getWifiStatus(): Observable<any> {
     return this.http.get(`${this.baseUrl}/wifi/status`);
   }
