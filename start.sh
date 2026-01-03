@@ -12,5 +12,11 @@ if [ ! -f "dist/unified-cli.js" ]; then
     npm run build || exit 1
 fi
 
+# Check and build frontend if needed
+if [ ! -d "frontend/dist/frontend/browser" ]; then
+    echo "[start] Frontend build not found. Building frontend..."
+    (cd frontend && npm install && npm run build) || exit 1
+fi
+
 echo "[start] Starting unified CLI..."
 node dist/unified-cli.js
