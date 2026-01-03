@@ -1,7 +1,18 @@
-import { ChangeDetectorRef, Component, OnInit, inject } from '@angular/core';
+import {
+  AfterViewInit,
+  ChangeDetectorRef,
+  Component,
+  ElementRef,
+  OnDestroy,
+  OnInit,
+  ViewChild,
+  inject,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Sidebar } from '../../components/sidebar/sidebar';
 import { ApiService } from '../../services/api';
+import type { DataSet } from 'vis-network';
+import type { Edge, Node, Network, Options } from 'vis-network';
 
 interface NetworkDevice {
   ip: string;
@@ -20,10 +31,16 @@ interface NetworkDevice {
   templateUrl: './network-map.html',
   styleUrl: './network-map.scss',
 })
-export class NetworkMap implements OnInit {
+export class NetworkMap implements OnInit, AfterViewInit, OnDestroy {
   private api = inject(ApiService);
   private cdr = inject(ChangeDetectorRef);
   private storageKey = 'networkMapState';
+  private visImports?: Promise<typeof import('vis-network')>;
+  private nodes?: DataSet<Node>;
+  private edges?: DataSet<Edge>;
+  private network?: Network;
+
+  @ViewChild('topologyGraph') topologyGraph?: ElementRef<HTMLDivElement>;
 
   devices: NetworkDevice[] = [];
   loading = false;
@@ -34,6 +51,15 @@ export class NetworkMap implements OnInit {
     console.log('[NetworkMap] Component initialized, loading devices...');
     this.loadSavedState();
     this.loadDevices();
+  }
+
+  ngAfterViewInit(): void {
+    // In case saved state arrived before view init
+    this.renderNetwork();
+  }
+
+  ngOnDestroy(): void {
+    this.network?.destroy();
   }
 
   private normalizeDevices(devices: any[] = []): NetworkDevice[] {
@@ -73,6 +99,7 @@ export class NetworkMap implements OnInit {
         this.devices = this.normalizeDevices(parsed.devices);
         this.lastScan = parsed.lastScan ? new Date(parsed.lastScan) : null;
         console.log(`[NetworkMap] Loaded ${this.devices.length} devices from saved state`);
+        this.renderNetwork();
       }
     } catch (err) {
       console.warn('[NetworkMap] Failed to load saved state:', err);
@@ -89,6 +116,7 @@ export class NetworkMap implements OnInit {
         console.log(`[NetworkMap] Found ${this.devices.length} devices`);
         this.loading = false;
         this.cdr.detectChanges();
+        this.renderNetwork();
       },
       error: (err) => {
         console.error('[NetworkMap] Failed to load devices:', err);
@@ -112,6 +140,7 @@ export class NetworkMap implements OnInit {
         this.scanning = false;
         this.loading = false;
         this.cdr.detectChanges();
+        this.renderNetwork();
       },
       error: (err) => {
         console.error('[NetworkMap] Network scan failed:', err);
@@ -128,19 +157,100 @@ export class NetworkMap implements OnInit {
   }
 
   get topologyNodes() {
-    const count = this.devices.length || 1;
-    const goldenAngle = Math.PI * (3 - Math.sqrt(5)); // ~137.5°
-    const minRadius = 12;
-    const maxRadius = 42;
+    return this.devices;
+  }
 
-    return this.devices.map((device, index) => {
-      const t = (index + 1) / (count + 1);
-      const radius = minRadius + (maxRadius - minRadius) * Math.sqrt(t);
-      const angle = index * goldenAngle;
-      const x = 50 + radius * Math.cos(angle);
-      const y = 50 + radius * Math.sin(angle);
-      return { ...device, x, y };
+  private connectionColors(connection?: string) {
+    switch (connection) {
+      case 'wired':
+        return { background: '#0d1f3a', border: '#4ea3ff' };
+      case 'wireless':
+        return { background: '#0f2a1d', border: '#4caf50' };
+      default:
+        return { background: '#1b1d25', border: '#6c6f7f' };
+    }
+  }
+
+  private async ensureNetwork(): Promise<void> {
+    if (!this.topologyGraph) return;
+    if (!this.visImports) {
+      this.visImports = import('vis-network');
+    }
+    const vis = await this.visImports;
+
+    if (!this.nodes) {
+      this.nodes = new vis.DataSet<Node>();
+    }
+    if (!this.edges) {
+      this.edges = new vis.DataSet<Edge>();
+    }
+
+    if (!this.network) {
+      const options: Options = {
+        autoResize: true,
+        physics: {
+          stabilization: true,
+          barnesHut: { gravitationalConstant: -9000, springLength: 140, springConstant: 0.02 },
+        },
+        nodes: {
+          shape: 'box',
+          font: { color: '#e9ecf5', size: 13 },
+          borderWidth: 1,
+        },
+        edges: {
+          color: { color: '#6c6f7f', inherit: false },
+          smooth: { enabled: true, type: 'dynamic' },
+          width: 1.5,
+        },
+        interaction: { hover: true },
+      };
+
+      this.network = new vis.Network(
+        this.topologyGraph.nativeElement,
+        { nodes: this.nodes, edges: this.edges },
+        options
+      );
+    }
+  }
+
+  private async renderNetwork() {
+    if (!this.topologyGraph) return;
+    await this.ensureNetwork();
+    if (!this.nodes || !this.edges) return;
+
+    this.nodes.clear();
+    this.edges.clear();
+
+    // Gateway node
+    this.nodes.add({
+      id: 'gateway',
+      label: 'Gateway',
+      shape: 'hexagon',
+      color: { background: '#252838', border: '#a7a9b7' },
+      font: { color: '#fff', size: 14 },
+      mass: 3,
     });
+
+    for (const device of this.devices) {
+      const colors = this.connectionColors(device.connection);
+      this.nodes.add({
+        id: device.ip,
+        label: device.hostname || device.ip,
+        title: `${device.ip}\n${device.mac}`,
+        color: { background: colors.background, border: colors.border },
+        font: { color: '#e9ecf5', size: 12 },
+      });
+      this.edges.add({
+        from: 'gateway',
+        to: device.ip,
+        color: { color: colors.border },
+      });
+    }
+
+    if (this.network) {
+      this.network.setData({ nodes: this.nodes, edges: this.edges });
+      this.network.fit({ animation: true });
+    }
   }
 
   formatLastSeen(dateStr: string): string {

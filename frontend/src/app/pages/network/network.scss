@@ -1,0 +1,167 @@
+@use '../../../styles/variables' as *;
+@use '../../../styles/mixins' as *;
+
+.network-layout {
+  display: flex;
+  min-height: 100vh;
+  background: $bg-color;
+}
+
+.network-main {
+  flex: 1;
+  padding: $spacing-xl;
+  margin-left: 250px;
+
+  @include mobile {
+    margin-left: 0;
+    padding: $spacing-md;
+    padding-top: 72px;
+  }
+}
+
+.network-header {
+  @include flex-between;
+  align-items: flex-start;
+  gap: $spacing-md;
+  margin-bottom: $spacing-xl;
+
+  .eyebrow {
+    color: $text-secondary;
+    margin-bottom: 4px;
+  }
+
+  h1 {
+    color: $text-primary;
+    margin: 0;
+  }
+
+  .header-actions {
+    display: flex;
+    gap: $spacing-sm;
+    flex-wrap: wrap;
+  }
+}
+
+.grid {
+  display: grid;
+  gap: $spacing-lg;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+}
+
+.card {
+  @include card;
+  position: relative;
+
+  &.loading {
+    opacity: 0.7;
+  }
+
+  .card-header {
+    @include flex-between;
+    margin-bottom: $spacing-md;
+
+    h3 {
+      margin: 0;
+      color: $text-primary;
+    }
+  }
+
+  .card-body {
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-xs;
+  }
+
+  .stat-row {
+    @include flex-between;
+    color: $text-primary;
+
+    span:last-child {
+      color: $text-secondary;
+      font-family: monospace;
+    }
+  }
+}
+
+.speedtest .card-body.stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: $spacing-md;
+
+  .stat {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    span {
+      color: $text-secondary;
+    }
+    strong {
+      color: $text-primary;
+    }
+  }
+
+  .full {
+    grid-column: 1 / -1;
+  }
+}
+
+.history-list {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-sm;
+}
+
+.history-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: $spacing-sm;
+  padding: $spacing-sm;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 8px;
+  font-size: 14px;
+  color: $text-primary;
+
+  .time {
+    color: $text-secondary;
+  }
+}
+
+.error-box {
+  @include card;
+  border: 1px solid $error-color;
+  color: $text-primary;
+  margin-bottom: $spacing-md;
+}
+
+.btn {
+  @include button-base;
+  &.primary {
+    @include button-primary;
+  }
+  &.ghost {
+    background: transparent;
+    border: 1px solid $border-color;
+    color: $text-primary;
+  }
+}
+
+.chip {
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid $border-color;
+  color: $text-secondary;
+  font-size: 12px;
+
+  &.ok {
+    color: $success-color;
+    border-color: rgba($success-color, 0.5);
+  }
+  &.bad {
+    color: $error-color;
+    border-color: rgba($error-color, 0.5);
+  }
+}
+
+.card-body.empty {
+  color: $text-secondary;
+}

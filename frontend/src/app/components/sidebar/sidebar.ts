@@ -21,6 +21,7 @@ export class Sidebar {
 
   adminLinks: NavLink[] = [
     { path: '/cockpit', icon: '📊', label: 'Dashboard' },
+    { path: '/network', icon: '🛰️', label: 'Network' },
     { path: '/users', icon: '👥', label: 'User Management' },
     { path: '/files', icon: '📁', label: 'Files' },
     { path: '/network-map', icon: '🌐', label: 'Network Map' },

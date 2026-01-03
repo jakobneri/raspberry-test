@@ -196,29 +196,21 @@
   }
 }
 
-.topology-lines {
+.topology-graph {
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
-  pointer-events: none;
 }
 
-.topology-line {
-  stroke: $border-color;
-  stroke-width: 0.6;
-  opacity: 0.6;
-
-  &.wired {
-    stroke: rgba($accent-color, 0.55);
-    opacity: 0.9;
-  }
-
-  &.wireless {
-    stroke: rgba($success-color, 0.55);
-    opacity: 0.9;
-    stroke-dasharray: 2.5 2;
-  }
+.topology-empty {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: $text-secondary;
+  font-size: 14px;
 }
 
 .topology-center {
@@ -247,77 +239,7 @@
   }
 }
 
-.topology-node {
-  position: absolute;
-  transform: translate(-50%, -50%);
-  padding: $spacing-sm $spacing-sm;
-  border-radius: 10px;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid $border-color;
-  min-width: 120px;
-  text-align: center;
-  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.24);
-  backdrop-filter: blur(4px);
-
-  .node-icon {
-    font-size: 22px;
-    margin-bottom: $spacing-xs;
-  }
-
-  .node-host {
-    color: $text-primary;
-    font-weight: 600;
-    margin-bottom: 2px;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-
-  .node-ip {
-    color: $accent-color;
-    font-family: monospace;
-    font-size: 12px;
-  }
-
-  .node-mac {
-    color: $text-secondary;
-    font-family: monospace;
-    font-size: 10px;
-  }
-
-  .node-type {
-    margin-top: $spacing-xs;
-    padding: 2px 8px;
-    border-radius: 999px;
-    display: inline-block;
-    font-size: 10px;
-    letter-spacing: 0.2px;
-    color: $text-primary;
-    background: rgba(255, 255, 255, 0.06);
-    border: 1px solid $border-color;
-  }
-
-  &.online {
-    border-color: rgba($success-color, 0.5);
-    box-shadow: 0 0 12px rgba($success-color, 0.35);
-  }
-
-  &.offline {
-    border-color: rgba($error-color, 0.5);
-    box-shadow: 0 0 12px rgba($error-color, 0.35);
-    opacity: 0.8;
-  }
-
-  &.wired {
-    border-color: rgba($accent-color, 0.6);
-    box-shadow: 0 0 14px rgba($accent-color, 0.35);
-  }
-
-  &.wireless {
-    border-color: rgba($success-color, 0.6);
-    box-shadow: 0 0 14px rgba($success-color, 0.35);
-  }
-}
+// Node styles are handled by vis-network; keep legend colors only
 
 .devices-grid {
   display: grid;

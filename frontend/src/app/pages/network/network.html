@@ -1,0 +1,175 @@
+<div class="network-layout">
+  <app-sidebar></app-sidebar>
+
+  <main class="network-main">
+    <header class="network-header">
+      <div>
+        <p class="eyebrow">Network</p>
+        <h1>Network Status & Speedtest</h1>
+      </div>
+      <div class="header-actions">
+        <button class="btn" (click)="refresh()">↻ Refresh</button>
+        <button class="btn primary" [disabled]="runningSpeedtest" (click)="runSpeedtest()">
+          @if (runningSpeedtest) { Running speedtest... } @else { Run Speedtest }
+        </button>
+        <a class="btn ghost" routerLink="/network-map">🌐 Network Map</a>
+      </div>
+    </header>
+
+    @if (error) {
+    <div class="error-box">{{ error }}</div>
+    }
+
+    <section class="grid">
+      <div class="card" [class.loading]="loadingDetails">
+        <div class="card-header">
+          <div>
+            <p class="eyebrow">Ethernet</p>
+            <h3>eth0</h3>
+          </div>
+          <span
+            class="chip"
+            [class.ok]="details?.ethernet?.connected"
+            [class.bad]="!details?.ethernet?.connected"
+          >
+            {{ details?.ethernet?.connected ? 'Connected' : 'Offline' }}
+          </span>
+        </div>
+        @if (details?.ethernet) {
+        <div class="card-body">
+          <div class="stat-row">
+            <span>IPv4</span><span>{{ details?.ethernet?.ipAddress }}</span>
+          </div>
+          <div class="stat-row">
+            <span>IPv6</span><span>{{ details?.ethernet?.ipv6Address }}</span>
+          </div>
+          <div class="stat-row">
+            <span>MAC</span><span>{{ details?.ethernet?.macAddress }}</span>
+          </div>
+          <div class="stat-row">
+            <span>Speed</span><span>{{ details?.ethernet?.speed }}</span>
+          </div>
+          <div class="stat-row">
+            <span>RX</span><span>{{ details?.ethernet?.rx }} KB/s</span>
+          </div>
+          <div class="stat-row">
+            <span>TX</span><span>{{ details?.ethernet?.tx }} KB/s</span>
+          </div>
+        </div>
+        }
+      </div>
+
+      <div class="card" [class.loading]="loadingDetails">
+        <div class="card-header">
+          <div>
+            <p class="eyebrow">Wi‑Fi</p>
+            <h3>wlan0</h3>
+          </div>
+          <span
+            class="chip"
+            [class.ok]="details?.wifi?.connected"
+            [class.bad]="!details?.wifi?.connected"
+          >
+            {{ details?.wifi?.connected ? 'Connected' : 'Offline' }}
+          </span>
+        </div>
+        @if (details?.wifi) {
+        <div class="card-body">
+          <div class="stat-row">
+            <span>IPv4</span><span>{{ details?.wifi?.ipAddress }}</span>
+          </div>
+          <div class="stat-row">
+            <span>IPv6</span><span>{{ details?.wifi?.ipv6Address }}</span>
+          </div>
+          <div class="stat-row">
+            <span>MAC</span><span>{{ details?.wifi?.macAddress }}</span>
+          </div>
+          <div class="stat-row">
+            <span>Speed</span><span>{{ details?.wifi?.speed }}</span>
+          </div>
+          <div class="stat-row">
+            <span>SSID</span><span>{{ details?.wifi?.ssid }}</span>
+          </div>
+          <div class="stat-row">
+            <span>Signal</span><span>{{ details?.wifi?.signal ?? 'N/A' }}</span>
+          </div>
+          <div class="stat-row">
+            <span>RX</span><span>{{ details?.wifi?.rx }} KB/s</span>
+          </div>
+          <div class="stat-row">
+            <span>TX</span><span>{{ details?.wifi?.tx }} KB/s</span>
+          </div>
+        </div>
+        }
+      </div>
+
+      <div class="card speedtest">
+        <div class="card-header">
+          <div>
+            <p class="eyebrow">Speedtest</p>
+            <h3>Latest Result</h3>
+          </div>
+          <span
+            class="chip"
+            [class.ok]="latestSpeedtest?.success"
+            [class.bad]="latestSpeedtest && !latestSpeedtest.success"
+          >
+            {{ latestSpeedtest?.success ? 'Success' : latestSpeedtest ? 'Failed' : 'No data' }}
+          </span>
+        </div>
+        @if (latestSpeedtest) {
+        <div class="card-body stats">
+          <div class="stat">
+            <span>Ping</span><strong>{{ formatPing(latestSpeedtest?.ping) }}</strong>
+          </div>
+          <div class="stat">
+            <span>Download</span><strong>{{ formatMbps(latestSpeedtest?.download) }}</strong>
+          </div>
+          <div class="stat">
+            <span>Upload</span><strong>{{ formatMbps(latestSpeedtest?.upload) }}</strong>
+          </div>
+          <div class="stat">
+            <span>When</span><strong>{{ latestSpeedtest?.timestamp | date : 'medium' }}</strong>
+          </div>
+          @if (latestSpeedtest?.message) {
+          <div class="stat full">
+            <span>Note</span><strong>{{ latestSpeedtest?.message }}</strong>
+          </div>
+          }
+        </div>
+        } @else {
+        <div class="card-body empty">No speedtest run yet.</div>
+        }
+        <div class="card-actions">
+          <button class="btn" [disabled]="runningSpeedtest" (click)="runSpeedtest()">
+            @if (runningSpeedtest) { Running... } @else { Run speedtest }
+          </button>
+          <button class="btn ghost" (click)="loadHistory()">Refresh history</button>
+        </div>
+      </div>
+
+      <div class="card history">
+        <div class="card-header">
+          <div>
+            <p class="eyebrow">History</p>
+            <h3>Recent Speedtests</h3>
+          </div>
+        </div>
+        @if (speedtestHistory.length) {
+        <div class="history-list">
+          @for (item of speedtestHistory; track item.timestamp; let idx = $index) {
+          <div class="history-row">
+            <div class="time">{{ item.timestamp | date : 'short' }}</div>
+            <div class="metric">Ping: {{ formatPing(item.ping) }}</div>
+            <div class="metric">Down: {{ formatMbps(item.download) }}</div>
+            <div class="metric">Up: {{ formatMbps(item.upload) }}</div>
+          </div>
+          }
+        </div>
+        } @else {
+        <div class="card-body empty">No history yet.</div>
+        }
+      </div>
+    </section>
+  </main>
+</div>
