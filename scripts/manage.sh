@@ -4,5 +4,6 @@
 if [ -f "dist/cli.js" ]; then
     node dist/cli.js
 else
-    npm run build && node dist/cli.js
+    npm run build || exit 1
+    node dist/cli.js
 fi

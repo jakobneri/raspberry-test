@@ -17,6 +17,7 @@ interface MenuItem {
   label: string;
   action?: MenuAction;
   submenu?: MenuItem[];
+  skipKeyPress?: boolean; // If true, don't prompt "Press any key" after action
 }
 
 class InteractiveMenu {
@@ -46,8 +47,8 @@ class InteractiveMenu {
         }
 
         // Handle number input (1-9)
-        if (str && str >= "1" && str <= "9") {
-          const index = parseInt(str) - 1;
+        if (str && /^[1-9]$/.test(str)) {
+          const index = parseInt(str, 10) - 1;
           if (index >= 0 && index < this.items.length) {
             this.selectedIndex = index;
             // Trigger selection immediately
@@ -88,6 +89,7 @@ class InteractiveMenu {
           ...item.submenu,
           {
             label: "← Back",
+            skipKeyPress: true,
             action: async () => {
               /* handled by loop */
             },
@@ -102,7 +104,7 @@ class InteractiveMenu {
     } else if (item.action) {
       console.clear();
       await item.action();
-      if (!item.label.includes("Exit") && item.label !== "← Back") {
+      if (!item.skipKeyPress) {
         console.log("\nPress any key to continue...");
         process.stdin.setRawMode(true);
         process.stdin.resume();
@@ -470,6 +472,7 @@ const mainMenu: MenuItem[] = [
   },
   {
     label: "🚪 Exit",
+    skipKeyPress: true,
     action: () => {
       console.log("Goodbye!");
       process.exit(0);
