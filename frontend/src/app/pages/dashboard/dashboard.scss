@@ -1,5 +1,6 @@
 @use '../../../styles/variables' as *;
 @use '../../../styles/mixins' as *;
+@use 'sass:color';
 
 .main-content {
   margin-left: $sidebar-width;
@@ -318,7 +319,7 @@
       border-color: $success-color;
 
       &:hover:not(:disabled) {
-        background: darken($success-color, 10%);
+        background: color.adjust($success-color, $lightness: -10%);
       }
     }
 
