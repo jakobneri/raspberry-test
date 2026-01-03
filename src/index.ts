@@ -31,9 +31,6 @@ const router = new Router();
 // Angular build directory
 const ANGULAR_DIST = "frontend/dist/frontend/browser";
 
-// In-memory storage for network devices
-let cachedNetworkDevices: any[] = [];
-
 // MIME types for static files
 const MIME_TYPES: Record<string, string> = {
   ".html": "text/html",
@@ -224,8 +221,6 @@ const authHandler = (
   };
 };
 
-// Static page routes removed - Angular SPA handles /cockpit, /users, /game-admin, /network-map
-
 router.get(
   "/api/users",
   authHandler(async (req, res) => {
@@ -257,56 +252,6 @@ router.get(
     const requests = await getPendingUserRequests();
     res.writeHead(200, { "Content-Type": "application/json" });
     res.end(JSON.stringify(requests));
-  })
-);
-
-router.get(
-  "/api/network/devices",
-  authHandler(async (req, res, userId) => {
-    console.log(`[Network] User ${userId} requesting cached network devices`);
-    console.log(
-      `[Network] Cached devices count: ${cachedNetworkDevices.length}`
-    );
-    // Return cached network devices
-    res.writeHead(200, { "Content-Type": "application/json" });
-    res.end(JSON.stringify({ devices: cachedNetworkDevices }));
-  })
-);
-
-router.post(
-  "/api/network/scan",
-  authHandler(async (req, res, userId) => {
-    console.log(`[Network] User ${userId} initiated network scan`);
-    try {
-      const { scanNetwork } = await import("./services/network.service.js");
-      const devices: any[] = [];
-
-      console.log("[Network] Starting network scan...");
-      await scanNetwork((device) => {
-        console.log(`[Network] Device found:`, device);
-        // Add status and lastSeen fields for compatibility with frontend
-        const deviceWithMeta = {
-          ...device,
-          status: device.alive ? "online" : "offline",
-          lastSeen: new Date().toISOString(),
-          mac: device.mac || "Unknown",
-        };
-        devices.push(deviceWithMeta);
-      });
-
-      // Update cached devices
-      cachedNetworkDevices = devices;
-      console.log(`[Network] Scan complete. Found ${devices.length} devices`);
-
-      res.writeHead(200, { "Content-Type": "application/json" });
-      res.end(JSON.stringify({ devices }));
-    } catch (error) {
-      console.error("[Network] Network scan error:", error);
-      res.writeHead(500, { "Content-Type": "application/json" });
-      res.end(
-        JSON.stringify({ error: "Network scan failed", details: String(error) })
-      );
-    }
   })
 );
 

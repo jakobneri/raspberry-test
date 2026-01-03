@@ -1,6 +1,5 @@
 import { Component, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Router } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { Sidebar } from '../../components/sidebar/sidebar';
 import { MetricCard } from '../../components/metric-card/metric-card';
@@ -28,8 +27,7 @@ export class Dashboard implements OnInit, OnDestroy {
   constructor(
     private metricsService: MetricsService,
     private api: ApiService,
-    private cdr: ChangeDetectorRef,
-    private router: Router
+    private cdr: ChangeDetectorRef
   ) {}
 
   ngOnInit(): void {

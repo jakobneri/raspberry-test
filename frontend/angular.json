@@ -52,8 +52,7 @@
                 "input": "public"
               }
             ],
-            "styles": ["src/styles.scss"],
-            "allowedCommonJsDependencies": ["vis-network", "vis-data"]
+            "styles": ["src/styles.scss"]
           },
           "configurations": {
             "production": {

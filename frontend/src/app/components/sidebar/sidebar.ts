@@ -24,7 +24,6 @@ export class Sidebar {
     { path: '/network', icon: '🛰️', label: 'Network' },
     { path: '/users', icon: '👥', label: 'User Management' },
     { path: '/files', icon: '📁', label: 'Files' },
-    { path: '/network-map', icon: '🌐', label: 'Network Map' },
     { path: '/game-admin', icon: '⚙️', label: 'Game Admin' },
   ];
 
