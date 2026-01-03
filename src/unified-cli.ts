@@ -10,10 +10,7 @@ import {
   getSchedulerConfig,
   updateSchedulerConfig,
 } from "./services/speedtest.service.js";
-import {
-  getSettings,
-  setAutoUpdate,
-} from "./services/settings.service.js";
+import { getSettings, setAutoUpdate } from "./services/settings.service.js";
 
 // ========== COLORS ==========
 
@@ -104,7 +101,6 @@ class InteractiveMenu {
           {
             label: "← Back",
             skipKeyPress: true,
-            action: async () => {},
           },
         ],
         this
@@ -116,7 +112,9 @@ class InteractiveMenu {
       console.clear();
       await item.action();
       if (!item.skipKeyPress) {
-        console.log(`\n${colors.gray}Press any key to continue...${colors.reset}`);
+        console.log(
+          `\n${colors.gray}Press any key to continue...${colors.reset}`
+        );
         process.stdin.setRawMode(true);
         process.stdin.resume();
         await new Promise<void>((res) =>
@@ -143,7 +141,9 @@ class InteractiveMenu {
       console.log(`${color}${cursor}${num}${item.label}${colors.reset}`);
     });
     const maxNum = Math.min(this.items.length, 9);
-    console.log(`\n${colors.gray}(Use ↑↓ arrows or numbers 1-${maxNum}, Enter to select)${colors.reset}`);
+    console.log(
+      `\n${colors.gray}(Use ↑↓ arrows or numbers 1-${maxNum}, Enter to select)${colors.reset}`
+    );
   }
 }
 
@@ -162,7 +162,9 @@ const question = (query: string): Promise<string> => {
 
 // ========== SHELL EXECUTION HELPERS ==========
 
-const execCommand = (command: string): Promise<{ stdout: string; stderr: string; code: number }> => {
+const execCommand = (
+  command: string
+): Promise<{ stdout: string; stderr: string; code: number }> => {
   return new Promise((resolve) => {
     exec(command, (error, stdout, stderr) => {
       resolve({
@@ -185,37 +187,51 @@ const spawnCommand = (command: string, args: string[]): Promise<number> => {
 
 const checkForUpdates = async (): Promise<boolean> => {
   console.log(`${colors.yellow}📥 Checking for updates...${colors.reset}`);
-  
+
   await execCommand("git fetch origin main");
-  const { stdout } = await execCommand("git rev-list HEAD...origin/main --count");
+  const { stdout } = await execCommand(
+    "git rev-list HEAD...origin/main --count"
+  );
   const behindCount = parseInt(stdout.trim());
-  
+
   if (behindCount > 0) {
-    console.log(`${colors.yellow}⚠️  ${behindCount} commit(s) available from remote${colors.reset}`);
+    console.log(
+      `${colors.yellow}⚠️  ${behindCount} commit(s) available from remote${colors.reset}`
+    );
     return true;
   }
-  
+
   console.log(`${colors.green}✓ Already up to date${colors.reset}`);
   return false;
 };
 
 const pullUpdates = async (): Promise<boolean> => {
-  console.log(`${colors.yellow}📥 Pulling latest changes from repository...${colors.reset}`);
+  console.log(
+    `${colors.yellow}📥 Pulling latest changes from repository...${colors.reset}`
+  );
 
   // Check for local changes
-  const { code: diffCode } = await execCommand("git diff-index --quiet HEAD --");
+  const { code: diffCode } = await execCommand(
+    "git diff-index --quiet HEAD --"
+  );
   const hasChanges = diffCode !== 0;
-  
+
   if (hasChanges) {
     console.log(`${colors.yellow}⚠️  Local changes detected!${colors.reset}`);
     const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
     const branchName = `local-changes-${timestamp}`;
 
-    console.log(`${colors.yellow}📦 Creating branch: ${branchName}${colors.reset}`);
+    console.log(
+      `${colors.yellow}📦 Creating branch: ${branchName}${colors.reset}`
+    );
     await execCommand(`git checkout -b ${branchName}`);
     await execCommand("git add -A");
-    await execCommand(`git commit -m "Local changes before pull at ${timestamp}"`);
-    console.log(`${colors.green}✓ Local changes saved to branch ${branchName}${colors.reset}`);
+    await execCommand(
+      `git commit -m "Local changes before pull at ${timestamp}"`
+    );
+    console.log(
+      `${colors.green}✓ Local changes saved to branch ${branchName}${colors.reset}`
+    );
 
     await execCommand("git checkout main");
   }
@@ -225,7 +241,9 @@ const pullUpdates = async (): Promise<boolean> => {
   const oldCommitHash = oldCommit.trim();
 
   // Pull changes
-  const { code: pullCode, stdout: pullOutput } = await execCommand("git pull origin main");
+  const { code: pullCode, stdout: pullOutput } = await execCommand(
+    "git pull origin main"
+  );
 
   if (pullCode !== 0) {
     console.log(`${colors.red}✗ Failed to pull changes${colors.reset}`);
@@ -241,12 +259,19 @@ const pullUpdates = async (): Promise<boolean> => {
     return true;
   }
 
-  console.log(`${colors.green}✓ Successfully pulled latest changes!${colors.reset}\n`);
+  console.log(
+    `${colors.green}✓ Successfully pulled latest changes!${colors.reset}\n`
+  );
 
   // Show changes
-  const { stdout: diffStats } = await execCommand(`git diff --numstat ${oldCommitHash} ${newCommitHash}`);
-  const lines = diffStats.trim().split("\n").filter(l => l);
-  
+  const { stdout: diffStats } = await execCommand(
+    `git diff --numstat ${oldCommitHash} ${newCommitHash}`
+  );
+  const lines = diffStats
+    .trim()
+    .split("\n")
+    .filter((l) => l);
+
   for (const line of lines) {
     const parts = line.split("\t");
     if (parts.length === 3) {
@@ -255,7 +280,9 @@ const pullUpdates = async (): Promise<boolean> => {
         console.log(`${filename.padEnd(50)}   (binary)`);
       } else {
         console.log(
-          `${filename.padEnd(50)}   ${colors.green}+ ${insertions.padStart(3)}${colors.reset}   ${colors.red}- ${deletions.padStart(3)}${colors.reset}`
+          `${filename.padEnd(50)}   ${colors.green}+ ${insertions.padStart(3)}${
+            colors.reset
+          }   ${colors.red}- ${deletions.padStart(3)}${colors.reset}`
         );
       }
     }
@@ -268,10 +295,14 @@ const pullUpdates = async (): Promise<boolean> => {
   );
 
   if (packageChanged.trim()) {
-    console.log(`${colors.yellow}📦 package.json changed, installing dependencies...${colors.reset}`);
+    console.log(
+      `${colors.yellow}📦 package.json changed, installing dependencies...${colors.reset}`
+    );
     const npmCode = await spawnCommand("npm", ["install"]);
     if (npmCode !== 0) {
-      console.log(`${colors.red}✗ Failed to install dependencies${colors.reset}`);
+      console.log(
+        `${colors.red}✗ Failed to install dependencies${colors.reset}`
+      );
       return false;
     }
     console.log(`${colors.green}✓ Dependencies installed${colors.reset}\n`);
@@ -281,7 +312,9 @@ const pullUpdates = async (): Promise<boolean> => {
 };
 
 const buildBackend = async (): Promise<boolean> => {
-  console.log(`${colors.yellow}🔨 Building TypeScript backend...${colors.reset}`);
+  console.log(
+    `${colors.yellow}🔨 Building TypeScript backend...${colors.reset}`
+  );
   const code = await spawnCommand("npm", ["run", "build"]);
   if (code !== 0) {
     console.log(`${colors.red}✗ Backend build failed${colors.reset}`);
@@ -295,15 +328,19 @@ const buildFrontend = async (): Promise<boolean> => {
   console.log(`${colors.yellow}🎨 Building Angular frontend...${colors.reset}`);
 
   const originalDir = process.cwd();
-  
+
   try {
     if (!existsSync("frontend/node_modules")) {
-      console.log(`${colors.yellow}📦 Installing frontend dependencies...${colors.reset}`);
+      console.log(
+        `${colors.yellow}📦 Installing frontend dependencies...${colors.reset}`
+      );
       process.chdir("frontend");
       const installCode = await spawnCommand("npm", ["install"]);
       process.chdir(originalDir);
       if (installCode !== 0) {
-        console.log(`${colors.red}✗ Failed to install frontend dependencies${colors.reset}`);
+        console.log(
+          `${colors.red}✗ Failed to install frontend dependencies${colors.reset}`
+        );
         return false;
       }
     }
@@ -311,7 +348,7 @@ const buildFrontend = async (): Promise<boolean> => {
     process.chdir("frontend");
     const code = await spawnCommand("npm", ["run", "build"]);
     process.chdir(originalDir);
-    
+
     if (code !== 0) {
       console.log(`${colors.red}✗ Frontend build failed${colors.reset}`);
       return false;
@@ -328,21 +365,25 @@ const buildFrontend = async (): Promise<boolean> => {
 const checkSpeedtestCli = async (): Promise<void> => {
   const { code } = await execCommand("command -v speedtest-cli");
   if (code !== 0) {
-    console.log(`${colors.yellow}📡 speedtest-cli not found, installing...${colors.reset}`);
-    
+    console.log(
+      `${colors.yellow}📡 speedtest-cli not found, installing...${colors.reset}`
+    );
+
     // Try pip3 first
     const { code: pip3Code } = await execCommand("pip3 install speedtest-cli");
     if (pip3Code === 0) {
       console.log(`${colors.green}✓ speedtest-cli installed!${colors.reset}`);
       return;
     }
-    
+
     // Fallback to pip
     const { code: pipCode } = await execCommand("pip install speedtest-cli");
     if (pipCode === 0) {
       console.log(`${colors.green}✓ speedtest-cli installed!${colors.reset}`);
     } else {
-      console.log(`${colors.red}✗ Failed to install speedtest-cli${colors.reset}`);
+      console.log(
+        `${colors.red}✗ Failed to install speedtest-cli${colors.reset}`
+      );
     }
   }
 };
@@ -351,9 +392,15 @@ const checkSpeedtestCli = async (): Promise<void> => {
 
 const startServer = async (skipUpdate: boolean = false) => {
   console.clear();
-  console.log(`${colors.blue}╔════════════════════════════════════════${colors.reset}`);
-  console.log(`${colors.blue}║  🥧 Raspberry Pi Server Manager 🥧   ║${colors.reset}`);
-  console.log(`${colors.blue}╚════════════════════════════════════════${colors.reset}\n`);
+  console.log(
+    `${colors.blue}╔════════════════════════════════════════${colors.reset}`
+  );
+  console.log(
+    `${colors.blue}║  🥧 Raspberry Pi Server Manager 🥧   ║${colors.reset}`
+  );
+  console.log(
+    `${colors.blue}╚════════════════════════════════════════${colors.reset}\n`
+  );
 
   if (!skipUpdate) {
     // Check if auto-update is enabled
@@ -363,12 +410,16 @@ const startServer = async (skipUpdate: boolean = false) => {
       if (hasUpdates) {
         const success = await pullUpdates();
         if (!success) {
-          console.log(`${colors.red}✗ Update failed, aborting...${colors.reset}`);
+          console.log(
+            `${colors.red}✗ Update failed, aborting...${colors.reset}`
+          );
           process.exit(1);
         }
       }
     } else {
-      console.log(`${colors.gray}Auto-update disabled, skipping update check${colors.reset}\n`);
+      console.log(
+        `${colors.gray}Auto-update disabled, skipping update check${colors.reset}\n`
+      );
     }
   }
 
@@ -390,21 +441,31 @@ const startServer = async (skipUpdate: boolean = false) => {
 
   // Get local IP
   const { stdout: ipOutput } = await execCommand("hostname -I 2>/dev/null");
-  let localIp = ipOutput.trim().split(' ')[0];
-  
+  let localIp = ipOutput.trim().split(" ")[0];
+
   if (!localIp) {
     // Fallback for macOS
-    const { stdout: macIp } = await execCommand("ipconfig getifaddr en0 2>/dev/null");
+    const { stdout: macIp } = await execCommand(
+      "ipconfig getifaddr en0 2>/dev/null"
+    );
     localIp = macIp.trim() || "localhost";
   }
 
-  console.log(`${colors.green}═══════════════════════════════════════${colors.reset}`);
+  console.log(
+    `${colors.green}═══════════════════════════════════════${colors.reset}`
+  );
   console.log(`${colors.green}   Server starting on:${colors.reset}\n`);
-  console.log(`   ${colors.blue}➜${colors.reset}  Local:   ${colors.green}http://localhost:3000${colors.reset}`);
+  console.log(
+    `   ${colors.blue}➜${colors.reset}  Local:   ${colors.green}http://localhost:3000${colors.reset}`
+  );
   if (localIp !== "localhost") {
-    console.log(`   ${colors.blue}➜${colors.reset}  Network: ${colors.green}http://${localIp}:3000${colors.reset}`);
+    console.log(
+      `   ${colors.blue}➜${colors.reset}  Network: ${colors.green}http://${localIp}:3000${colors.reset}`
+    );
   }
-  console.log(`\n${colors.green}═══════════════════════════════════════${colors.reset}\n`);
+  console.log(
+    `\n${colors.green}═══════════════════════════════════════${colors.reset}\n`
+  );
 
   // Start server with auto-restart on exit code 42
   while (true) {
@@ -413,7 +474,9 @@ const startServer = async (skipUpdate: boolean = false) => {
       console.log(`\n${colors.yellow}🔄 Server restarting...${colors.reset}\n`);
       await new Promise((resolve) => setTimeout(resolve, 1000));
     } else {
-      console.log(`\n${colors.green}Server stopped (exit code: ${code})${colors.reset}`);
+      console.log(
+        `\n${colors.green}Server stopped (exit code: ${code})${colors.reset}`
+      );
       break;
     }
   }
@@ -718,14 +781,22 @@ const runManualSpeedtest = async () => {
 const toggleAutoUpdate = async () => {
   const settings = await getSettings();
   console.log(`\n--- Auto-Update Configuration ---`);
-  console.log(`Current Status: ${settings.autoUpdate ? `${colors.green}Enabled${colors.reset}` : `${colors.red}Disabled${colors.reset}`}`);
+  console.log(
+    `Current Status: ${
+      settings.autoUpdate
+        ? `${colors.green}Enabled${colors.reset}`
+        : `${colors.red}Disabled${colors.reset}`
+    }`
+  );
 
   const input = await question("\nEnable Auto-Update? (y/n): ");
 
   if (input.toLowerCase() === "y") {
     await setAutoUpdate(true);
     console.log(`${colors.green}✓ Auto-update enabled${colors.reset}`);
-    console.log(`\nThe server will automatically check for updates from the main branch on startup.`);
+    console.log(
+      `\nThe server will automatically check for updates from the main branch on startup.`
+    );
   } else if (input.toLowerCase() === "n") {
     await setAutoUpdate(false);
     console.log(`${colors.yellow}Auto-update disabled${colors.reset}`);
@@ -826,10 +897,7 @@ const main = async () => {
   // Wait for DB init
   await new Promise((resolve) => setTimeout(resolve, 100));
 
-  const menu = new InteractiveMenu(
-    "🥧 Raspberry Pi Server Manager",
-    mainMenu
-  );
+  const menu = new InteractiveMenu("🥧 Raspberry Pi Server Manager", mainMenu);
   await menu.show();
 };
 

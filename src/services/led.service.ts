@@ -12,7 +12,8 @@ const PWR_LED_TRIGGER = "/sys/class/leds/PWR/trigger";
 const ACT_LED_TRIGGER = "/sys/class/leds/ACT/trigger";
 
 // Available trigger modes
-export type LedTriggerMode = "none" | "mmc0" | "actpwr" | "heartbeat" | "default";
+// Use string type but validate against the device-reported trigger list to stay flexible
+export type LedTriggerMode = string;
 
 export interface LedConfig {
   enabled: boolean;
@@ -23,14 +24,51 @@ export interface LedConfig {
 // Default configuration
 let currentConfig: LedConfig = {
   enabled: false,
-  mode: "default",
+  mode: "default-on",
   ledType: "PWR",
+};
+
+// Remember the boot-time trigger so we can revert to it when disabling
+const defaultTriggers: Record<"PWR" | "ACT", string | null> = {
+  PWR: null,
+  ACT: null,
 };
 
 // Simple mutex lock for config updates to prevent race conditions
 // Note: This simple boolean flag works for most cases but is not perfectly thread-safe
 // in high-concurrency scenarios. For production, consider using a proper semaphore/queue.
 let updateInProgress = false;
+
+const captureDefaultTrigger = async (ledType: "PWR" | "ACT") => {
+  if (defaultTriggers[ledType] !== null) return;
+  if (!isLedAvailable(ledType)) return;
+
+  defaultTriggers[ledType] = await getCurrentTrigger(ledType);
+};
+
+const resolveFallbackTrigger = async (
+  ledType: "PWR" | "ACT"
+): Promise<LedTriggerMode | null> => {
+  await captureDefaultTrigger(ledType);
+  const available = await getAvailableTriggers(ledType);
+
+  if (!available.length) return null;
+
+  const recorded = defaultTriggers[ledType];
+  if (recorded && available.includes(recorded)) return recorded;
+
+  const preferredOrder = [
+    "default-on",
+    "mmc0",
+    "actpwr",
+    "heartbeat",
+    "input",
+    "none",
+  ];
+
+  const preferred = preferredOrder.find((mode) => available.includes(mode));
+  return preferred ?? available[0] ?? null;
+};
 
 // ========== LED AVAILABILITY CHECK ==========
 
@@ -61,7 +99,8 @@ export const getAvailableTriggers = async (
     const triggers = content
       .replace(/\[|\]/g, "")
       .trim()
-      .split(/\s+/);
+      .split(/\s+/)
+      .filter((mode) => mode.length > 0);
     return triggers;
   } catch (error) {
     console.error(`[LED] Error reading available triggers:`, error);
@@ -110,12 +149,30 @@ export const setLedTrigger = async (
     };
   }
 
-  // Validate mode against allowed values to prevent command injection
-  const allowedModes = ["none", "mmc0", "actpwr", "heartbeat", "default"];
-  if (!allowedModes.includes(mode)) {
+  const availableTriggers = await getAvailableTriggers(ledType);
+  if (!availableTriggers.length) {
     return {
       success: false,
-      error: `Invalid LED mode: ${mode}. Allowed modes: ${allowedModes.join(", ")}`,
+      error: "No LED trigger modes available on this system",
+    };
+  }
+
+  const sanitizedMode = mode.trim();
+
+  // Validate mode against allowed values to prevent command injection
+  if (!/^[A-Za-z0-9._-]{1,32}$/.test(sanitizedMode)) {
+    return {
+      success: false,
+      error: "Invalid LED mode characters",
+    };
+  }
+
+  if (!availableTriggers.includes(sanitizedMode)) {
+    return {
+      success: false,
+      error: `Invalid LED mode: ${sanitizedMode}. Available modes: ${availableTriggers.join(
+        ", "
+      )}`,
     };
   }
 
@@ -133,10 +190,10 @@ export const setLedTrigger = async (
     // This requires the user running the server to have sudo access without password
     // for the specific command, or the server to run as root
     // Mode is validated above to prevent command injection
-    const command = `echo "${mode}" | sudo tee ${ledPath} > /dev/null`;
+    const command = `echo "${sanitizedMode}" | sudo tee ${ledPath} > /dev/null`;
     await execAsync(command);
 
-    console.log(`[LED] Set ${ledType} LED trigger to: ${mode}`);
+    console.log(`[LED] Set ${ledType} LED trigger to: ${sanitizedMode}`);
     return { success: true };
   } catch (error: any) {
     console.error(`[LED] Error setting LED trigger:`, error);
@@ -153,14 +210,59 @@ export const setLedTrigger = async (
 export const applyLedConfig = async (
   config: LedConfig
 ): Promise<{ success: boolean; error?: string }> => {
+  if (!isLedAvailable(config.ledType)) {
+    return {
+      success: false,
+      error: "LED control not available on this system",
+    };
+  }
+
+  const availableTriggers = await getAvailableTriggers(config.ledType);
+  if (!availableTriggers.length) {
+    return {
+      success: false,
+      error: "No LED trigger modes reported by the system",
+    };
+  }
+
   if (!config.enabled) {
     // Restore default LED behavior
     console.log("[LED] Restoring default LED behavior");
-    return await setLedTrigger("default", config.ledType);
+    const fallback = await resolveFallbackTrigger(config.ledType);
+
+    if (!fallback) {
+      return {
+        success: false,
+        error: "No suitable default trigger found",
+      };
+    }
+
+    return await setLedTrigger(fallback, config.ledType);
+  }
+
+  const requestedMode =
+    config.mode === "default"
+      ? await resolveFallbackTrigger(config.ledType)
+      : config.mode;
+
+  if (!requestedMode) {
+    return {
+      success: false,
+      error: "Unable to resolve LED mode",
+    };
+  }
+
+  if (!availableTriggers.includes(requestedMode)) {
+    return {
+      success: false,
+      error: `Invalid LED mode: ${requestedMode}. Available modes: ${availableTriggers.join(
+        ", "
+      )}`,
+    };
   }
 
   // Apply the configured mode
-  return await setLedTrigger(config.mode, config.ledType);
+  return await setLedTrigger(requestedMode, config.ledType);
 };
 
 // ========== CONFIGURATION MANAGEMENT ==========
@@ -175,18 +277,14 @@ const loadLedConfigFromDb = async (): Promise<LedConfig> => {
     );
     if (row && row.value) {
       const parsed = JSON.parse(row.value);
-      // Validate parsed data has required fields with valid values
-      const validModes = ["none", "mmc0", "actpwr", "heartbeat", "default"];
-      const validLedTypes = ["PWR", "ACT"];
-      
+
       if (
         parsed &&
         typeof parsed === "object" &&
         typeof parsed.enabled === "boolean" &&
         typeof parsed.mode === "string" &&
-        validModes.includes(parsed.mode) &&
         typeof parsed.ledType === "string" &&
-        validLedTypes.includes(parsed.ledType)
+        (parsed.ledType === "PWR" || parsed.ledType === "ACT")
       ) {
         return parsed as LedConfig;
       }
@@ -199,7 +297,7 @@ const loadLedConfigFromDb = async (): Promise<LedConfig> => {
   // Return default config
   return {
     enabled: false,
-    mode: "default",
+    mode: "default-on",
     ledType: "PWR",
   };
 };
@@ -240,19 +338,47 @@ export const updateLedConfig = async (
   updateInProgress = true;
 
   try {
-    // Merge with current config
-    currentConfig = {
+    const targetLedType = config.ledType ?? currentConfig.ledType;
+    const mergedMode = config.mode ?? currentConfig.mode;
+
+    if (!isLedAvailable(targetLedType)) {
+      return {
+        success: false,
+        error: "LED control not available on this system",
+        config: currentConfig,
+      };
+    }
+
+    // Normalize requested mode (e.g., legacy "default") before applying
+    const normalizedMode =
+      mergedMode === "default"
+        ? await resolveFallbackTrigger(targetLedType)
+        : mergedMode;
+
+    if (!normalizedMode) {
+      return {
+        success: false,
+        error: "Unable to resolve LED mode for this device",
+        config: currentConfig,
+      };
+    }
+
+    const nextConfig: LedConfig = {
       ...currentConfig,
       ...config,
+      ledType: targetLedType,
+      mode: normalizedMode,
     };
 
-    // Save to database first
-    await saveLedConfigToDb(currentConfig);
-
-    // Apply the configuration
-    const result = await applyLedConfig(currentConfig);
+    // Apply the configuration first
+    const result = await applyLedConfig(nextConfig);
 
     if (result.success) {
+      currentConfig = nextConfig;
+
+      // Persist only when application succeeds
+      await saveLedConfigToDb(currentConfig);
+
       console.log("[LED] Configuration updated:", currentConfig);
     }
 
@@ -309,11 +435,31 @@ export const initLedService = async (): Promise<void> => {
   currentConfig = await loadLedConfigFromDb();
   console.log("[LED] Loaded configuration:", currentConfig);
 
+  // Capture boot-time triggers for both LEDs if present so we can restore them later
+  await Promise.all([
+    captureDefaultTrigger("PWR"),
+    captureDefaultTrigger("ACT"),
+  ]);
+
   const available = isLedAvailable(currentConfig.ledType);
   if (available) {
     console.log("[LED] LED control available");
     const triggers = await getAvailableTriggers(currentConfig.ledType);
     console.log(`[LED] Available triggers: ${triggers.join(", ")}`);
+
+    if (!triggers.includes(currentConfig.mode)) {
+      const fallback = await resolveFallbackTrigger(currentConfig.ledType);
+      if (fallback) {
+        console.warn(
+          `[LED] Stored mode '${currentConfig.mode}' is not available. Falling back to '${fallback}'.`
+        );
+        currentConfig = {
+          ...currentConfig,
+          mode: fallback,
+        };
+        await saveLedConfigToDb(currentConfig);
+      }
+    }
 
     // Apply saved configuration on startup
     if (currentConfig.enabled) {
@@ -323,7 +469,10 @@ export const initLedService = async (): Promise<void> => {
           `[LED] Applied saved configuration: ${currentConfig.mode} mode`
         );
       } else {
-        console.error(`[LED] Failed to apply saved configuration:`, result.error);
+        console.error(
+          `[LED] Failed to apply saved configuration:`,
+          result.error
+        );
       }
     }
   } else {

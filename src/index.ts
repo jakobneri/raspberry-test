@@ -724,12 +724,15 @@ router.post(
       }
 
       if (data.mode !== undefined) {
-        const validModes = ["none", "mmc0", "actpwr", "heartbeat", "default"];
-        if (!validModes.includes(data.mode)) {
+        if (
+          typeof data.mode !== "string" ||
+          !/^[A-Za-z0-9._-]{1,32}$/.test(data.mode.trim())
+        ) {
           res.writeHead(400, { "Content-Type": "application/json" });
           res.end(
             JSON.stringify({
-              error: `Invalid mode. Must be one of: ${validModes.join(", ")}`,
+              error:
+                "Invalid mode. Only letters, numbers, dash, underscore, and dot are allowed.",
             })
           );
           return;
@@ -747,7 +750,8 @@ router.post(
       }
 
       const result = await ledService.updateLedConfig(data);
-      res.writeHead(200, { "Content-Type": "application/json" });
+      const statusCode = result.success ? 200 : 400;
+      res.writeHead(statusCode, { "Content-Type": "application/json" });
       res.end(JSON.stringify(result));
     } catch (error) {
       console.error("[LED] Error updating config:", error);
