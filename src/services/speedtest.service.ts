@@ -151,9 +151,14 @@ export const runSpeedTest = async (
 
       // Final fallback: ping only
       try {
-        const { stdout } = await execAsync("ping -c 4 8.8.8.8");
-        const match = stdout.match(/avg = ([\d.]+)/);
-        const avgPing = match ? parseFloat(match[1]) : null;
+        const { stdout } = await execAsync("ping -c 4 8.8.8.8", {
+          timeout: 15000,
+        });
+        
+        // Match both Linux (rtt min/avg/max/mdev) and macOS (round-trip min/avg/max/stddev) formats
+        // Format: min/avg/max/stddev = 10.123/15.456/20.789/2.345 ms
+        const match = stdout.match(/(?:rtt|round-trip)\s+min\/avg\/max\/(?:mdev|stddev)\s*=\s*([\d.]+)\/([\d.]+)\/([\d.]+)\/([\d.]+)/);
+        const avgPing = match ? parseFloat(match[2]) : null;
 
         if (avgPing === null) {
           throw new Error("Could not parse ping result");

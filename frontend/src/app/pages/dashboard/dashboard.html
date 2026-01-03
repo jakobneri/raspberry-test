@@ -120,47 +120,30 @@
         <!-- LED Control Card -->
         @if (ledStatus) {
         <div class="metric-card led-control-card" [class.unavailable]="!ledStatus.available">
-          <div class="metric-header led-header">
+          <div class="metric-header">
             <div class="metric-icon">💡</div>
-            <div class="metric-title">Power LED activity</div>
-            <div class="led-chips">
-              <span
-                class="chip"
-                [class.good]="ledStatus.available"
-                [class.bad]="!ledStatus.available"
-              >
-                {{ ledStatus.available ? 'Detected' : 'Not detected' }}
-              </span>
-              <span
-                class="chip"
-                [class.good]="ledStatus.config.enabled"
-                [class.bad]="!ledStatus.config.enabled"
-              >
-                {{ ledStatus.config.enabled ? 'Active' : 'Idle' }}
-              </span>
-            </div>
+            <div class="metric-title">Power LED Activity</div>
           </div>
 
           @if (ledError) {
           <div class="led-error">{{ ledError }}</div>
-          } @if (ledStatus.available) {
-          <div class="led-status-grid">
-            <div class="stat">
-              <div class="label">Current trigger</div>
-              <div class="value">{{ ledStatus.currentTrigger || 'default-on' }}</div>
-              <div class="hint">Live from /sys/class/leds/{{ ledStatus.config.ledType }}/trigger</div>
+          }
+          
+          @if (ledStatus.available) {
+          <div class="led-status-row">
+            <div class="led-status-item">
+              <span class="label">Status</span>
+              <span 
+                class="badge"
+                [class.badge-success]="ledStatus.config.enabled"
+                [class.badge-secondary]="!ledStatus.config.enabled"
+              >
+                {{ ledStatus.config.enabled ? 'Active' : 'Idle' }}
+              </span>
             </div>
-            <div class="stat">
-              <div class="label">Selected mode</div>
-              <div class="value">{{ ledStatus.config.mode }}</div>
-              <div class="hint">Applied when activity display is enabled</div>
-            </div>
-            <div class="stat">
-              <div class="label">LED type</div>
-              <div class="value">{{ ledStatus.config.ledType }}</div>
-              <div class="hint">
-                {{ ledStatus.config.ledType === 'ACT' ? 'Activity LED' : 'Power LED' }}
-              </div>
+            <div class="led-status-item">
+              <span class="label">Current mode</span>
+              <span class="value">{{ ledStatus.currentTrigger || 'default-on' }}</span>
             </div>
           </div>
 
@@ -172,39 +155,24 @@
               (click)="toggleLed()"
             >
               {{
-                ledStatus.config.enabled ? 'Turn off activity display' : 'Activate activity display'
+                ledStatus.config.enabled ? 'Disable' : 'Enable'
               }}
             </button>
 
-            <div class="led-modes">
-              <label>Activity pattern</label>
-              <div class="picker-row">
-                <select
-                  [value]="ledStatus.config.mode"
-                  (change)="changeLedMode($any($event.target).value)"
-                  [disabled]="ledLoading"
-                >
-                  @for (option of ledModeOptions; track option.value) {
-                  <option [value]="option.value">{{ option.label }}</option>
-                  }
-                </select>
-                <span class="hint">Applies instantly</span>
-              </div>
+            <div class="led-mode-selector">
+              <label>Pattern</label>
+              <select
+                [value]="ledStatus.config.mode"
+                (change)="changeLedMode($any($event.target).value)"
+                [disabled]="ledLoading"
+              >
+                @for (option of ledModeOptions; track option.value) {
+                <option [value]="option.value">{{ option.label }}</option>
+                }
+              </select>
             </div>
           </div>
-
-          @if (ledStatus.availableTriggers?.length) {
-          <div class="led-triggers">
-            <div class="label">Available triggers</div>
-            <div class="chips">
-              @for (trigger of ledStatus.availableTriggers; track trigger) {
-              <span class="chip" [class.active]="trigger === ledStatus.currentTrigger">{{
-                trigger
-              }}</span>
-              }
-            </div>
-          </div>
-          } } @else {
+          } @else {
           <div class="led-unavailable">
             <div class="title">LED interface not available</div>
             <p>
@@ -215,7 +183,7 @@
           } @if (ledLoading) {
           <div class="led-overlay">
             <div class="loading-spinner"></div>
-            <span>Updating LED...</span>
+            <span>Updating...</span>
           </div>
           }
         </div>
