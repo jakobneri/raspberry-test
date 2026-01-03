@@ -410,6 +410,8 @@ const startServer = async (skipUpdate: boolean = false) => {
     `${colors.blue}╚════════════════════════════════════════${colors.reset}\n`
   );
 
+  let pulledUpdates = false;
+
   if (!skipUpdate) {
     // Check if auto-update is enabled
     const settings = await getSettings();
@@ -423,6 +425,7 @@ const startServer = async (skipUpdate: boolean = false) => {
           );
           process.exit(1);
         }
+        pulledUpdates = true;
       }
     } else {
       console.log(
@@ -431,14 +434,14 @@ const startServer = async (skipUpdate: boolean = false) => {
     }
   }
 
-  // Ensure builds exist
-  if (!existsSync("dist")) {
+  // Rebuild if updates were pulled, or if builds don't exist
+  if (pulledUpdates || !existsSync("dist")) {
     if (!(await buildBackend())) {
       process.exit(1);
     }
   }
 
-  if (!existsSync("frontend/dist")) {
+  if (pulledUpdates || !existsSync("frontend/dist")) {
     if (!(await buildFrontend())) {
       process.exit(1);
     }
