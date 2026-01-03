@@ -716,6 +716,36 @@ router.post(
 
       console.log(`[LED] User ${userId} updating LED config:`, data);
 
+      // Validate input data
+      if (data.enabled !== undefined && typeof data.enabled !== "boolean") {
+        res.writeHead(400, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ error: "enabled must be a boolean" }));
+        return;
+      }
+
+      if (data.mode !== undefined) {
+        const validModes = ["none", "mmc0", "actpwr", "heartbeat", "default"];
+        if (!validModes.includes(data.mode)) {
+          res.writeHead(400, { "Content-Type": "application/json" });
+          res.end(
+            JSON.stringify({
+              error: `Invalid mode. Must be one of: ${validModes.join(", ")}`,
+            })
+          );
+          return;
+        }
+      }
+
+      if (data.ledType !== undefined) {
+        if (data.ledType !== "PWR" && data.ledType !== "ACT") {
+          res.writeHead(400, { "Content-Type": "application/json" });
+          res.end(
+            JSON.stringify({ error: "ledType must be either 'PWR' or 'ACT'" })
+          );
+          return;
+        }
+      }
+
       const result = await ledService.updateLedConfig(data);
       res.writeHead(200, { "Content-Type": "application/json" });
       res.end(JSON.stringify(result));

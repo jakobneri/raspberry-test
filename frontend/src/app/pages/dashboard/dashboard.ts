@@ -102,10 +102,8 @@ export class Dashboard implements OnInit, OnDestroy {
     this.api.updateLedConfig({ enabled: newEnabled }).subscribe({
       next: (result) => {
         if (result.success) {
-          this.ledStatus = {
-            ...this.ledStatus,
-            config: result.config,
-          };
+          // Refresh full LED status to avoid stale properties like currentTrigger/availableTriggers
+          this.fetchLedStatus();
         }
         this.ledLoading = false;
         this.cdr.detectChanges();
@@ -127,10 +125,8 @@ export class Dashboard implements OnInit, OnDestroy {
     this.api.updateLedConfig({ mode, enabled: true }).subscribe({
       next: (result) => {
         if (result.success) {
-          this.ledStatus = {
-            ...this.ledStatus,
-            config: result.config,
-          };
+          // Refresh full LED status to avoid stale properties like currentTrigger/availableTriggers
+          this.fetchLedStatus();
         }
         this.ledLoading = false;
         this.cdr.detectChanges();

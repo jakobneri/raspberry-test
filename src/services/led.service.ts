@@ -1,4 +1,4 @@
-import { existsSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { exec } from "node:child_process";
 import { promisify } from "node:util";
 import { get, run } from "./db.service.js";
@@ -26,6 +26,9 @@ let currentConfig: LedConfig = {
   mode: "default",
   ledType: "PWR",
 };
+
+// Simple mutex lock for config updates to prevent race conditions
+let updateInProgress = false;
 
 // ========== LED AVAILABILITY CHECK ==========
 
@@ -114,6 +117,15 @@ export const setLedTrigger = async (
     };
   }
 
+  // Validate ledPath matches expected constants to prevent command injection
+  const validPaths = [PWR_LED_TRIGGER, ACT_LED_TRIGGER];
+  if (!validPaths.includes(ledPath)) {
+    return {
+      success: false,
+      error: "Invalid LED path",
+    };
+  }
+
   try {
     // Use echo with sudo to write to the LED trigger file
     // This requires the user running the server to have sudo access without password
@@ -160,7 +172,18 @@ const loadLedConfigFromDb = async (): Promise<LedConfig> => {
       "SELECT value FROM settings WHERE key = 'led_config'"
     );
     if (row && row.value) {
-      return JSON.parse(row.value);
+      const parsed = JSON.parse(row.value);
+      // Validate parsed data has required fields
+      if (
+        parsed &&
+        typeof parsed === "object" &&
+        typeof parsed.enabled === "boolean" &&
+        typeof parsed.mode === "string" &&
+        typeof parsed.ledType === "string"
+      ) {
+        return parsed as LedConfig;
+      }
+      console.warn("[LED] Invalid config in database, using defaults");
     }
   } catch (error) {
     console.error("[LED] Error loading config from database:", error);
@@ -178,15 +201,11 @@ const loadLedConfigFromDb = async (): Promise<LedConfig> => {
  * Save LED configuration to database
  */
 const saveLedConfigToDb = async (config: LedConfig): Promise<void> => {
-  try {
-    await run(
-      `INSERT OR REPLACE INTO settings (key, value, updated_at) 
-       VALUES ('led_config', ?, datetime('now'))`,
-      [JSON.stringify(config)]
-    );
-  } catch (error) {
-    console.error("[LED] Error saving config to database:", error);
-  }
+  await run(
+    `INSERT OR REPLACE INTO settings (key, value, updated_at) 
+     VALUES ('led_config', ?, datetime('now'))`,
+    [JSON.stringify(config)]
+  );
 };
 
 /**
@@ -202,26 +221,48 @@ export const getLedConfig = (): LedConfig => {
 export const updateLedConfig = async (
   config: Partial<LedConfig>
 ): Promise<{ success: boolean; error?: string; config: LedConfig }> => {
-  // Merge with current config
-  currentConfig = {
-    ...currentConfig,
-    ...config,
-  };
-
-  // Save to database
-  await saveLedConfigToDb(currentConfig);
-
-  // Apply the configuration
-  const result = await applyLedConfig(currentConfig);
-
-  if (result.success) {
-    console.log("[LED] Configuration updated:", currentConfig);
+  // Simple lock to prevent race conditions
+  if (updateInProgress) {
+    return {
+      success: false,
+      error: "Update already in progress",
+      config: currentConfig,
+    };
   }
 
-  return {
-    ...result,
-    config: currentConfig,
-  };
+  updateInProgress = true;
+
+  try {
+    // Merge with current config
+    currentConfig = {
+      ...currentConfig,
+      ...config,
+    };
+
+    // Save to database first
+    await saveLedConfigToDb(currentConfig);
+
+    // Apply the configuration
+    const result = await applyLedConfig(currentConfig);
+
+    if (result.success) {
+      console.log("[LED] Configuration updated:", currentConfig);
+    }
+
+    return {
+      ...result,
+      config: currentConfig,
+    };
+  } catch (error: any) {
+    console.error("[LED] Error updating LED config:", error);
+    return {
+      success: false,
+      error: error.message || "Failed to update LED configuration",
+      config: currentConfig,
+    };
+  } finally {
+    updateInProgress = false;
+  }
 };
 
 /**

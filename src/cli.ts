@@ -473,7 +473,7 @@ const configureLed = async () => {
   if (enableInput.toLowerCase() === "n") enabled = false;
 
   let mode = status.config.mode;
-  if (enabled && enableInput.toLowerCase() === "y") {
+  if (enabled) {
     console.log("\nAvailable modes:");
     console.log("  mmc0      - Blink on SD card activity");
     console.log("  heartbeat - Heartbeat pattern");

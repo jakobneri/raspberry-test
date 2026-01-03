@@ -6,6 +6,7 @@ This feature allows you to configure the Raspberry Pi's power LED to display sys
 
 ## Available LED Modes
 
+- **None**: Disable all LED triggers (LED controlled by system default)
 - **SD Card Activity (mmc0)**: LED blinks when the SD card is being accessed
 - **Heartbeat**: LED shows a heartbeat pattern (double-blink)
 - **Activity + Power (actpwr)**: Combined activity indicator
