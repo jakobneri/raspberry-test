@@ -98,7 +98,10 @@ router.post("/api/login", async (req, res) => {
   console.log(`[AUTH] Successful login for user: ${user.id} (${email})`);
   const token = await createToken(user.id);
   sessionService.addSession(user.id, token);
-  res.setHeader("Set-Cookie", `jwt=${token}; HttpOnly; Path=/; Max-Age=900; SameSite=Lax`);
+  res.setHeader(
+    "Set-Cookie",
+    `jwt=${token}; HttpOnly; Path=/; Max-Age=900; SameSite=Lax`
+  );
   res.writeHead(200, { "Content-Type": "application/json" });
   res.end(JSON.stringify({ success: true, userId: user.id }));
 });
@@ -258,7 +261,11 @@ router.get(
 
 router.get(
   "/api/network/devices",
-  authHandler(async (req, res) => {
+  authHandler(async (req, res, userId) => {
+    console.log(`[Network] User ${userId} requesting cached network devices`);
+    console.log(
+      `[Network] Cached devices count: ${cachedNetworkDevices.length}`
+    );
     // Return cached network devices
     res.writeHead(200, { "Content-Type": "application/json" });
     res.end(JSON.stringify({ devices: cachedNetworkDevices }));
@@ -267,26 +274,38 @@ router.get(
 
 router.post(
   "/api/network/scan",
-  authHandler(async (req, res) => {
-    const { scanNetwork } = await import("./services/network.service.js");
-    const devices: any[] = [];
+  authHandler(async (req, res, userId) => {
+    console.log(`[Network] User ${userId} initiated network scan`);
+    try {
+      const { scanNetwork } = await import("./services/network.service.js");
+      const devices: any[] = [];
 
-    await scanNetwork((device) => {
-      // Add status and lastSeen fields for compatibility with frontend
-      const deviceWithMeta = {
-        ...device,
-        status: device.alive ? 'online' : 'offline',
-        lastSeen: new Date().toISOString(),
-        mac: device.mac || 'Unknown',
-      };
-      devices.push(deviceWithMeta);
-    });
+      console.log("[Network] Starting network scan...");
+      await scanNetwork((device) => {
+        console.log(`[Network] Device found:`, device);
+        // Add status and lastSeen fields for compatibility with frontend
+        const deviceWithMeta = {
+          ...device,
+          status: device.alive ? "online" : "offline",
+          lastSeen: new Date().toISOString(),
+          mac: device.mac || "Unknown",
+        };
+        devices.push(deviceWithMeta);
+      });
 
-    // Update cached devices
-    cachedNetworkDevices = devices;
+      // Update cached devices
+      cachedNetworkDevices = devices;
+      console.log(`[Network] Scan complete. Found ${devices.length} devices`);
 
-    res.writeHead(200, { "Content-Type": "application/json" });
-    res.end(JSON.stringify({ devices }));
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ devices }));
+    } catch (error) {
+      console.error("[Network] Network scan error:", error);
+      res.writeHead(500, { "Content-Type": "application/json" });
+      res.end(
+        JSON.stringify({ error: "Network scan failed", details: String(error) })
+      );
+    }
   })
 );
 
@@ -692,7 +711,10 @@ router.post(
       sessionService.removeSession(cookieToken);
       clearTokenCache(cookieToken);
     }
-    res.setHeader("Set-Cookie", "jwt=; HttpOnly; Path=/; Max-Age=0; SameSite=Lax");
+    res.setHeader(
+      "Set-Cookie",
+      "jwt=; HttpOnly; Path=/; Max-Age=0; SameSite=Lax"
+    );
     res.writeHead(200, { "Content-Type": "application/json" });
     res.end(JSON.stringify({ success: true }));
   })

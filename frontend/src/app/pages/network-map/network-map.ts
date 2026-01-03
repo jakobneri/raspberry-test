@@ -28,33 +28,42 @@ export class NetworkMap implements OnInit {
   lastScan: Date | null = null;
 
   ngOnInit() {
+    console.log('[NetworkMap] Component initialized, loading devices...');
     this.loadDevices();
   }
 
   loadDevices() {
+    console.log('[NetworkMap] Loading cached network devices...');
     this.loading = true;
     this.api.getNetworkDevices().subscribe({
       next: (data) => {
+        console.log('[NetworkMap] Devices loaded:', data);
         this.devices = data.devices || [];
+        console.log(`[NetworkMap] Found ${this.devices.length} devices`);
         this.loading = false;
       },
       error: (err) => {
-        console.error('Failed to load devices:', err);
+        console.error('[NetworkMap] Failed to load devices:', err);
+        console.error('[NetworkMap] Error details:', JSON.stringify(err));
         this.loading = false;
       },
     });
   }
 
   scanNetwork() {
+    console.log('[NetworkMap] Starting network scan...');
     this.scanning = true;
     this.api.scanNetwork().subscribe({
       next: (data) => {
+        console.log('[NetworkMap] Network scan completed:', data);
         this.devices = data.devices || [];
+        console.log(`[NetworkMap] Scan found ${this.devices.length} devices`);
         this.lastScan = new Date();
         this.scanning = false;
       },
       error: (err) => {
-        console.error('Network scan failed:', err);
+        console.error('[NetworkMap] Network scan failed:', err);
+        console.error('[NetworkMap] Error details:', JSON.stringify(err));
         this.scanning = false;
       },
     });

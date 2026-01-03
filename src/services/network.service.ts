@@ -40,11 +40,13 @@ const getMacAddress = async (ip: string): Promise<string | undefined> => {
   try {
     // Use arp to get MAC address
     const { stdout } = await execAsync(`arp -n ${ip}`);
-    const lines = stdout.split('\n');
+    const lines = stdout.split("\n");
     for (const line of lines) {
       if (line.includes(ip)) {
         // Extract MAC address from arp output
-        const match = line.match(/([0-9a-fA-F]{2}:[0-9a-fA-F]{2}:[0-9a-fA-F]{2}:[0-9a-fA-F]{2}:[0-9a-fA-F]{2}:[0-9a-fA-F]{2})/);
+        const match = line.match(
+          /([0-9a-fA-F]{2}:[0-9a-fA-F]{2}:[0-9a-fA-F]{2}:[0-9a-fA-F]{2}:[0-9a-fA-F]{2}:[0-9a-fA-F]{2})/
+        );
         return match ? match[1] : undefined;
       }
     }
@@ -57,27 +59,38 @@ const getMacAddress = async (ip: string): Promise<string | undefined> => {
 export const scanNetwork = async (
   onDeviceFound: (device: NetworkDevice) => void
 ): Promise<void> => {
+  console.log("[NetworkService] Starting network scan...");
   const interfaces = await si.networkInterfaces();
+  console.log("[NetworkService] Network interfaces:", interfaces);
+
   // Find default or first active non-internal interface
   const ifaceList = Array.isArray(interfaces) ? interfaces : [interfaces];
   const defaultIface =
     ifaceList.find((i) => !i.internal && i.ip4) || ifaceList[0];
 
-  if (!defaultIface || !defaultIface.ip4) return;
+  if (!defaultIface || !defaultIface.ip4) {
+    console.error("[NetworkService] No valid network interface found");
+    return;
+  }
 
+  console.log("[NetworkService] Using interface:", defaultIface);
   const subnet = defaultIface.ip4.substring(
     0,
     defaultIface.ip4.lastIndexOf(".")
   );
   const myIp = defaultIface.ip4;
+  console.log(`[NetworkService] Scanning subnet: ${subnet}.0/24`);
+  console.log(`[NetworkService] This device IP: ${myIp}`);
 
   // Emit self immediately with MAC address
-  onDeviceFound({ 
-    ip: myIp, 
-    alive: true, 
+  const selfDevice = {
+    ip: myIp,
+    alive: true,
     hostname: "Raspberry Pi (Self)",
-    mac: defaultIface.mac || "Unknown"
-  });
+    mac: defaultIface.mac || "Unknown",
+  };
+  console.log("[NetworkService] Self device:", selfDevice);
+  onDeviceFound(selfDevice);
 
   // Scan 1-254 in batches
   const batchSize = 20;
@@ -85,24 +98,47 @@ export const scanNetwork = async (
   for (let i = 1; i < 255; i++) {
     ips.push(`${subnet}.${i}`);
   }
+  console.log(
+    `[NetworkService] Scanning ${ips.length} IP addresses in batches of ${batchSize}`
+  );
 
+  let scannedCount = 0;
+  let foundCount = 0;
   for (let i = 0; i < ips.length; i += batchSize) {
     const batch = ips.slice(i, i + batchSize);
+    const batchNum = Math.floor(i / batchSize) + 1;
+    console.log(
+      `[NetworkService] Scanning batch ${batchNum}/${Math.ceil(
+        ips.length / batchSize
+      )}...`
+    );
+
     await Promise.all(
       batch.map(async (ip) => {
         if (ip === myIp) return;
         const alive = await ping(ip);
+        scannedCount++;
         if (alive) {
+          foundCount++;
+          console.log(`[NetworkService] Device alive at ${ip}`);
           // Try to get additional device info
           const [hostname, mac] = await Promise.all([
             getHostname(ip),
-            getMacAddress(ip)
+            getMacAddress(ip),
           ]);
+          console.log(
+            `[NetworkService] Device details - IP: ${ip}, Hostname: ${
+              hostname || "Unknown"
+            }, MAC: ${mac || "Unknown"}`
+          );
           onDeviceFound({ ip, alive: true, hostname, mac });
         }
       })
     );
   }
+  console.log(
+    `[NetworkService] Scan complete. Scanned ${scannedCount} IPs, found ${foundCount} alive devices`
+  );
 };
 
 // ========== WIFI MANAGEMENT ==========
