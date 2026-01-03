@@ -225,11 +225,7 @@ export class ApiService {
     return this.http.get(`${this.baseUrl}/led/status`);
   }
 
-  updateLedConfig(config: {
-    enabled?: boolean;
-    mode?: string;
-    ledType?: string;
-  }): Observable<any> {
+  updateLedConfig(config: { enabled?: boolean; mode?: string; ledType?: string }): Observable<any> {
     return this.http.post(`${this.baseUrl}/led/config`, config);
   }
 }
