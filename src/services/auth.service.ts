@@ -51,6 +51,7 @@ interface EnvConfig {
   TENANT_ID: string;
   CLIENT_SECRET: string;
   CLOUD_INSTANCE: string;
+  SSO_ENABLED?: boolean;
 }
 
 // Load environment configuration with fallback
@@ -73,6 +74,11 @@ const loadEnvConfig = (): EnvConfig => {
       process.exit(1);
     }
     
+    // Default SSO to enabled unless explicitly set to false
+    if (config.SSO_ENABLED === undefined) {
+      config.SSO_ENABLED = true;
+    }
+
     return config;
   } catch (error) {
     console.error("[Auth] ERROR: Failed to load config/env.json");
@@ -148,6 +154,11 @@ let cca: ConfidentialClientApplication | null = null;
 let appToken = "";
 
 const initializeSSO = async (): Promise<void> => {
+  if (envConfig.SSO_ENABLED === false) {
+    console.log("[Auth] SSO disabled via config/env.json");
+    return;
+  }
+
   // Skip SSO initialization if credentials are not configured
   if (
     !envConfig.CLIENT_ID ||
