@@ -267,10 +267,6 @@
 .led-control-card {
   @include card;
 
-  &.unavailable {
-    // Keep same styling when unavailable
-  }
-
   @include mobile {
     padding: $spacing-lg $spacing-md;
   }
@@ -376,12 +372,23 @@
   background: $bg-color;
   border: 1px solid $border-color;
 
+  @include tablet-up {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    align-items: start;
+  }
+
   .btn-toggle {
     @include button-base;
     width: 100%;
     background: $accent-color;
     color: white;
     font-weight: 600;
+
+    @include tablet-up {
+      width: auto;
+      min-width: 200px;
+    }
 
     &.active {
       background: $success-color;
