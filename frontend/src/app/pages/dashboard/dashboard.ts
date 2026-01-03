@@ -179,7 +179,7 @@ export class Dashboard implements OnInit, OnDestroy {
       return available.map((mode: string) => ({ value: mode, label: labels[mode] || mode }));
     }
 
-    return [{ value: 'mmc0', label: labels.mmc0 }];
+    return [{ value: 'mmc0', label: labels['mmc0'] }];
   }
 
   get cpuDetails() {
