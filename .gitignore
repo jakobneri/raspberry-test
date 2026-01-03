@@ -10,6 +10,12 @@ database.sqlite-journal
 # Game scores
 config/scores.json
 
+# LED configuration
+config/led.json
+
+# Speedtest configuration
+config/speedtest.json
+
 # Shared files (user uploads)
 shared-files/*
 !shared-files/.gitkeep
