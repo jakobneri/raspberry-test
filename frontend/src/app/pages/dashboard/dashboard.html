@@ -94,6 +94,20 @@
         </div>
         }
 
+        <div class="settings-toggle">
+          <label class="toggle-label">
+            <span>🔄 Auto-Update</span>
+            <div class="toggle-switch">
+              <input 
+                type="checkbox" 
+                [checked]="autoUpdateEnabled" 
+                (change)="toggleAutoUpdate($event)"
+              />
+              <span class="slider"></span>
+            </div>
+          </label>
+        </div>
+
         <div class="admin-buttons">
           <button class="btn-restart" (click)="restartServer()">🔄 Restart</button>
           <button class="btn-shutdown" (click)="shutdownServer()">⛔ Shutdown</button>

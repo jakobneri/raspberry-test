@@ -215,4 +215,16 @@ export class ApiService {
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     });
   }
+
+  // Settings
+  getSettings(): Observable<{ autoUpdate: boolean }> {
+    return this.http.get<{ autoUpdate: boolean }>(`${this.baseUrl}/settings`);
+  }
+
+  toggleAutoUpdate(enabled: boolean): Observable<any> {
+    const params = new HttpParams().set('enabled', enabled.toString());
+    return this.http.post(`${this.baseUrl}/settings/auto-update`, params.toString(), {
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    });
+  }
 }

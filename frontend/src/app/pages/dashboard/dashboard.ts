@@ -21,6 +21,7 @@ export class Dashboard implements OnInit, OnDestroy {
   lastUpdate: string = '--';
   loading = true;
   error: string | null = null;
+  autoUpdateEnabled = false;
 
   private metricsSubscription?: Subscription;
 
@@ -61,6 +62,7 @@ export class Dashboard implements OnInit, OnDestroy {
     });
 
     this.fetchSystemInfo();
+    this.loadSettings();
   }
 
   ngOnDestroy(): void {
@@ -155,5 +157,37 @@ export class Dashboard implements OnInit, OnDestroy {
 
   navigateToNetworkMap(): void {
     this.router.navigate(['/network-map']);
+  }
+
+  loadSettings(): void {
+    this.api.getSettings().subscribe({
+      next: (settings) => {
+        this.autoUpdateEnabled = settings.autoUpdate;
+        this.cdr.detectChanges();
+      },
+      error: (err) => console.error('Error loading settings:', err),
+    });
+  }
+
+  toggleAutoUpdate(event: Event): void {
+    const target = event.target as HTMLInputElement;
+    const enabled = target.checked;
+    
+    this.api.toggleAutoUpdate(enabled).subscribe({
+      next: () => {
+        this.autoUpdateEnabled = enabled;
+        const message = enabled 
+          ? 'Auto-update enabled. Server will check for updates on startup.' 
+          : 'Auto-update disabled.';
+        alert(message);
+        this.cdr.detectChanges();
+      },
+      error: (err) => {
+        console.error('Error toggling auto-update:', err);
+        alert('Failed to update auto-update setting');
+        // Revert checkbox
+        target.checked = !enabled;
+      },
+    });
   }
 }
