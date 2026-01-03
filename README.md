@@ -41,35 +41,60 @@ npm start
 ./start.sh
 ```
 
-The start script will automatically:
+The unified CLI provides an interactive menu with the following options:
 
-- Pull latest changes from git
-- Install dependencies
-- Build TypeScript code
-- Start the server
+- **🚀 Start Server (with auto-update check)** - Checks for updates if enabled, then starts the server
+- **▶️ Start Server (skip update check)** - Starts the server immediately
+- **👤 User Management** - Create, list, delete users, and manage access requests
+- **⚙️ System & Sessions** - View system status and manage active sessions
+- **🌐 Network Speedtest** - Run speed tests and configure auto-scheduler
+- **🔧 Build & Update** - Rebuild projects, pull updates, toggle auto-update
+- **🚪 Exit** - Close the CLI
 
-## 📁 Project Structure
+### CLI Management
+
+To access the management CLI:
+
+```bash
+npm run manage
+```
+
+Or directly via start.sh menu option.
+
+## ⚙️ Auto-Update
+
+The server supports automatic updates from the main git branch. When enabled:
+
+- Automatically checks for updates on server startup
+- Pulls latest changes from repository
+- Automatically installs new dependencies (when package.json changes)
+- Rebuilds backend and frontend as needed
+- Aborts startup if any build fails
+
+**Enable auto-update:**
+
+1. Via CLI: Select **Build & Update** → **Toggle Auto-Update**
+2. Via Dashboard: Toggle the **🔄 Auto-Update** switch in the System Info card
+
+## 🚀 Deployment on Raspberry Pi
 
 ```
 raspberry-test/
 ├── src/
 │   ├── index.ts              # Main server entry point
+│   ├── cli.ts                # Legacy CLI (deprecated)
+│   ├── unified-cli.ts        # Unified CLI with server management
 │   └── services/
-│       ├── admin.service.ts      # Server restart/shutdown
+│       ├── auth.service.ts       # Authentication & sessions
+│       ├── db.service.ts         # Database wrapper
 │       ├── files.service.ts      # File upload/download
-│       ├── jwt.service.ts        # JWT token management
 │       ├── metrics.service.ts    # System metrics (CPU, RAM, etc)
+│       ├── network.service.ts    # WiFi & network operations
 │       ├── score.service.ts      # Game scoreboard
-│       ├── session.service.ts    # Session management
-│       ├── sso.service.ts        # Azure SSO integration
+│       ├── settings.service.ts   # System settings (auto-update, etc)
 │       ├── speedtest.service.ts  # Network speed testing
-│       ├── user.service.ts       # User authentication
-│       └── wifi.service.ts       # WiFi management
-├── public/
-│   ├── cockpit.html          # Main dashboard
-│   ├── game.html             # Game page
-│   ├── login.html            # Login page
-│   └── files.html            # File manager
+│       └── system.service.ts     # Admin operations (restart, shutdown)
+├── frontend/                 # Angular application
 ├── dist/                     # Compiled JavaScript (generated)
 ├── shared-files/             # User uploaded files
 ├── package.json              # Dependencies and scripts
@@ -89,6 +114,14 @@ npm run build
 
 ```bash
 npm run dev
+```
+
+### Management CLI
+
+Access the unified CLI for user management, system monitoring, and configuration:
+
+```bash
+npm run manage
 ```
 
 ### Clean Build
@@ -171,6 +204,9 @@ The project uses modern TypeScript with:
 - Server restart
 - Server shutdown
 - Update and restart (git pull + restart)
+- **Auto-update toggle** - Enable/disable automatic updates on startup
+- Build failure handling - Server won't start if builds fail
+- Automatic dependency installation - Detects package.json changes and runs npm install
 
 ### Game Integration
 
@@ -193,11 +229,12 @@ cd raspberry-test
 ./start.sh
 ```
 
-3. Select an option:
-   - **Pull updates and start server** - Recommended for first run
-   - **Just start server (no update)** - Quick restart
-   - **Only pull updates (don't start)** - Update only
-   - **Exit**
+3. The unified CLI will launch with an interactive menu. Navigate using:
+   - Arrow keys (↑↓) to move selection
+   - Number keys (1-9) for quick selection
+   - Enter to confirm selection
+
+4. For first-time setup, select **🚀 Start Server (with auto-update check)**
 
 The server will be available at `http://pi.local:3000`
 
@@ -297,6 +334,8 @@ Access the cockpit at `/cockpit` to view:
 - `POST /api/admin/restart` - Restart server
 - `POST /api/admin/shutdown` - Shutdown server
 - `POST /api/admin/update` - Update and restart
+- `GET /api/settings` - Get system settings (auto-update status)
+- `POST /api/settings/auto-update` - Toggle auto-update (params: enabled=true/false)
 - `POST /api/logout` - Logout
 
 ## 🎄 Merry Christmas!

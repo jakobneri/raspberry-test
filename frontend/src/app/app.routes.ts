@@ -30,11 +30,6 @@ export const routes: Routes = [
     loadComponent: () => import('./pages/files/files').then((m) => m.Files),
   },
   {
-    path: 'network-map',
-    loadComponent: () => import('./pages/network-map/network-map').then((m) => m.NetworkMap),
-    canActivate: [authGuard],
-  },
-  {
     path: 'game',
     loadComponent: () => import('./pages/game/game').then((m) => m.Game),
   },

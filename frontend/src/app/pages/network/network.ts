@@ -1,6 +1,5 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterLink } from '@angular/router';
 import { Sidebar } from '../../components/sidebar/sidebar';
 import { ApiService } from '../../services/api';
 
@@ -12,7 +11,7 @@ interface NetworkDetails {
 @Component({
   selector: 'app-network',
   standalone: true,
-  imports: [CommonModule, RouterLink, Sidebar],
+  imports: [CommonModule, Sidebar],
   templateUrl: './network.html',
   styleUrl: './network.scss',
 })

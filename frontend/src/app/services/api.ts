@@ -176,14 +176,6 @@ export class ApiService {
     return this.http.get(`${this.baseUrl}/network/details`);
   }
 
-  getNetworkDevices(): Observable<{ devices: any[] }> {
-    return this.http.get<{ devices: any[] }>(`${this.baseUrl}/network/devices`);
-  }
-
-  scanNetwork(): Observable<{ devices: any[] }> {
-    return this.http.post<{ devices: any[] }>(`${this.baseUrl}/network/scan`, {});
-  }
-
   getWifiStatus(): Observable<any> {
     return this.http.get(`${this.baseUrl}/wifi/status`);
   }
@@ -212,6 +204,18 @@ export class ApiService {
   toggleAutoSpeedtest(enabled: boolean): Observable<any> {
     const params = new HttpParams().set('enabled', enabled.toString());
     return this.http.post(`${this.baseUrl}/admin/speedtest/toggle`, params.toString(), {
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    });
+  }
+
+  // Settings
+  getSettings(): Observable<{ autoUpdate: boolean }> {
+    return this.http.get<{ autoUpdate: boolean }>(`${this.baseUrl}/settings`);
+  }
+
+  toggleAutoUpdate(enabled: boolean): Observable<any> {
+    const params = new HttpParams().set('enabled', enabled.toString());
+    return this.http.post(`${this.baseUrl}/settings/auto-update`, params.toString(), {
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     });
   }

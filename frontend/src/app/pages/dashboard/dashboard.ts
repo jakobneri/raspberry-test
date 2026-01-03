@@ -1,6 +1,5 @@
 import { Component, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Router } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { Sidebar } from '../../components/sidebar/sidebar';
 import { MetricCard } from '../../components/metric-card/metric-card';
@@ -21,6 +20,7 @@ export class Dashboard implements OnInit, OnDestroy {
   lastUpdate: string = '--';
   loading = true;
   error: string | null = null;
+  autoUpdateEnabled = false;
 
   // LED configuration
   ledStatus: any = null;
@@ -31,8 +31,7 @@ export class Dashboard implements OnInit, OnDestroy {
   constructor(
     private metricsService: MetricsService,
     private api: ApiService,
-    private cdr: ChangeDetectorRef,
-    private router: Router
+    private cdr: ChangeDetectorRef
   ) {}
 
   ngOnInit(): void {
@@ -66,6 +65,7 @@ export class Dashboard implements OnInit, OnDestroy {
 
     this.fetchSystemInfo();
     this.fetchLedStatus();
+    this.loadSettings();
   }
 
   ngOnDestroy(): void {
@@ -219,7 +219,38 @@ export class Dashboard implements OnInit, OnDestroy {
     }
   }
 
-  navigateToNetworkMap(): void {
-    this.router.navigate(['/network-map']);
+  loadSettings(): void {
+    this.api.getSettings().subscribe({
+      next: (settings) => {
+        this.autoUpdateEnabled = settings.autoUpdate;
+        this.cdr.detectChanges();
+      },
+      error: (err) => console.error('Error loading settings:', err),
+    });
+  }
+
+  toggleAutoUpdate(event: Event): void {
+    const target = event.target as HTMLInputElement;
+    const enabled = target.checked;
+
+    this.api.toggleAutoUpdate(enabled).subscribe({
+      next: () => {
+        this.autoUpdateEnabled = enabled;
+        const status = enabled ? 'enabled' : 'disabled';
+        const message = enabled
+          ? 'Auto-update enabled. The server will check for updates from the main branch on startup and automatically install new dependencies.'
+          : 'Auto-update disabled. The server will no longer check for updates on startup.';
+
+        console.log(`Auto-update ${status}: ${message}`);
+        alert(`✓ Auto-update ${status}`);
+        this.cdr.detectChanges();
+      },
+      error: (err) => {
+        console.error('Error toggling auto-update:', err);
+        alert('✗ Failed to update auto-update setting. Please try again.');
+        // Revert checkbox
+        target.checked = !enabled;
+      },
+    });
   }
 }
