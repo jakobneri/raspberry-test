@@ -446,11 +446,14 @@ router.post(
   })
 );
 
-router.get("/api/files", async (req, res) => {
-  const files = filesService.listFiles();
-  res.writeHead(200, { "Content-Type": "application/json" });
-  res.end(JSON.stringify(files));
-});
+router.get(
+  "/api/files",
+  authHandler(async (req, res) => {
+    const files = filesService.listFiles();
+    res.writeHead(200, { "Content-Type": "application/json" });
+    res.end(JSON.stringify(files));
+  })
+);
 
 router.post(
   "/api/files/upload",
