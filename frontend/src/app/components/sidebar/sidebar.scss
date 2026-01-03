@@ -118,24 +118,31 @@
 }
 
 .nav-section {
-  margin-bottom: $spacing-lg;
+  margin-bottom: $spacing-md;
 }
 
 .nav-section-title {
-  padding: $spacing-sm $spacing-lg;
-  font-size: 11px;
+  padding: $spacing-md $spacing-lg $spacing-sm;
+  font-size: 10px;
+  font-weight: 600;
   text-transform: uppercase;
   color: $text-secondary;
-  letter-spacing: 0.5px;
+  letter-spacing: 1px;
+  opacity: 0.7;
 }
 
 .nav-link {
   display: flex;
   align-items: center;
-  padding: $spacing-sm $spacing-lg;
+  gap: $spacing-md;
+  padding: $spacing-md $spacing-lg;
+  margin: 0 $spacing-sm;
   color: $text-secondary;
   text-decoration: none;
+  border-radius: $border-radius-sm;
   transition: all $transition-fast;
+  font-size: 14px;
+  font-weight: 500;
 
   &:hover {
     background: $nav-hover;
@@ -143,14 +150,15 @@
   }
 
   &.active {
-    background: $nav-active;
-    color: $accent-color;
-    border-left: 3px solid $accent-color;
+    background: $accent-color;
+    color: white;
+    font-weight: 600;
   }
 
   .nav-link-icon {
-    margin-right: $spacing-sm;
     font-size: 18px;
+    width: 20px;
+    text-align: center;
   }
 }
 
@@ -159,9 +167,13 @@
   border-top: 1px solid $border-color;
 
   .logout-btn {
-    @include button-secondary;
+    @include button-base;
     width: 100%;
     justify-content: center;
+    background: transparent;
+    border: 1px solid $border-color;
+    color: $text-secondary;
+    font-weight: 500;
 
     &:hover {
       background: $danger-color;
