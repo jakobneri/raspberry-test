@@ -15,10 +15,7 @@ fi
 # Check and build frontend if needed
 if [ ! -d "frontend/dist/frontend/browser" ]; then
     echo "[start] Frontend build not found. Building frontend..."
-    cd frontend
-    npm install || exit 1
-    npm run build || exit 1
-    cd ..
+    (cd frontend && npm install && npm run build) || exit 1
 fi
 
 echo "[start] Starting unified CLI..."
