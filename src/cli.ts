@@ -17,6 +17,7 @@ interface MenuItem {
   label: string;
   action?: MenuAction;
   submenu?: MenuItem[];
+  skipKeyPress?: boolean; // If true, don't prompt "Press any key" after action
 }
 
 class InteractiveMenu {
@@ -45,6 +46,21 @@ class InteractiveMenu {
           process.exit(0);
         }
 
+        // Handle number input (1-9)
+        if (str && /^[1-9]$/.test(str)) {
+          const index = parseInt(str, 10) - 1;
+          if (index >= 0 && index < this.items.length) {
+            this.selectedIndex = index;
+            // Trigger selection immediately
+            const item = this.items[this.selectedIndex];
+            process.stdin.removeListener("keypress", keyHandler);
+            process.stdin.setRawMode(false);
+
+            await this.handleSelection(item, resolve);
+            return;
+          }
+        }
+
         if (key.name === "up") {
           this.selectedIndex =
             (this.selectedIndex - 1 + this.items.length) % this.items.length;
@@ -57,42 +73,7 @@ class InteractiveMenu {
           process.stdin.removeListener("keypress", keyHandler);
           process.stdin.setRawMode(false);
 
-          if (item.submenu) {
-            const subMenu = new InteractiveMenu(
-              item.label,
-              [
-                ...item.submenu,
-                {
-                  label: "< Back",
-                  action: async () => {
-                    /* handled by loop */
-                  },
-                },
-              ],
-              this
-            );
-            await subMenu.show();
-            // Return to this menu
-            this.show();
-            resolve(); // Resolve this promise instance, but we re-entered show()
-          } else if (item.action) {
-            console.clear();
-            await item.action();
-            if (item.label !== "Exit") {
-              console.log("\nPress any key to continue...");
-              process.stdin.setRawMode(true);
-              process.stdin.resume();
-              await new Promise<void>((res) =>
-                process.stdin.once("data", () => res())
-              );
-              process.stdin.setRawMode(false);
-              this.show();
-              resolve();
-            }
-          } else {
-            // Back button or empty
-            resolve();
-          }
+          await this.handleSelection(item, resolve);
         }
       };
 
@@ -100,15 +81,60 @@ class InteractiveMenu {
     });
   }
 
+  private async handleSelection(item: MenuItem, resolve: () => void) {
+    if (item.submenu) {
+      const subMenu = new InteractiveMenu(
+        item.label,
+        [
+          ...item.submenu,
+          {
+            label: "← Back",
+            skipKeyPress: true,
+            action: async () => {
+              /* handled by loop */
+            },
+          },
+        ],
+        this
+      );
+      await subMenu.show();
+      // Return to this menu
+      this.show();
+      resolve(); // Resolve this promise instance, but we re-entered show()
+    } else if (item.action) {
+      console.clear();
+      await item.action();
+      if (!item.skipKeyPress) {
+        console.log("\nPress any key to continue...");
+        process.stdin.setRawMode(true);
+        process.stdin.resume();
+        await new Promise<void>((res) =>
+          process.stdin.once("data", () => res())
+        );
+        process.stdin.setRawMode(false);
+        this.show();
+        resolve();
+      }
+    } else {
+      // Back button or empty
+      resolve();
+    }
+  }
+
   private render() {
     console.clear();
-    console.log(`\n=== ${this.title} ===\n`);
+    console.log(`\n╔═══════════════════════════════════════════╗`);
+    console.log(`║  ${this.title.padEnd(39)}  ║`);
+    console.log(`╚═══════════════════════════════════════════╝\n`);
     this.items.forEach((item, index) => {
-      const cursor = index === this.selectedIndex ? "> " : "  ";
+      // Show numbers 1-9 for first 9 items only
+      const num = index < 9 ? `${index + 1}. ` : "   ";
+      const cursor = index === this.selectedIndex ? "▶ " : "  ";
       const color = index === this.selectedIndex ? "\x1b[36m" : "\x1b[0m"; // Cyan for selected
-      console.log(`${color}${cursor}${item.label}\x1b[0m`);
+      console.log(`${color}${cursor}${num}${item.label}\x1b[0m`);
     });
-    console.log("\n(Use arrow keys to navigate, Enter to select)");
+    const maxNum = Math.min(this.items.length, 9);
+    console.log(`\n\x1b[90m(Use ↑↓ arrows or numbers 1-${maxNum}, Enter to select)\x1b[0m`);
   }
 }
 
@@ -419,33 +445,34 @@ const runManualSpeedtest = async () => {
 
 const mainMenu: MenuItem[] = [
   {
-    label: "User Management",
+    label: "👤 User Management",
     submenu: [
-      { label: "Create User", action: createUser },
-      { label: "List Users", action: listUsers },
-      { label: "Delete User", action: deleteUser },
-      { label: "Reset Password", action: resetPassword },
-      { label: "List Pending Requests", action: listRequests },
-      { label: "Approve Request", action: approveRequest },
+      { label: "➕ Create New User", action: createUser },
+      { label: "📋 View All Users", action: listUsers },
+      { label: "🗑️  Delete User", action: deleteUser },
+      { label: "🔑 Reset User Password", action: resetPassword },
+      { label: "📥 View Pending Access Requests", action: listRequests },
+      { label: "✅ Approve Access Request", action: approveRequest },
     ],
   },
   {
-    label: "System & Sessions",
+    label: "⚙️  System & Sessions",
     submenu: [
-      { label: "System Status", action: showSystemStatus },
-      { label: "List Active Sessions", action: listSessions },
-      { label: "Revoke All Sessions", action: revokeSessions },
+      { label: "📊 View System Status", action: showSystemStatus },
+      { label: "👥 View Active Sessions", action: listSessions },
+      { label: "🚫 Revoke All Sessions", action: revokeSessions },
     ],
   },
   {
-    label: "Speedtest",
+    label: "🌐 Network Speedtest",
     submenu: [
-      { label: "Run Speedtest Now", action: runManualSpeedtest },
-      { label: "Configure Scheduler", action: configureSpeedtest },
+      { label: "▶️  Run Speedtest Now", action: runManualSpeedtest },
+      { label: "⏰ Configure Auto-Scheduler", action: configureSpeedtest },
     ],
   },
   {
-    label: "Exit",
+    label: "🚪 Exit",
+    skipKeyPress: true,
     action: () => {
       console.log("Goodbye!");
       process.exit(0);
@@ -458,7 +485,7 @@ const main = async () => {
   await new Promise((resolve) => setTimeout(resolve, 100));
 
   const menu = new InteractiveMenu(
-    "Raspberry Pi Server Control Center",
+    "🥧 Raspberry Pi Server Manager",
     mainMenu
   );
   await menu.show();

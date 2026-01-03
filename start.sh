@@ -260,35 +260,35 @@ start_server() {
 show_menu() {
     local selected=0
     local options=(
-        "Pull updates and start server"
-        "Just start server (no update)"
-        "Rebuild everything (frontend + backend)"
-        "Only pull updates (don't start)"
-        "Manage Users (CLI)"
-        "Exit"
+        "🚀 Start Server (with git pull)"
+        "▶️  Start Server (skip git pull)"
+        "🔨 Rebuild Everything (frontend + backend)"
+        "📥 Pull Updates Only (don't start server)"
+        "👤 User Management (CLI)"
+        "🚪 Exit"
     )
     
     while true; do
         clear
         echo -e "${BLUE}╔════════════════════════════════════════${NC}"
         echo -e "${BLUE}║  🥧 Raspberry Pi Server Manager 🥧   ║${NC}"
-        echo -e "${BLUE}╔════════════════════════════════════════${NC}"
+        echo -e "${BLUE}╚════════════════════════════════════════${NC}"
         echo ""
         echo -e "${YELLOW}What would you like to do?${NC}"
         echo ""
         
         for i in "${!options[@]}"; do
             if [ $i -eq $selected ]; then
-                echo -e "${GREEN}▶ ${options[$i]}${NC}"
+                echo -e "${GREEN}▶ $((i+1)). ${options[$i]}${NC}"
             else
-                echo -e "  ${options[$i]}"
+                echo -e "  $((i+1)). ${options[$i]}"
             fi
         done
         
         echo ""
-        echo -e "${BLUE}Use ↑↓ arrow keys to navigate, Enter to select${NC}"
+        echo -e "${BLUE}Use ↑↓ arrows or numbers 1-${#options[@]}, Enter to select${NC}"
         
-        # Read arrow keys
+        # Read input (arrow keys or numbers)
         read -rsn1 key
         if [[ $key == $'\x1b' ]]; then
             read -rsn2 key
@@ -306,6 +306,13 @@ show_menu() {
                     fi
                     ;;
             esac
+        elif [[ $key =~ ^[1-9]$ ]]; then
+            # Number key pressed - validate against actual number of options
+            local num=$((key - 1))
+            if [ $num -ge 0 ] && [ $num -lt ${#options[@]} ]; then
+                return $num
+            fi
+            # If invalid number, ignore and stay in loop
         elif [[ $key == "" ]]; then
             # Enter key pressed
             return $selected
