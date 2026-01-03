@@ -27,6 +27,12 @@ export class Files implements OnInit {
   }
 
   fetchFiles(): void {
+    // Don't set loading to true if we're just refreshing after upload/delete
+    // Only show loading spinner on initial load
+    if (this.files.length === 0) {
+      this.loading = true;
+    }
+    
     this.api.getFiles().subscribe({
       next: (files) => {
         this.files = files;

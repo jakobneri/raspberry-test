@@ -271,56 +271,10 @@
 // LED Control Card
 .led-control-card {
   @include card;
+  position: relative;
 
   @include mobile {
     padding: $spacing-lg $spacing-md;
-  }
-}
-
-.led-header {
-  display: flex;
-  align-items: center;
-  gap: $spacing-sm;
-  margin-bottom: $spacing-md;
-
-  .metric-icon {
-    font-size: 28px;
-    margin-right: $spacing-sm;
-  }
-
-  .metric-title {
-    font-size: 16px;
-    color: $text-secondary;
-    font-weight: 600;
-    flex: 1;
-  }
-
-  .led-chips {
-    display: flex;
-    gap: $spacing-xs;
-    flex-wrap: wrap;
-
-    .chip {
-      padding: 4px 8px;
-      border-radius: 4px;
-      font-size: 11px;
-      font-weight: 600;
-      background: rgba($text-secondary, 0.1);
-      border: 1px solid $border-color;
-      color: $text-secondary;
-
-      &.good {
-        background: rgba($success-color, 0.15);
-        border-color: rgba($success-color, 0.3);
-        color: $success-color;
-      }
-
-      &.bad {
-        background: rgba($danger-color, 0.15);
-        border-color: rgba($danger-color, 0.3);
-        color: $danger-color;
-      }
-    }
   }
 }
 
@@ -334,61 +288,83 @@
   font-size: 13px;
 }
 
-.led-status-grid {
-  margin-top: $spacing-md;
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-  gap: $spacing-md;
+.led-status-row {
+  display: flex;
+  gap: $spacing-lg;
+  margin: $spacing-md 0;
+  padding: $spacing-md;
+  background: $bg-color;
+  border-radius: $border-radius-md;
+  border: 1px solid $border-color;
+  flex-wrap: wrap;
 
-  .stat {
-    padding: $spacing-md;
-    border-radius: $border-radius-md;
-    background: $bg-color;
-    border: 1px solid $border-color;
+  @include mobile {
+    flex-direction: column;
+    gap: $spacing-md;
+  }
+}
 
-    .label {
-      color: $text-secondary;
-      font-size: 12px;
-      margin-bottom: $spacing-xs;
+.led-status-item {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-xs;
+  flex: 1;
+  min-width: 140px;
+
+  .label {
+    font-size: 11px;
+    color: $text-secondary;
+    text-transform: uppercase;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+  }
+
+  .value {
+    font-size: 15px;
+    font-weight: 600;
+    color: $text-primary;
+  }
+
+  .badge {
+    display: inline-block;
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 600;
+    width: fit-content;
+    
+    &.badge-success {
+      background: rgba($success-color, 0.15);
+      color: $success-color;
+      border: 1px solid rgba($success-color, 0.3);
     }
 
-    .value {
-      font-size: 16px;
-      font-weight: 600;
-      color: $text-primary;
-      margin-bottom: $spacing-xs;
-    }
-
-    .hint {
+    &.badge-secondary {
+      background: rgba($text-secondary, 0.1);
       color: $text-secondary;
-      font-size: 11px;
-      line-height: 1.4;
+      border: 1px solid rgba($text-secondary, 0.2);
     }
   }
 }
 
 .led-controls {
-  margin-top: $spacing-lg;
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: auto 1fr;
   gap: $spacing-md;
-  padding: $spacing-md;
-  border-radius: $border-radius-md;
-  background: $bg-color;
-  border: 1px solid $border-color;
+  align-items: center;
 
-  @include tablet-up {
-    display: grid;
-    grid-template-columns: minmax(200px, auto) 1fr;
-    align-items: start;
+  @include mobile {
+    grid-template-columns: 1fr;
   }
 
   .btn-toggle {
     @include button-base;
-    width: 100%;
+    padding: $spacing-sm $spacing-lg;
     background: $accent-color;
     color: white;
     font-weight: 600;
+    white-space: nowrap;
+    min-width: 100px;
 
     &.active {
       background: $success-color;
@@ -404,82 +380,37 @@
     }
   }
 
-  .led-modes {
+  .led-mode-selector {
     display: flex;
-    flex-direction: column;
-    gap: $spacing-xs;
+    align-items: center;
+    gap: $spacing-sm;
 
     label {
       font-size: 12px;
       color: $text-secondary;
       font-weight: 600;
       text-transform: uppercase;
+      white-space: nowrap;
     }
 
-    .picker-row {
-      display: flex;
-      align-items: center;
-      gap: $spacing-sm;
-      flex-wrap: wrap;
-
-      select {
-        padding: $spacing-sm $spacing-md;
-        border-radius: $border-radius-sm;
-        border: 1px solid $border-color;
-        background: $input-bg;
-        color: $text-primary;
-        font-size: 14px;
-        min-width: 160px;
-
-        &:focus {
-          outline: none;
-          border-color: $accent-color;
-        }
-
-        &:disabled {
-          opacity: 0.6;
-          cursor: not-allowed;
-        }
-      }
-
-      .hint {
-        color: $text-secondary;
-        font-size: 11px;
-      }
-    }
-  }
-}
-
-.led-triggers {
-  margin-top: $spacing-md;
-  padding-top: $spacing-md;
-  border-top: 1px solid $border-color;
-
-  .label {
-    color: $text-secondary;
-    font-size: 12px;
-    margin-bottom: $spacing-xs;
-    font-weight: 600;
-  }
-
-  .chips {
-    display: flex;
-    flex-wrap: wrap;
-    gap: $spacing-xs;
-
-    .chip {
-      padding: 4px 8px;
-      border-radius: 4px;
-      background: rgba($text-secondary, 0.1);
-      color: $text-primary;
+    select {
+      padding: $spacing-sm $spacing-md;
+      border-radius: $border-radius-sm;
       border: 1px solid $border-color;
-      font-size: 11px;
+      background: $input-bg;
+      color: $text-primary;
+      font-size: 14px;
+      flex: 1;
+      min-width: 140px;
 
-      &.active {
-        background: rgba($accent-color, 0.15);
+      &:focus {
+        outline: none;
         border-color: $accent-color;
-        color: $accent-color;
-        font-weight: 600;
+      }
+
+      &:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
       }
     }
   }
