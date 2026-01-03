@@ -96,9 +96,9 @@
           <label class="toggle-label">
             <span>🔄 Auto-Update</span>
             <div class="toggle-switch">
-              <input 
-                type="checkbox" 
-                [checked]="autoUpdateEnabled" 
+              <input
+                type="checkbox"
+                [checked]="autoUpdateEnabled"
                 (change)="toggleAutoUpdate($event)"
               />
               <span class="slider"></span>
@@ -113,30 +113,51 @@
       </div>
 
       <!-- LED Control Card -->
-      @if (ledStatus && ledStatus.available) {
-      <div class="metric-card led-control-card">
-        <div class="metric-header">
+      @if (ledStatus) {
+      <div class="metric-card led-control-card" [class.unavailable]="!ledStatus.available">
+        <div class="led-sheen"></div>
+        <div class="metric-header led-header">
           <div class="metric-icon">💡</div>
-          <div class="metric-title">Power LED</div>
-        </div>
-
-        <div class="led-status">
-          <div class="detail-row">
-            <span>Status</span>
-            <span class="status-badge" [class.enabled]="ledStatus.config.enabled">
-              {{ ledStatus.config.enabled ? 'Enabled' : 'Disabled' }}
+          <div class="metric-title">Power LED activity</div>
+          <div class="led-chips">
+            <span
+              class="chip"
+              [class.good]="ledStatus.available"
+              [class.bad]="!ledStatus.available"
+            >
+              {{ ledStatus.available ? 'Detected' : 'Not detected' }}
+            </span>
+            <span
+              class="chip"
+              [class.good]="ledStatus.config.enabled"
+              [class.bad]="!ledStatus.config.enabled"
+            >
+              {{ ledStatus.config.enabled ? 'Active' : 'Idle' }}
             </span>
           </div>
-          @if (ledStatus.config.enabled) {
-          <div class="detail-row">
-            <span>Mode</span>
-            <span>{{ ledStatus.config.mode }}</span>
+        </div>
+
+        @if (ledError) {
+        <div class="led-error">{{ ledError }}</div>
+        } @if (ledStatus.available) {
+        <div class="led-status-grid">
+          <div class="stat">
+            <div class="label">Current trigger</div>
+            <div class="value">{{ ledStatus.currentTrigger || 'default-on' }}</div>
+            <div class="hint">Live from /sys/class/leds/{{ ledStatus.config.ledType }}/trigger</div>
           </div>
-          <div class="detail-row">
-            <span>Current</span>
-            <span>{{ ledStatus.currentTrigger || '--' }}</span>
+          <div class="stat">
+            <div class="label">Selected mode</div>
+            <div class="value">{{ ledStatus.config.mode }}</div>
+            <div class="hint">Applied when activity display is enabled</div>
           </div>
-          }
+          <div class="stat">
+            <div class="label">LED type</div>
+            <div class="value">{{ ledStatus.config.ledType }}</div>
+            <div class="hint">
+              {{ ledStatus.config.ledType === 'ACT' ? 'Activity LED' : 'Power LED' }}
+            </div>
+          </div>
         </div>
 
         <div class="led-controls">
@@ -146,24 +167,53 @@
             [disabled]="ledLoading"
             (click)="toggleLed()"
           >
-            {{ ledStatus.config.enabled ? '✓ Enabled' : 'Enable Activity Display' }}
+            {{
+              ledStatus.config.enabled ? 'Turn off activity display' : 'Activate activity display'
+            }}
           </button>
 
-          @if (ledStatus.config.enabled) {
           <div class="led-modes">
-            <label>Activity Mode:</label>
-            <select
-              [value]="ledStatus.config.mode"
-              (change)="changeLedMode($any($event.target).value)"
-              [disabled]="ledLoading"
-            >
-              <option value="mmc0">SD Card Activity</option>
-              <option value="heartbeat">Heartbeat</option>
-              <option value="actpwr">Activity + Power</option>
-            </select>
+            <label>Activity pattern</label>
+            <div class="picker-row">
+              <select
+                [value]="ledStatus.config.mode"
+                (change)="changeLedMode($any($event.target).value)"
+                [disabled]="ledLoading"
+              >
+                @for (option of ledModeOptions; track option.value) {
+                <option [value]="option.value">{{ option.label }}</option>
+                }
+              </select>
+              <span class="hint">Applies instantly</span>
+            </div>
           </div>
-          }
         </div>
+
+        @if (ledStatus.availableTriggers?.length) {
+        <div class="led-triggers">
+          <div class="label">Available triggers</div>
+          <div class="chips">
+            @for (trigger of ledStatus.availableTriggers; track trigger) {
+            <span class="chip" [class.active]="trigger === ledStatus.currentTrigger">{{
+              trigger
+            }}</span>
+            }
+          </div>
+        </div>
+        } } @else {
+        <div class="led-unavailable">
+          <div class="title">LED interface not available</div>
+          <p>
+            We could not find a controllable power LED on this device. If you are running on a
+            Raspberry Pi, make sure the server has permission to write to /sys/class/leds.
+          </p>
+        </div>
+        } @if (ledLoading) {
+        <div class="led-overlay">
+          <div class="loading-spinner"></div>
+          <span>Updating LED...</span>
+        </div>
+        }
       </div>
       }
 

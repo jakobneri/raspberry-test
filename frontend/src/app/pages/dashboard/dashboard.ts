@@ -25,6 +25,7 @@ export class Dashboard implements OnInit, OnDestroy {
   // LED configuration
   ledStatus: any = null;
   ledLoading = false;
+  ledError: string | null = null;
 
   private metricsSubscription?: Subscription;
 
@@ -87,9 +88,14 @@ export class Dashboard implements OnInit, OnDestroy {
     this.api.getLedStatus().subscribe({
       next: (status) => {
         this.ledStatus = status;
+        this.ledError = status.available ? null : 'LED interface not available on this device';
         this.cdr.detectChanges();
       },
-      error: (err) => console.error('Error fetching LED status:', err),
+      error: (err) => {
+        console.error('Error fetching LED status:', err);
+        this.ledError = 'Failed to load LED status';
+        this.cdr.detectChanges();
+      },
     });
   }
 
@@ -104,13 +110,18 @@ export class Dashboard implements OnInit, OnDestroy {
         if (result.success) {
           // Refresh full LED status to avoid stale properties like currentTrigger/availableTriggers
           this.fetchLedStatus();
+          this.ledError = null;
+        } else {
+          this.ledError = result.error || 'Unable to update LED';
         }
         this.ledLoading = false;
         this.cdr.detectChanges();
       },
       error: (err) => {
         console.error('Error toggling LED:', err);
-        alert('Failed to toggle LED');
+        const message = err?.error?.error || 'Failed to toggle LED';
+        this.ledError = message;
+        alert(message);
         this.ledLoading = false;
         this.cdr.detectChanges();
       },
@@ -127,17 +138,48 @@ export class Dashboard implements OnInit, OnDestroy {
         if (result.success) {
           // Refresh full LED status to avoid stale properties like currentTrigger/availableTriggers
           this.fetchLedStatus();
+          this.ledError = null;
+        } else {
+          this.ledError = result.error || 'Unable to update LED';
         }
         this.ledLoading = false;
         this.cdr.detectChanges();
       },
       error: (err) => {
         console.error('Error changing LED mode:', err);
-        alert('Failed to change LED mode');
+        const message = err?.error?.error || 'Failed to change LED mode';
+        this.ledError = message;
+        alert(message);
         this.ledLoading = false;
         this.cdr.detectChanges();
       },
     });
+  }
+
+  get ledModeOptions() {
+    const available = this.ledStatus?.availableTriggers || [];
+    const labels: Record<string, string> = {
+      mmc0: 'SD card pulses',
+      heartbeat: 'Heartbeat',
+      actpwr: 'Activity + power',
+      'default-on': 'Default on',
+      none: 'None',
+      input: 'Input',
+      timer: 'Timer',
+    };
+
+    const preferredOrder = ['mmc0', 'heartbeat', 'actpwr', 'default-on'];
+    const preferred = preferredOrder
+      .filter((mode) => !available.length || available.includes(mode))
+      .map((mode) => ({ value: mode, label: labels[mode] || mode }));
+
+    if (preferred.length) return preferred;
+
+    if (available.length) {
+      return available.map((mode: string) => ({ value: mode, label: labels[mode] || mode }));
+    }
+
+    return [{ value: 'mmc0', label: labels.mmc0 }];
   }
 
   get cpuDetails() {

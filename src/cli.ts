@@ -95,9 +95,6 @@ class InteractiveMenu {
           {
             label: "← Back",
             skipKeyPress: true,
-            action: async () => {
-              /* handled by loop */
-            },
           },
         ],
         this
@@ -139,7 +136,9 @@ class InteractiveMenu {
       console.log(`${color}${cursor}${num}${item.label}\x1b[0m`);
     });
     const maxNum = Math.min(this.items.length, 9);
-    console.log(`\n\x1b[90m(Use ↑↓ arrows or numbers 1-${maxNum}, Enter to select)\x1b[0m`);
+    console.log(
+      `\n\x1b[90m(Use ↑↓ arrows or numbers 1-${maxNum}, Enter to select)\x1b[0m`
+    );
   }
 }
 
@@ -459,7 +458,9 @@ const configureLed = async () => {
     return;
   }
 
-  console.log(`Current Status: ${status.config.enabled ? "Enabled" : "Disabled"}`);
+  console.log(
+    `Current Status: ${status.config.enabled ? "Enabled" : "Disabled"}`
+  );
   console.log(`Current Mode: ${status.config.mode}`);
   console.log(`Current Trigger: ${status.currentTrigger || "unknown"}`);
   console.log(`Available Triggers: ${status.availableTriggers.join(", ")}`);
@@ -551,10 +552,7 @@ const main = async () => {
   // Initialize LED service
   await initLedService();
 
-  const menu = new InteractiveMenu(
-    "🥧 Raspberry Pi Server Manager",
-    mainMenu
-  );
+  const menu = new InteractiveMenu("🥧 Raspberry Pi Server Manager", mainMenu);
   await menu.show();
 };
 
