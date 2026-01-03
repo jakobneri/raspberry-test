@@ -727,7 +727,9 @@ const server = http.createServer(async (req, res) => {
   }
 
   // Serve Angular static files
-  if (req.method === "GET") {
+  const isHead = req.method === "HEAD";
+
+  if (req.method === "GET" || isHead) {
     // Check for security issues
     if (urlPath.includes("..")) {
       res.writeHead(403).end("Forbidden");
@@ -743,7 +745,11 @@ const server = http.createServer(async (req, res) => {
         const content = readFileSync(filePath);
         const contentType = MIME_TYPES[ext] || "application/octet-stream";
         res.writeHead(200, { "Content-Type": contentType });
-        res.end(content);
+        if (isHead) {
+          res.end();
+        } else {
+          res.end(content);
+        }
         return;
       } catch (error) {
         // Fall through to index.html
@@ -755,7 +761,11 @@ const server = http.createServer(async (req, res) => {
       const indexPath = join(ANGULAR_DIST, "index.html");
       const content = readFileSync(indexPath, "utf8");
       res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
-      res.end(content);
+      if (isHead) {
+        res.end();
+      } else {
+        res.end(content);
+      }
       return;
     } catch (error) {
       res.writeHead(404).end("Not found");
