@@ -14,213 +14,222 @@
     </div>
     } @else {
     <div class="metrics-grid">
-      <!-- CPU Card -->
-      <app-metric-card
-        icon="🖥️"
-        title="CPU Usage"
-        [value]="metrics?.cpu?.usage ?? '--'"
-        unit="%"
-        [details]="cpuDetails"
-        [progress]="metrics?.cpu?.usage"
-      />
+      <!-- Compact Metrics Row -->
+      <div class="compact-metrics">
+        <!-- CPU Card -->
+        <app-metric-card
+          icon="🖥️"
+          title="CPU Usage"
+          [value]="metrics?.cpu?.usage ?? '--'"
+          unit="%"
+          [details]="cpuDetails"
+          [progress]="metrics?.cpu?.usage"
+        />
 
-      <!-- Memory Card -->
-      <app-metric-card
-        icon="💾"
-        title="RAM Memory"
-        [value]="metrics?.memory?.usagePercent ?? '--'"
-        unit="%"
-        [details]="memoryDetails"
-        [progress]="metrics?.memory?.usagePercent"
-        [progressWarning]="(metrics?.memory?.usagePercent || 0) > 80"
-      />
+        <!-- Memory Card -->
+        <app-metric-card
+          icon="💾"
+          title="RAM Memory"
+          [value]="metrics?.memory?.usagePercent ?? '--'"
+          unit="%"
+          [details]="memoryDetails"
+          [progress]="metrics?.memory?.usagePercent"
+          [progressWarning]="(metrics?.memory?.usagePercent || 0) > 80"
+        />
 
-      <!-- Disk Card -->
-      <app-metric-card
-        icon="💿"
-        title="Disk"
-        [value]="metrics?.disk?.usagePercent ?? '--'"
-        unit="%"
-        [details]="diskDetails"
-        [progress]="metrics?.disk?.usagePercent"
-        [progressWarning]="(metrics?.disk?.usagePercent || 0) > 80"
-      />
+        <!-- Disk Card -->
+        <app-metric-card
+          icon="💿"
+          title="Disk"
+          [value]="metrics?.disk?.usagePercent ?? '--'"
+          unit="%"
+          [details]="diskDetails"
+          [progress]="metrics?.disk?.usagePercent"
+          [progressWarning]="(metrics?.disk?.usagePercent || 0) > 80"
+        />
 
-      <!-- Network Card -->
-      <app-metric-card
-        icon="🌐"
-        title="Network"
-        [value]="metrics?.network?.rx?.toFixed(1) ?? '--'"
-        unit="KB/s ↓"
-        [details]="networkDetails"
-      />
+        <!-- Network Card -->
+        <app-metric-card
+          icon="🌐"
+          title="Network"
+          [value]="metrics?.network?.rx?.toFixed(1) ?? '--'"
+          unit="KB/s ↓"
+          [details]="networkDetails"
+        />
 
-      <!-- System Load Card -->
-      <app-metric-card
-        icon="⚙️"
-        title="System Load"
-        [value]="metrics?.system?.loadAvg?.[0]?.toFixed(2) || '--'"
-        [details]="systemLoadDetails"
-      />
-
-      <!-- System Info Card -->
-      <div class="metric-card system-info-card">
-        <div class="metric-header">
-          <div class="metric-icon">ℹ️</div>
-          <div class="metric-title">System Info</div>
-        </div>
-
-        @if (systemInfo) {
-        <div class="uptime-display">
-          <span class="label">Uptime</span>
-          <span class="value">{{ formatUptime(systemInfo.os?.uptime || 0) }}</span>
-        </div>
-
-        <div class="system-details">
-          <div class="detail-row">
-            <span>🖥️ Host</span>
-            <span>{{ systemInfo.os?.hostname || '--' }}</span>
-          </div>
-          <div class="detail-row">
-            <span>🐧 OS</span>
-            <span>{{ systemInfo.os?.platform || '--' }}</span>
-          </div>
-          <div class="detail-row">
-            <span>⚙️ Kernel</span>
-            <span>{{ systemInfo.os?.release || '--' }}</span>
-          </div>
-        </div>
-        }
-
-        <div class="settings-toggle">
-          <label class="toggle-label">
-            <span>🔄 Auto-Update</span>
-            <div class="toggle-switch">
-              <input
-                type="checkbox"
-                [checked]="autoUpdateEnabled"
-                (change)="toggleAutoUpdate($event)"
-              />
-              <span class="slider"></span>
-            </div>
-          </label>
-        </div>
-
-        <div class="admin-buttons">
-          <button class="btn-restart" (click)="restartServer()">🔄 Restart</button>
-          <button class="btn-shutdown" (click)="shutdownServer()">⛔ Shutdown</button>
-        </div>
+        <!-- System Load Card -->
+        <app-metric-card
+          icon="⚙️"
+          title="System Load"
+          [value]="metrics?.system?.loadAvg?.[0]?.toFixed(2) || '--'"
+          [details]="systemLoadDetails"
+        />
       </div>
 
-      <!-- LED Control Card -->
-      @if (ledStatus) {
-      <div class="metric-card led-control-card" [class.unavailable]="!ledStatus.available">
-        <div class="metric-header led-header">
-          <div class="metric-icon">💡</div>
-          <div class="metric-title">Power LED activity</div>
-          <div class="led-chips">
-            <span
-              class="chip"
-              [class.good]="ledStatus.available"
-              [class.bad]="!ledStatus.available"
-            >
-              {{ ledStatus.available ? 'Detected' : 'Not detected' }}
-            </span>
-            <span
-              class="chip"
-              [class.good]="ledStatus.config.enabled"
-              [class.bad]="!ledStatus.config.enabled"
-            >
-              {{ ledStatus.config.enabled ? 'Active' : 'Idle' }}
-            </span>
+      <!-- Feature Cards Section -->
+      <div class="feature-cards">
+        <!-- System Info Card -->
+        <div class="metric-card system-info-card">
+          <div class="metric-header">
+            <div class="metric-icon">ℹ️</div>
+            <div class="metric-title">System Info</div>
           </div>
-        </div>
 
-        @if (ledError) {
-        <div class="led-error">{{ ledError }}</div>
-        } @if (ledStatus.available) {
-        <div class="led-status-grid">
-          <div class="stat">
-            <div class="label">Current trigger</div>
-            <div class="value">{{ ledStatus.currentTrigger || 'default-on' }}</div>
-            <div class="hint">Live from /sys/class/leds/{{ ledStatus.config.ledType }}/trigger</div>
+          @if (systemInfo) {
+          <div class="uptime-display">
+            <span class="label">Uptime</span>
+            <span class="value">{{ formatUptime(systemInfo.os?.uptime || 0) }}</span>
           </div>
-          <div class="stat">
-            <div class="label">Selected mode</div>
-            <div class="value">{{ ledStatus.config.mode }}</div>
-            <div class="hint">Applied when activity display is enabled</div>
-          </div>
-          <div class="stat">
-            <div class="label">LED type</div>
-            <div class="value">{{ ledStatus.config.ledType }}</div>
-            <div class="hint">
-              {{ ledStatus.config.ledType === 'ACT' ? 'Activity LED' : 'Power LED' }}
+
+          <div class="system-details">
+            <div class="detail-row">
+              <span>🖥️ Host</span>
+              <span>{{ systemInfo.os?.hostname || '--' }}</span>
+            </div>
+            <div class="detail-row">
+              <span>🐧 OS</span>
+              <span>{{ systemInfo.os?.platform || '--' }}</span>
+            </div>
+            <div class="detail-row">
+              <span>⚙️ Kernel</span>
+              <span>{{ systemInfo.os?.release || '--' }}</span>
             </div>
           </div>
+          }
+
+          <div class="settings-toggle">
+            <label class="toggle-label">
+              <span>🔄 Auto-Update</span>
+              <div class="toggle-switch">
+                <input
+                  type="checkbox"
+                  [checked]="autoUpdateEnabled"
+                  (change)="toggleAutoUpdate($event)"
+                />
+                <span class="slider"></span>
+              </div>
+            </label>
+          </div>
+
+          <div class="admin-buttons">
+            <button class="btn-restart" (click)="restartServer()">🔄 Restart</button>
+            <button class="btn-shutdown" (click)="shutdownServer()">⛔ Shutdown</button>
+          </div>
         </div>
 
-        <div class="led-controls">
-          <button
-            class="btn-toggle"
-            [class.active]="ledStatus.config.enabled"
-            [disabled]="ledLoading"
-            (click)="toggleLed()"
-          >
-            {{
-              ledStatus.config.enabled ? 'Turn off activity display' : 'Activate activity display'
-            }}
-          </button>
-
-          <div class="led-modes">
-            <label>Activity pattern</label>
-            <div class="picker-row">
-              <select
-                [value]="ledStatus.config.mode"
-                (change)="changeLedMode($any($event.target).value)"
-                [disabled]="ledLoading"
+        <!-- LED Control Card -->
+        @if (ledStatus) {
+        <div class="metric-card led-control-card" [class.unavailable]="!ledStatus.available">
+          <div class="metric-header led-header">
+            <div class="metric-icon">💡</div>
+            <div class="metric-title">Power LED activity</div>
+            <div class="led-chips">
+              <span
+                class="chip"
+                [class.good]="ledStatus.available"
+                [class.bad]="!ledStatus.available"
               >
-                @for (option of ledModeOptions; track option.value) {
-                <option [value]="option.value">{{ option.label }}</option>
-                }
-              </select>
-              <span class="hint">Applies instantly</span>
+                {{ ledStatus.available ? 'Detected' : 'Not detected' }}
+              </span>
+              <span
+                class="chip"
+                [class.good]="ledStatus.config.enabled"
+                [class.bad]="!ledStatus.config.enabled"
+              >
+                {{ ledStatus.config.enabled ? 'Active' : 'Idle' }}
+              </span>
             </div>
           </div>
-        </div>
 
-        @if (ledStatus.availableTriggers?.length) {
-        <div class="led-triggers">
-          <div class="label">Available triggers</div>
-          <div class="chips">
-            @for (trigger of ledStatus.availableTriggers; track trigger) {
-            <span class="chip" [class.active]="trigger === ledStatus.currentTrigger">{{
-              trigger
-            }}</span>
-            }
+          @if (ledError) {
+          <div class="led-error">{{ ledError }}</div>
+          } @if (ledStatus.available) {
+          <div class="led-status-grid">
+            <div class="stat">
+              <div class="label">Current trigger</div>
+              <div class="value">{{ ledStatus.currentTrigger || 'default-on' }}</div>
+              <div class="hint">Live from /sys/class/leds/{{ ledStatus.config.ledType }}/trigger</div>
+            </div>
+            <div class="stat">
+              <div class="label">Selected mode</div>
+              <div class="value">{{ ledStatus.config.mode }}</div>
+              <div class="hint">Applied when activity display is enabled</div>
+            </div>
+            <div class="stat">
+              <div class="label">LED type</div>
+              <div class="value">{{ ledStatus.config.ledType }}</div>
+              <div class="hint">
+                {{ ledStatus.config.ledType === 'ACT' ? 'Activity LED' : 'Power LED' }}
+              </div>
+            </div>
           </div>
-        </div>
-        } } @else {
-        <div class="led-unavailable">
-          <div class="title">LED interface not available</div>
-          <p>
-            We could not find a controllable power LED on this device. If you are running on a
-            Raspberry Pi, make sure the server has permission to write to /sys/class/leds.
-          </p>
-        </div>
-        } @if (ledLoading) {
-        <div class="led-overlay">
-          <div class="loading-spinner"></div>
-          <span>Updating LED...</span>
+
+          <div class="led-controls">
+            <button
+              class="btn-toggle"
+              [class.active]="ledStatus.config.enabled"
+              [disabled]="ledLoading"
+              (click)="toggleLed()"
+            >
+              {{
+                ledStatus.config.enabled ? 'Turn off activity display' : 'Activate activity display'
+              }}
+            </button>
+
+            <div class="led-modes">
+              <label>Activity pattern</label>
+              <div class="picker-row">
+                <select
+                  [value]="ledStatus.config.mode"
+                  (change)="changeLedMode($any($event.target).value)"
+                  [disabled]="ledLoading"
+                >
+                  @for (option of ledModeOptions; track option.value) {
+                  <option [value]="option.value">{{ option.label }}</option>
+                  }
+                </select>
+                <span class="hint">Applies instantly</span>
+              </div>
+            </div>
+          </div>
+
+          @if (ledStatus.availableTriggers?.length) {
+          <div class="led-triggers">
+            <div class="label">Available triggers</div>
+            <div class="chips">
+              @for (trigger of ledStatus.availableTriggers; track trigger) {
+              <span class="chip" [class.active]="trigger === ledStatus.currentTrigger">{{
+                trigger
+              }}</span>
+              }
+            </div>
+          </div>
+          } } @else {
+          <div class="led-unavailable">
+            <div class="title">LED interface not available</div>
+            <p>
+              We could not find a controllable power LED on this device. If you are running on a
+              Raspberry Pi, make sure the server has permission to write to /sys/class/leds.
+            </p>
+          </div>
+          } @if (ledLoading) {
+          <div class="led-overlay">
+            <div class="loading-spinner"></div>
+            <span>Updating LED...</span>
+          </div>
+          }
         </div>
         }
+
+        <!-- Sessions Card -->
+        <app-sessions-card />
       </div>
-      }
 
-      <!-- Sessions Card -->
-      <app-sessions-card />
-
-      <!-- Terminal Card -->
-      <app-terminal-card />
+      <!-- Full Width Cards Section -->
+      <div class="full-width-cards">
+        <!-- Terminal Card -->
+        <app-terminal-card />
+      </div>
     </div>
 
     <div class="timestamp">Last updated: {{ lastUpdate }}</div>
