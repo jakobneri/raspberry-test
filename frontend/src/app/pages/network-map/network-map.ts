@@ -1,4 +1,4 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { ChangeDetectorRef, Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Sidebar } from '../../components/sidebar/sidebar';
 import { ApiService } from '../../services/api';
@@ -21,6 +21,7 @@ interface NetworkDevice {
 })
 export class NetworkMap implements OnInit {
   private api = inject(ApiService);
+  private cdr = inject(ChangeDetectorRef);
 
   devices: NetworkDevice[] = [];
   loading = false;
@@ -55,11 +56,13 @@ export class NetworkMap implements OnInit {
         this.devices = this.normalizeDevices(data.devices);
         console.log(`[NetworkMap] Found ${this.devices.length} devices`);
         this.loading = false;
+        this.cdr.detectChanges();
       },
       error: (err) => {
         console.error('[NetworkMap] Failed to load devices:', err);
         console.error('[NetworkMap] Error details:', JSON.stringify(err));
         this.loading = false;
+        this.cdr.detectChanges();
       },
     });
   }
@@ -74,11 +77,15 @@ export class NetworkMap implements OnInit {
         console.log(`[NetworkMap] Scan found ${this.devices.length} devices`);
         this.lastScan = new Date();
         this.scanning = false;
+        this.loading = false;
+        this.cdr.detectChanges();
       },
       error: (err) => {
         console.error('[NetworkMap] Network scan failed:', err);
         console.error('[NetworkMap] Error details:', JSON.stringify(err));
         this.scanning = false;
+        this.loading = false;
+        this.cdr.detectChanges();
       },
     });
   }
