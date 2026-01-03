@@ -9,6 +9,7 @@ A TypeScript-based server manager for Raspberry Pi with monitoring, file sharing
 For network speed testing, you need to install the official Ookla Speedtest CLI:
 
 **On Raspberry Pi / Debian / Ubuntu:**
+
 ```bash
 # Install dependencies
 sudo apt-get install curl
@@ -19,6 +20,7 @@ sudo apt-get install speedtest
 ```
 
 **Alternative: Legacy speedtest-cli (not recommended due to HTTP 403 errors):**
+
 ```bash
 sudo apt-get install speedtest-cli
 ```
@@ -230,6 +232,7 @@ cd raspberry-test
 ```
 
 3. The unified CLI will launch with an interactive menu. Navigate using:
+
    - Arrow keys (↑↓) to move selection
    - Number keys (1-9) for quick selection
    - Enter to confirm selection
@@ -249,6 +252,7 @@ The start script automatically restarts the server if it crashes (exit code 42).
 ### Quick Setup
 
 Copy the example configuration:
+
 ```bash
 cp config/env.example.json config/env.json
 ```
@@ -337,7 +341,3 @@ Access the cockpit at `/cockpit` to view:
 - `GET /api/settings` - Get system settings (auto-update status)
 - `POST /api/settings/auto-update` - Toggle auto-update (params: enabled=true/false)
 - `POST /api/logout` - Logout
-
-## 🎄 Merry Christmas!
-
-Built on December 25, 2025
