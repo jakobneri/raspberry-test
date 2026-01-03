@@ -105,10 +105,20 @@ export const setLedTrigger = async (
     };
   }
 
+  // Validate mode against allowed values to prevent command injection
+  const allowedModes = ["none", "mmc0", "actpwr", "heartbeat", "default"];
+  if (!allowedModes.includes(mode)) {
+    return {
+      success: false,
+      error: `Invalid LED mode: ${mode}. Allowed modes: ${allowedModes.join(", ")}`,
+    };
+  }
+
   try {
     // Use echo with sudo to write to the LED trigger file
     // This requires the user running the server to have sudo access without password
     // for the specific command, or the server to run as root
+    // Mode is validated above to prevent command injection
     const command = `echo "${mode}" | sudo tee ${ledPath} > /dev/null`;
     await execAsync(command);
 
