@@ -22,6 +22,7 @@ interface NetworkDevice {
 export class NetworkMap implements OnInit {
   private api = inject(ApiService);
   private cdr = inject(ChangeDetectorRef);
+  private storageKey = 'networkMapState';
 
   devices: NetworkDevice[] = [];
   loading = false;
@@ -30,6 +31,7 @@ export class NetworkMap implements OnInit {
 
   ngOnInit() {
     console.log('[NetworkMap] Component initialized, loading devices...');
+    this.loadSavedState();
     this.loadDevices();
   }
 
@@ -45,6 +47,34 @@ export class NetworkMap implements OnInit {
       };
       return normalized;
     });
+  }
+
+  private saveState(devices: NetworkDevice[], lastScan: Date | null) {
+    try {
+      const payload = {
+        devices,
+        lastScan: lastScan ? lastScan.toISOString() : null,
+      };
+      localStorage.setItem(this.storageKey, JSON.stringify(payload));
+      console.log('[NetworkMap] State saved to localStorage');
+    } catch (err) {
+      console.warn('[NetworkMap] Failed to save state:', err);
+    }
+  }
+
+  private loadSavedState() {
+    try {
+      const raw = localStorage.getItem(this.storageKey);
+      if (!raw) return;
+      const parsed = JSON.parse(raw) as { devices?: any[]; lastScan?: string | null };
+      if (parsed.devices?.length) {
+        this.devices = this.normalizeDevices(parsed.devices);
+        this.lastScan = parsed.lastScan ? new Date(parsed.lastScan) : null;
+        console.log(`[NetworkMap] Loaded ${this.devices.length} devices from saved state`);
+      }
+    } catch (err) {
+      console.warn('[NetworkMap] Failed to load saved state:', err);
+    }
   }
 
   loadDevices() {
@@ -76,6 +106,7 @@ export class NetworkMap implements OnInit {
         this.devices = this.normalizeDevices(data.devices);
         console.log(`[NetworkMap] Scan found ${this.devices.length} devices`);
         this.lastScan = new Date();
+        this.saveState(this.devices, this.lastScan);
         this.scanning = false;
         this.loading = false;
         this.cdr.detectChanges();
