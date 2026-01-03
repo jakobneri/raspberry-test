@@ -625,11 +625,12 @@ const approveRequest = async () => {
 const showSystemStatus = async () => {
   console.log("\n--- System Status ---");
   try {
-    console.log(`${colors.gray}Fetching system metrics...${colors.reset}`);
+    process.stdout.write(`\n${colors.gray}Fetching system metrics...${colors.reset}`);
     const metrics = await getMetrics();
+    process.stdout.write(`\r${' '.repeat(50)}\r`); // Clear the loading message
     const { cpu, memory, disk, os, system } = metrics.current;
 
-    console.log(`\n${colors.cyan}System Information:${colors.reset}`);
+    console.log(`${colors.cyan}System Information:${colors.reset}`);
     console.log(`Hostname: ${os.hostname}`);
     console.log(`OS: ${os.distro} ${os.release} (${os.platform})`);
     console.log(
