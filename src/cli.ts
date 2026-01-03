@@ -102,7 +102,7 @@ class InteractiveMenu {
     } else if (item.action) {
       console.clear();
       await item.action();
-      if (item.label !== "Exit") {
+      if (!item.label.includes("Exit") && item.label !== "← Back") {
         console.log("\nPress any key to continue...");
         process.stdin.setRawMode(true);
         process.stdin.resume();
