@@ -23,8 +23,8 @@ export interface LedConfig {
 
 // Default configuration
 let currentConfig: LedConfig = {
-  enabled: false,
-  mode: "default-on",
+  enabled: true,
+  mode: "actpwr",
   ledType: "PWR",
 };
 
@@ -296,8 +296,8 @@ const loadLedConfigFromDb = async (): Promise<LedConfig> => {
 
   // Return default config
   return {
-    enabled: false,
-    mode: "default-on",
+    enabled: true,
+    mode: "actpwr",
     ledType: "PWR",
   };
 };
