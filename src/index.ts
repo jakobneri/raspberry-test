@@ -25,6 +25,7 @@ import * as networkService from "./services/network.service.js";
 import * as speedTestService from "./services/speedtest.service.js";
 import * as settingsService from "./services/settings.service.js";
 import * as ledService from "./services/led.service.js";
+import * as autoUpdateService from "./services/auto-update.service.js";
 
 const PORT = 3000;
 const router = new Router();
@@ -578,6 +579,23 @@ router.post(
     console.log(`[Settings] Auto-update set to ${enabled} by user: ${userId}`);
 
     await settingsService.setAutoUpdate(enabled);
+    
+    // Start or stop the auto-update scheduler based on the new setting
+    if (enabled) {
+      try {
+        const envConfig = JSON.parse(readFileSync("config/env.json", "utf8"));
+        const intervalMinutes = envConfig.AUTO_UPDATE_CHECK_INTERVAL_MINUTES || 30;
+        autoUpdateService.startAutoUpdateScheduler(intervalMinutes);
+        console.log(`[Auto-Update] Periodic update checks enabled (every ${intervalMinutes} minutes)`);
+      } catch (e) {
+        autoUpdateService.startAutoUpdateScheduler(30);
+        console.log("[Auto-Update] Periodic update checks enabled (every 30 minutes - default)");
+      }
+    } else {
+      autoUpdateService.stopAutoUpdateScheduler();
+      console.log("[Auto-Update] Periodic update checks disabled");
+    }
+    
     res.writeHead(200, { "Content-Type": "application/json" });
     res.end(JSON.stringify({ success: true, autoUpdate: enabled }));
   })
@@ -891,4 +909,23 @@ try {
 // Initialize LED service
 ledService.initLedService().catch((err) => {
   console.error("[LED] Failed to initialize LED service:", err);
+});
+
+// Start auto-update scheduler if enabled
+settingsService.getSettings().then((settings) => {
+  if (settings.autoUpdate) {
+    try {
+      const envConfig = JSON.parse(readFileSync("config/env.json", "utf8"));
+      const intervalMinutes = envConfig.AUTO_UPDATE_CHECK_INTERVAL_MINUTES || 30;
+      autoUpdateService.startAutoUpdateScheduler(intervalMinutes);
+      console.log(`[Auto-Update] Periodic update checks enabled (every ${intervalMinutes} minutes)`);
+    } catch (e) {
+      autoUpdateService.startAutoUpdateScheduler(30); // Default to 30 minutes
+      console.log("[Auto-Update] Periodic update checks enabled (every 30 minutes - default)");
+    }
+  } else {
+    console.log("[Auto-Update] Periodic update checks disabled");
+  }
+}).catch((err) => {
+  console.error("[Auto-Update] Failed to initialize scheduler:", err);
 });
