@@ -73,11 +73,15 @@ export const connectWifi = async (
 ): Promise<{ success: boolean; message: string }> => {
   try {
     // Validate SSID and password to prevent command injection
-    if (!ssid || ssid.includes('"') || ssid.includes("'") || ssid.includes("`")) {
-      return { success: false, message: "Invalid SSID format" };
+    // Allow alphanumeric, spaces, hyphens, underscores, and dots
+    const validSsidPattern = /^[a-zA-Z0-9\s._-]{1,32}$/;
+    const validPasswordPattern = /^[\x20-\x7E]{0,63}$/; // Printable ASCII chars, max 63 for WPA
+    
+    if (!ssid || !validSsidPattern.test(ssid)) {
+      return { success: false, message: "Invalid SSID format (use alphanumeric, spaces, dots, hyphens, underscores only)" };
     }
     
-    if (password && (password.includes('"') || password.includes("'") || password.includes("`"))) {
+    if (password && !validPasswordPattern.test(password)) {
       return { success: false, message: "Invalid password format" };
     }
 

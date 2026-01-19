@@ -61,7 +61,11 @@ const getReqBody = async (req: http.IncomingMessage, maxSize: number = MAX_REQUE
     req.on("data", (chunk) => {
       size += chunk.length;
       if (size > maxSize) {
-        req.destroy();
+        try {
+          req.destroy();
+        } catch (err) {
+          console.error("[Server] Error destroying request:", err);
+        }
         reject(new Error("Request body too large"));
         return;
       }
@@ -583,10 +587,15 @@ router.post(
           const originalFilename = filenameMatch[1];
           const filename = basename(originalFilename);
           
-          // Validate filename
-          if (!filename || filename === "." || filename === ".." || filename.includes("/") || filename.includes("\\")) {
+          // Validate filename - check for dangerous characters including null bytes
+          const dangerousChars = /[\x00-\x1f\x7f\/\\:*?"<>|]/;
+          if (!filename || 
+              filename === "." || 
+              filename === ".." || 
+              filename.length > 255 ||
+              dangerousChars.test(filename)) {
             res.writeHead(400, { "Content-Type": "application/json" });
-            res.end(JSON.stringify({ error: "Invalid filename" }));
+            res.end(JSON.stringify({ error: "Invalid filename (contains dangerous characters)" }));
             return;
           }
 
