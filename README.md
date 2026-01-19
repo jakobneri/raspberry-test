@@ -64,6 +64,35 @@ npm run manage
 # or via start.sh menu
 ```
 
+## 🧪 Development
+
+### Code Quality Tools
+
+```bash
+# Linting
+npm run lint          # Check for issues
+npm run lint:fix      # Auto-fix issues
+
+# Formatting
+npm run format        # Format all files
+npm run format:check  # Check formatting
+
+# Building
+npm run build         # Compile TypeScript
+npm run clean         # Remove dist/
+```
+
+### Frontend Development
+
+```bash
+cd frontend
+npm install           # Install dependencies
+npm run build         # Build production bundle
+npm run start         # Dev server (if needed)
+```
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for detailed development guidelines.
+
 ## 📁 Project Structure
 
 ```
@@ -80,7 +109,58 @@ dist/                     # Compiled output
 
 ## 🔒 Security
 
-- JWT token-based authentication
-- Session tracking and cleanup
-- Change default passwords in production
-- Keep `config/env.json` private (gitignored)
+### Security Features
+
+- **JWT token-based authentication** with HttpOnly cookies
+- **Rate limiting** on login endpoint (5 attempts per 15 minutes)
+- **Session tracking and cleanup** with automatic expiration
+- **File upload validation** with size limits (50MB max)
+- **Path traversal protection** using `basename()` sanitization
+- **Command injection prevention** using `execFile` with array arguments
+- **CORS headers** for API routes
+- **Request size limits** (100MB max)
+- **Input validation** with JSON.parse error handling
+
+### Security Best Practices
+
+1. **Change the JWT Secret:**
+   ```bash
+   # Generate a strong secret (minimum 32 characters)
+   node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+   ```
+   Add this to `config/env.json`:
+   ```json
+   {
+     "JWT_SECRET": "your-generated-secret-here"
+   }
+   ```
+
+2. **Keep config files private:**
+   - Never commit `config/env.json` to version control
+   - Use environment-specific configs for production
+
+3. **Change default passwords:**
+   - Use the management CLI to create strong user passwords
+   - Avoid using easily guessable credentials
+
+4. **Update regularly:**
+   - Keep dependencies updated: `npm audit` and `npm update`
+   - Monitor for security vulnerabilities
+
+5. **Network security:**
+   - Use HTTPS in production (configure reverse proxy)
+   - Restrict access to admin endpoints
+   - Use firewall rules to limit access
+
+6. **File uploads:**
+   - Files are limited to 50MB
+   - Filenames are sanitized to prevent path traversal
+   - Consider adding virus scanning for production use
+
+### Known Limitations
+
+- No HTTPS support built-in (use reverse proxy like nginx)
+- No audit logging for admin actions
+- Password hashing uses SHA-256 (consider bcrypt for production)
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for security guidelines when contributing.
