@@ -1,8 +1,9 @@
 import si from "systeminformation";
-import { exec } from "node:child_process";
+import { exec, execFile } from "node:child_process";
 import { promisify } from "node:util";
 
 const execAsync = promisify(exec);
+const execFileAsync = promisify(execFile);
 
 // ========== WIFI MANAGEMENT ==========
 
@@ -71,10 +72,19 @@ export const connectWifi = async (
   password?: string
 ): Promise<{ success: boolean; message: string }> => {
   try {
+    // Validate SSID and password to prevent command injection
+    if (!ssid || ssid.includes('"') || ssid.includes("'") || ssid.includes("`")) {
+      return { success: false, message: "Invalid SSID format" };
+    }
+    
+    if (password && (password.includes('"') || password.includes("'") || password.includes("`"))) {
+      return { success: false, message: "Invalid password format" };
+    }
+
     if (!password) {
-      // Open network - simple connection
+      // Open network - use execFile with array arguments to prevent injection
       console.log(`[Network] Connecting to open network: ${ssid}`);
-      await execAsync(`sudo nmcli device wifi connect "${ssid}"`);
+      await execFileAsync("sudo", ["nmcli", "device", "wifi", "connect", ssid]);
       console.log(`[Network] Successfully connected to: ${ssid}`);
       return { success: true, message: "Connected successfully" };
     }
@@ -85,17 +95,28 @@ export const connectWifi = async (
 
     console.log(`[Network] Creating WPA connection profile for: ${ssid}`);
 
-    // Add connection with full WPA-PSK parameters
-    await execAsync(
-      `sudo nmcli connection add type wifi con-name "${connectionName}" ` +
-        `ifname wlan0 ssid "${ssid}" ` +
-        `wifi-sec.key-mgmt wpa-psk ` +
-        `wifi-sec.psk "${password}"`
-    );
+    // Add connection with full WPA-PSK parameters using execFile to prevent injection
+    await execFileAsync("sudo", [
+      "nmcli",
+      "connection",
+      "add",
+      "type",
+      "wifi",
+      "con-name",
+      connectionName,
+      "ifname",
+      "wlan0",
+      "ssid",
+      ssid,
+      "wifi-sec.key-mgmt",
+      "wpa-psk",
+      "wifi-sec.psk",
+      password,
+    ]);
 
     // Activate the connection
     console.log(`[Network] Activating connection: ${connectionName}`);
-    await execAsync(`sudo nmcli connection up "${connectionName}"`);
+    await execFileAsync("sudo", ["nmcli", "connection", "up", connectionName]);
 
     console.log(`[Network] Successfully connected to: ${ssid}`);
     return { success: true, message: "Connected successfully" };

@@ -5,7 +5,7 @@ import {
   writeFileSync,
   existsSync,
 } from "node:fs";
-import { extname, join } from "node:path";
+import { extname, join, basename } from "node:path";
 import { Router } from "./router.js";
 import {
   createToken,
@@ -30,6 +30,10 @@ import * as autoUpdateService from "./services/auto-update.service.js";
 const PORT = 3000;
 const router = new Router();
 
+// Configuration constants
+const MAX_REQUEST_SIZE = 100 * 1024 * 1024; // 100MB
+const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
+
 // Angular build directory
 const ANGULAR_DIST = "frontend/dist/frontend/browser";
 
@@ -49,12 +53,22 @@ const MIME_TYPES: Record<string, string> = {
   ".ttf": "font/ttf",
 };
 
-// Helper: Parse Body
-const getReqBody = async (req: http.IncomingMessage): Promise<string> => {
-  return new Promise((resolve) => {
+// Helper: Parse Body with size limit
+const getReqBody = async (req: http.IncomingMessage, maxSize: number = MAX_REQUEST_SIZE): Promise<string> => {
+  return new Promise((resolve, reject) => {
     let body = "";
-    req.on("data", (chunk) => (body += chunk));
+    let size = 0;
+    req.on("data", (chunk) => {
+      size += chunk.length;
+      if (size > maxSize) {
+        req.destroy();
+        reject(new Error("Request body too large"));
+        return;
+      }
+      body += chunk;
+    });
     req.on("end", () => resolve(body));
+    req.on("error", (err) => reject(err));
   });
 };
 
@@ -133,17 +147,28 @@ router.post("/api/scores", async (req, res) => {
       const payload = await verifyToken(cookieToken);
       sessionService.updateSessionActivity(cookieToken);
       userId = payload[propUserId] as string;
-    } catch {}
+    } catch (error) {
+      console.error("[Scores] Token verification failed:", error);
+    }
   }
 
   try {
     const body = await getReqBody(req);
     const data = JSON.parse(body || "{}");
-    scoreService.addScore(data.score || 0, userId);
+    
+    if (typeof data.score !== 'number' || isNaN(data.score)) {
+      res.writeHead(400, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ error: "Invalid score value" }));
+      return;
+    }
+    
+    scoreService.addScore(data.score, userId);
     res.writeHead(200, { "Content-Type": "application/json" });
     res.end(JSON.stringify({ success: true }));
   } catch (error) {
-    res.writeHead(500).end("Error saving score");
+    console.error("[Scores] Error saving score:", error);
+    res.writeHead(500, { "Content-Type": "application/json" });
+    res.end(JSON.stringify({ error: "Error saving score" }));
   }
 });
 
@@ -236,12 +261,25 @@ router.get(
 router.post(
   "/api/users",
   authHandler(async (req, res) => {
-    const body = await getReqBody(req);
-    const data = JSON.parse(body || "{}");
-    const { createUser } = await import("./services/auth.service.js");
-    const result = await createUser(data.email, data.password, data.name || "");
-    res.writeHead(200, { "Content-Type": "application/json" });
-    res.end(JSON.stringify(result));
+    try {
+      const body = await getReqBody(req);
+      const data = JSON.parse(body || "{}");
+      
+      if (!data.email || !data.password) {
+        res.writeHead(400, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ error: "Email and password required" }));
+        return;
+      }
+      
+      const { createUser } = await import("./services/auth.service.js");
+      const result = await createUser(data.email, data.password, data.name || "");
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(JSON.stringify(result));
+    } catch (error) {
+      console.error("[Users] Error creating user:", error);
+      res.writeHead(500, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ error: "Error creating user" }));
+    }
   })
 );
 
@@ -435,15 +473,25 @@ router.get(
 router.post(
   "/api/wifi/connect",
   authHandler(async (req, res) => {
-    const body = await getReqBody(req);
-    const { ssid, password } = JSON.parse(body || "{}");
-    if (!ssid) {
-      res.writeHead(400).end("SSID required");
-      return;
+    try {
+      const body = await getReqBody(req);
+      const data = JSON.parse(body || "{}");
+      const { ssid, password } = data;
+      
+      if (!ssid) {
+        res.writeHead(400, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ error: "SSID required" }));
+        return;
+      }
+      
+      const result = await networkService.connectWifi(ssid, password);
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(JSON.stringify(result));
+    } catch (error) {
+      console.error("[WiFi] Error connecting:", error);
+      res.writeHead(500, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ error: "Error connecting to WiFi" }));
     }
-    const result = await networkService.connectWifi(ssid, password);
-    res.writeHead(200, { "Content-Type": "application/json" });
-    res.end(JSON.stringify(result));
   })
 );
 
@@ -459,42 +507,74 @@ router.get(
 router.post(
   "/api/files/upload",
   authHandler(async (req, res) => {
-    const contentType = req.headers["content-type"] || "";
-    const boundary = contentType.split("boundary=")[1];
-    if (!boundary) {
-      res.writeHead(400).end("Invalid content type");
-      return;
-    }
-
-    let body = await getReqBody(req);
-    if (!body) {
-      res.writeHead(400).end("No file data");
-      return;
-    }
-
-    const parts = body.split(`--${boundary}`);
-    for (const part of parts) {
-      if (part.includes('name="file"')) {
-        const filenameMatch = part.match(/filename="([^"]+)"/);
-        if (!filenameMatch) continue;
-
-        const filename = filenameMatch[1];
-        const dataStart = part.indexOf("\r\n\r\n") + 4;
-        const dataEnd = part.lastIndexOf("\r\n");
-        const fileData = part.substring(dataStart, dataEnd);
-
-        const filePath = filesService.getFilePath(filename);
-        const stream = createWriteStream(filePath);
-        stream.write(fileData);
-        stream.end();
-
-        console.log(`[Files] Uploaded file: ${filename}`);
-        res.writeHead(200, { "Content-Type": "application/json" });
-        res.end(JSON.stringify({ success: true, filename }));
+    try {
+      const contentType = req.headers["content-type"] || "";
+      const boundary = contentType.split("boundary=")[1];
+      if (!boundary) {
+        res.writeHead(400, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ error: "Invalid content type" }));
         return;
       }
+
+      let body = await getReqBody(req, MAX_FILE_SIZE);
+      if (!body) {
+        res.writeHead(400, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ error: "No file data" }));
+        return;
+      }
+
+      const parts = body.split(`--${boundary}`);
+      for (const part of parts) {
+        if (part.includes('name="file"')) {
+          const filenameMatch = part.match(/filename="([^"]+)"/);
+          if (!filenameMatch) continue;
+
+          // Sanitize filename to prevent path traversal
+          const originalFilename = filenameMatch[1];
+          const filename = basename(originalFilename);
+          
+          // Validate filename
+          if (!filename || filename === "." || filename === ".." || filename.includes("/") || filename.includes("\\")) {
+            res.writeHead(400, { "Content-Type": "application/json" });
+            res.end(JSON.stringify({ error: "Invalid filename" }));
+            return;
+          }
+
+          const dataStart = part.indexOf("\r\n\r\n") + 4;
+          const dataEnd = part.lastIndexOf("\r\n");
+          
+          if (dataStart >= dataEnd) {
+            res.writeHead(400, { "Content-Type": "application/json" });
+            res.end(JSON.stringify({ error: "Invalid file data" }));
+            return;
+          }
+
+          // Use Buffer instead of string substring for binary safety
+          const fileData = Buffer.from(part.substring(dataStart, dataEnd), 'binary');
+
+          const filePath = filesService.getFilePath(filename);
+          const stream = createWriteStream(filePath);
+          stream.write(fileData);
+          stream.end();
+
+          console.log(`[Files] Uploaded file: ${filename} (${fileData.length} bytes)`);
+          res.writeHead(200, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({ success: true, filename }));
+          return;
+        }
+      }
+      res.writeHead(400, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ error: "No file found" }));
+    } catch (error: any) {
+      console.error("[Files] Upload error:", error);
+      if (error.message === "Request body too large") {
+        res.writeHead(413, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ error: "File too large (max 50MB)" }));
+      } else {
+        res.writeHead(500, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ error: "Error uploading file" }));
+      }
     }
-    res.writeHead(400).end("No file found");
   })
 );
 

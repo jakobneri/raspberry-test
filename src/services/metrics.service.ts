@@ -53,6 +53,7 @@ let metricsHistory: SystemMetrics[] = [];
 let cachedMetrics: SystemMetrics | null = null;
 let lastFetch: number = 0;
 const CACHE_DURATION_MS = 1000; // Cache for 1 second
+const MAX_HISTORY_SIZE = 60; // Keep last 60 data points
 
 export const getMetrics = async (): Promise<MetricsHistory> => {
   // Return cached metrics if they're fresh (less than CACHE_DURATION_MS old)
@@ -165,9 +166,9 @@ export const getMetrics = async (): Promise<MetricsHistory> => {
   // Let's just use that.
   metrics.system.loadAvg = [currentLoad.avgLoad];
 
-  // Store in history (keep last 60 data points)
+  // Store in history (keep last MAX_HISTORY_SIZE data points)
   metricsHistory.push(metrics);
-  if (metricsHistory.length > 60) {
+  if (metricsHistory.length > MAX_HISTORY_SIZE) {
     metricsHistory.shift();
   }
 
