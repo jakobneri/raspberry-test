@@ -57,6 +57,21 @@ export class Router {
     const { method, url } = req;
     if (!url || !method) return;
 
+    // Add CORS headers for API routes
+    if (url.startsWith("/api/")) {
+      res.setHeader("Access-Control-Allow-Origin", "*");
+      res.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
+      res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
+      res.setHeader("Access-Control-Max-Age", "86400");
+      
+      // Handle preflight OPTIONS requests
+      if (method === "OPTIONS") {
+        res.writeHead(204);
+        res.end();
+        return true;
+      }
+    }
+
     // Parse URL to ignore query strings for matching
     const [path] = url.split("?");
 

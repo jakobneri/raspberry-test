@@ -1,3 +1,189 @@
+# Änderungen
+
+## 2024-01-19: Comprehensive Security and Quality Improvements
+
+### Übersicht
+
+Umfassende Verbesserungen in den Bereichen Sicherheit, Code-Qualität, Benutzerfreundlichkeit und Dokumentation.
+
+### 🔒 Sicherheitsverbesserungen (Kritisch)
+
+1. **Command Injection Vulnerability behoben**
+   - WiFi-Verbindung nutzt jetzt `execFile` mit Array-Argumenten
+   - Umfassende Input-Validierung für SSID (Regex-Pattern)
+   - Password-Validierung mit printable ASCII Check
+   - **Risiko:** Hoch → Behoben ✅
+
+2. **Datei-Upload Validierung**
+   - Pfad-Traversal-Schutz mit `basename()`
+   - Null-Byte und Kontrollzeichen-Prüfung
+   - Maximale Dateinamen-Länge (255 Zeichen)
+   - Dateigrößen-Limit (50MB für Uploads)
+   - **Risiko:** Hoch → Behoben ✅
+
+3. **Rate Limiting**
+   - Login-Endpoint: 5 Versuche pro 15 Minuten pro IP
+   - Automatische Aufräumung abgelaufener Einträge
+   - **Risiko:** Mittel → Behoben ✅
+
+4. **Request Size Limits**
+   - Maximale Request-Größe: 100MB
+   - Maximale Upload-Größe: 50MB
+   - DoS-Prävention
+   - **Risiko:** Mittel → Behoben ✅
+
+5. **JSON.parse Error Handling**
+   - Fehlerbehandlung für alle API-Endpunkte
+   - Verhindert Server-Abstürze bei ungültigem JSON
+   - **Risiko:** Mittel → Behoben ✅
+
+### 🎯 Code-Qualität
+
+1. **Linting und Formatting**
+   - ESLint-Konfiguration hinzugefügt
+   - Prettier-Konfiguration hinzugefügt
+   - EditorConfig für Konsistenz
+   - Neue npm-Skripte: `lint`, `lint:fix`, `format`, `format:check`
+
+2. **Memory Leak behoben**
+   - Metrics History limitiert auf 60 Einträge
+   - Konstante MAX_HISTORY_SIZE eingeführt
+
+3. **Error Response Konsistenz**
+   - Alle Fehler-Antworten im JSON-Format
+   - Konsistente HTTP-Statuscodes
+   - Verbesserte Fehler-Logging
+
+4. **Router Verbesserungen**
+   - CORS-Header für API-Routen
+   - OPTIONS Preflight-Handling
+   - Try-catch für Error Handling
+
+### 🎨 Frontend Verbesserungen
+
+1. **Toast Notification System**
+   - Neuer ToastService
+   - ToastContainerComponent mit Animation
+   - 4 Toast-Typen: Success, Error, Info, Warning
+   - Responsive Design für Mobile
+   - Auto-dismiss nach 5 Sekunden
+
+2. **UX Improvements**
+   - Alert()-Aufrufe durch Toast-Notifications ersetzt
+   - Files-Seite: Toast-Feedback für Upload/Delete
+   - Users-Seite: Toast-Feedback für Benutzer-Aktionen
+   - Detaillierte Fehlermeldungen vom Server
+
+### 📚 Dokumentation
+
+1. **CONTRIBUTING.md**
+   - Entwicklungs-Richtlinien
+   - Code-Style-Guide
+   - Sicherheits-Best-Practices
+   - Pull Request Prozess
+
+2. **README.md erweitert**
+   - Sicherheitsfeatures dokumentiert
+   - Best Practices Sektion
+   - Code Quality Tools
+   - Bekannte Einschränkungen
+
+3. **API Dokumentation (docs/API.md)**
+   - Alle Endpunkte dokumentiert
+   - Request/Response Beispiele
+   - Fehler-Codes
+   - CORS-Informationen
+
+### 🔧 Technische Details
+
+#### Neue Dateien
+- `.eslintrc.json` - ESLint-Konfiguration
+- `.prettierrc` - Prettier-Konfiguration
+- `.prettierignore` - Prettier Ignore-Datei
+- `.editorconfig` - Editor-Konfiguration
+- `CONTRIBUTING.md` - Beitrags-Richtlinien
+- `docs/API.md` - API-Dokumentation
+- `frontend/src/app/services/toast.ts` - Toast-Service
+- `frontend/src/app/components/toast-container/toast-container.ts` - Toast-Komponente
+
+#### Geänderte Dateien
+- `src/services/network.service.ts` - Command Injection Fix
+- `src/index.ts` - Rate Limiting, File Upload Validation
+- `src/services/metrics.service.ts` - Memory Leak Fix
+- `src/router.ts` - CORS Support
+- `frontend/src/app/app.ts` - Toast Container Integration
+- `frontend/src/app/pages/files/files.ts` - Toast Integration
+- `frontend/src/app/pages/users/users.ts` - Toast Integration
+- `package.json` - Neue Dev Dependencies
+
+#### Neue Dependencies
+- `eslint` - Code Linting
+- `prettier` - Code Formatting
+- `@typescript-eslint/eslint-plugin` - TypeScript ESLint
+- `@typescript-eslint/parser` - TypeScript Parser
+
+### 🛡️ Sicherheits-Zusammenfassung
+
+**CodeQL-Analyse:** Keine Schwachstellen gefunden ✅
+
+**Behobene Schwachstellen:**
+1. Command Injection (WiFi) - KRITISCH ✅
+2. Path Traversal (File Upload) - HOCH ✅
+3. DoS durch große Requests - MITTEL ✅
+4. Brute Force (Login) - MITTEL ✅
+5. Server-Crash (JSON.parse) - MITTEL ✅
+
+**Noch zu beachten:**
+- HTTPS nicht eingebaut (Reverse Proxy empfohlen)
+- Audit Logging fehlt noch
+- SHA-256 statt bcrypt für Passwörter
+
+### 📊 Statistiken
+
+- **Commits:** 5
+- **Dateien geändert:** 13
+- **Neue Dateien:** 8
+- **Zeilen hinzugefügt:** ~2000
+- **Zeilen entfernt:** ~150
+
+### 🚀 Verwendung
+
+```bash
+# Neue Linting-Befehle
+npm run lint         # Code prüfen
+npm run lint:fix     # Auto-Fix
+npm run format       # Code formatieren
+
+# Wie gewohnt
+npm run build        # Build
+npm start            # Start Server
+```
+
+### ✅ Testing
+
+- [x] TypeScript Build erfolgreich
+- [x] Frontend Build erfolgreich
+- [x] CodeQL Security Check bestanden
+- [x] Keine Breaking Changes
+
+### 🔄 Migration
+
+Keine Migrations-Schritte erforderlich!
+
+1. Dependencies installieren:
+   ```bash
+   npm install
+   cd frontend && npm install
+   ```
+
+2. Bauen und Starten:
+   ```bash
+   npm run build
+   npm start
+   ```
+
+## Ältere Änderungen
+
 # Änderungen: Unified CLI und Auto-Update
 
 ## Übersicht

@@ -1,8 +1,9 @@
 import si from "systeminformation";
-import { exec } from "node:child_process";
+import { exec, execFile } from "node:child_process";
 import { promisify } from "node:util";
 
 const execAsync = promisify(exec);
+const execFileAsync = promisify(execFile);
 
 // ========== WIFI MANAGEMENT ==========
 
@@ -71,10 +72,23 @@ export const connectWifi = async (
   password?: string
 ): Promise<{ success: boolean; message: string }> => {
   try {
+    // Validate SSID and password to prevent command injection
+    // Allow alphanumeric, spaces, hyphens, underscores, and dots
+    const validSsidPattern = /^[a-zA-Z0-9\s._-]{1,32}$/;
+    const validPasswordPattern = /^[\x20-\x7E]{0,63}$/; // Printable ASCII chars, max 63 for WPA
+    
+    if (!ssid || !validSsidPattern.test(ssid)) {
+      return { success: false, message: "Invalid SSID format (use alphanumeric, spaces, dots, hyphens, underscores only)" };
+    }
+    
+    if (password && !validPasswordPattern.test(password)) {
+      return { success: false, message: "Invalid password format" };
+    }
+
     if (!password) {
-      // Open network - simple connection
+      // Open network - use execFile with array arguments to prevent injection
       console.log(`[Network] Connecting to open network: ${ssid}`);
-      await execAsync(`sudo nmcli device wifi connect "${ssid}"`);
+      await execFileAsync("sudo", ["nmcli", "device", "wifi", "connect", ssid]);
       console.log(`[Network] Successfully connected to: ${ssid}`);
       return { success: true, message: "Connected successfully" };
     }
@@ -85,17 +99,28 @@ export const connectWifi = async (
 
     console.log(`[Network] Creating WPA connection profile for: ${ssid}`);
 
-    // Add connection with full WPA-PSK parameters
-    await execAsync(
-      `sudo nmcli connection add type wifi con-name "${connectionName}" ` +
-        `ifname wlan0 ssid "${ssid}" ` +
-        `wifi-sec.key-mgmt wpa-psk ` +
-        `wifi-sec.psk "${password}"`
-    );
+    // Add connection with full WPA-PSK parameters using execFile to prevent injection
+    await execFileAsync("sudo", [
+      "nmcli",
+      "connection",
+      "add",
+      "type",
+      "wifi",
+      "con-name",
+      connectionName,
+      "ifname",
+      "wlan0",
+      "ssid",
+      ssid,
+      "wifi-sec.key-mgmt",
+      "wpa-psk",
+      "wifi-sec.psk",
+      password,
+    ]);
 
     // Activate the connection
     console.log(`[Network] Activating connection: ${connectionName}`);
-    await execAsync(`sudo nmcli connection up "${connectionName}"`);
+    await execFileAsync("sudo", ["nmcli", "connection", "up", connectionName]);
 
     console.log(`[Network] Successfully connected to: ${ssid}`);
     return { success: true, message: "Connected successfully" };
