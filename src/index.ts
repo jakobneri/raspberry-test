@@ -92,10 +92,60 @@ const requireAuth = async (
   return userId;
 };
 
+// Helper: Rate Limiting
+interface RateLimitEntry {
+  count: number;
+  resetTime: number;
+}
+
+const rateLimitMap = new Map<string, RateLimitEntry>();
+const RATE_LIMIT_WINDOW_MS = 15 * 60 * 1000; // 15 minutes
+const MAX_LOGIN_ATTEMPTS = 5;
+
+const checkRateLimit = (ip: string): boolean => {
+  const now = Date.now();
+  const entry = rateLimitMap.get(ip);
+
+  if (!entry || now > entry.resetTime) {
+    rateLimitMap.set(ip, { count: 1, resetTime: now + RATE_LIMIT_WINDOW_MS });
+    return true;
+  }
+
+  if (entry.count >= MAX_LOGIN_ATTEMPTS) {
+    return false;
+  }
+
+  entry.count++;
+  return true;
+};
+
+// Clean up old rate limit entries periodically
+setInterval(() => {
+  const now = Date.now();
+  for (const [ip, entry] of rateLimitMap.entries()) {
+    if (now > entry.resetTime) {
+      rateLimitMap.delete(ip);
+    }
+  }
+}, 5 * 60 * 1000); // Clean up every 5 minutes
+
 // ========== API ROUTES ==========
 
 // Login API endpoint for Angular
 router.post("/api/login", async (req, res) => {
+  const clientIp = req.socket.remoteAddress || "unknown";
+  
+  // Check rate limit
+  if (!checkRateLimit(clientIp)) {
+    console.log(`[AUTH] Rate limit exceeded for IP: ${clientIp}`);
+    res.writeHead(429, { "Content-Type": "application/json" });
+    res.end(JSON.stringify({ 
+      success: false, 
+      error: "Too many login attempts. Please try again later." 
+    }));
+    return;
+  }
+
   const params = await parseBody(req);
   const email = params.get("email") || "";
   const password = params.get("password") || "";
