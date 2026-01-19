@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Sidebar } from '../../components/sidebar/sidebar';
 import { ApiService, User } from '../../services/api';
+import { ToastService } from '../../services/toast';
 
 @Component({
   selector: 'app-users',
@@ -24,7 +25,11 @@ export class Users implements OnInit {
     password: '',
   };
 
-  constructor(private api: ApiService, private cdr: ChangeDetectorRef) {}
+  constructor(
+    private api: ApiService,
+    private cdr: ChangeDetectorRef,
+    private toast: ToastService
+  ) {}
 
   ngOnInit(): void {
     this.fetchUsers();
@@ -40,6 +45,7 @@ export class Users implements OnInit {
       },
       error: (err) => {
         console.error('Error fetching users:', err);
+        this.toast.error('Failed to load users');
         this.loading = false;
         this.cdr.detectChanges();
       },
@@ -49,36 +55,47 @@ export class Users implements OnInit {
   fetchUserRequests(): void {
     this.api.getUserRequests().subscribe({
       next: (requests) => (this.userRequests = requests),
-      error: (err) => console.error('Error fetching requests:', err),
+      error: (err) => {
+        console.error('Error fetching requests:', err);
+        this.toast.error('Failed to load user requests');
+      },
     });
   }
 
   createUser(): void {
     if (!this.newUser.email || !this.newUser.password || !this.newUser.name) {
-      alert('Please fill all fields');
+      this.toast.warning('Please fill all fields');
       return;
     }
 
     this.api.createUser(this.newUser).subscribe({
       next: () => {
         this.showCreateModal = false;
+        this.toast.success(`User "${this.newUser.email}" created successfully`);
         this.newUser = { email: '', name: '', password: '' };
         this.fetchUsers();
       },
       error: (err) => {
         console.error('Error creating user:', err);
-        alert('Error creating user');
+        const errorMsg = err.error?.error || 'Error creating user';
+        this.toast.error(errorMsg);
       },
     });
   }
 
   deleteUser(userId: string): void {
-    if (confirm('Are you sure you want to delete this user?')) {
+    const user = this.users.find((u) => u.id === userId);
+    const userName = user?.email || 'this user';
+    
+    if (confirm(`Are you sure you want to delete ${userName}?`)) {
       this.api.deleteUser(userId).subscribe({
-        next: () => this.fetchUsers(),
+        next: () => {
+          this.toast.success(`User deleted successfully`);
+          this.fetchUsers();
+        },
         error: (err) => {
           console.error('Error deleting user:', err);
-          alert('Error deleting user');
+          this.toast.error('Error deleting user');
         },
       });
     }
@@ -87,22 +104,26 @@ export class Users implements OnInit {
   approveRequest(requestId: string): void {
     this.api.approveUserRequest(requestId).subscribe({
       next: () => {
+        this.toast.success('User request approved');
         this.fetchUserRequests();
         this.fetchUsers();
       },
       error: (err) => {
         console.error('Error approving request:', err);
-        alert('Error approving request');
+        this.toast.error('Error approving request');
       },
     });
   }
 
   rejectRequest(requestId: string): void {
     this.api.rejectUserRequest(requestId).subscribe({
-      next: () => this.fetchUserRequests(),
+      next: () => {
+        this.toast.info('User request rejected');
+        this.fetchUserRequests();
+      },
       error: (err) => {
         console.error('Error rejecting request:', err);
-        alert('Error rejecting request');
+        this.toast.error('Error rejecting request');
       },
     });
   }

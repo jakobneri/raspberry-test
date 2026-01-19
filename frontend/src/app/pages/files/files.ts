@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { Sidebar } from '../../components/sidebar/sidebar';
 import { ApiService, FileItem } from '../../services/api';
 import { AuthService } from '../../services/auth';
+import { ToastService } from '../../services/toast';
 
 @Component({
   selector: 'app-files',
@@ -17,7 +18,11 @@ export class Files implements OnInit {
   dragOver = false;
   isAuthenticated = false;
 
-  constructor(private api: ApiService, private auth: AuthService) {}
+  constructor(
+    private api: ApiService,
+    private auth: AuthService,
+    private toast: ToastService
+  ) {}
 
   ngOnInit(): void {
     this.auth.isAuthenticated$.subscribe((isAuth) => {
@@ -32,7 +37,7 @@ export class Files implements OnInit {
     if (this.files.length === 0) {
       this.loading = true;
     }
-    
+
     this.api.getFiles().subscribe({
       next: (files) => {
         this.files = files;
@@ -40,6 +45,7 @@ export class Files implements OnInit {
       },
       error: (err) => {
         console.error('Error fetching files:', err);
+        this.toast.error('Failed to load files');
         this.loading = false;
       },
     });
@@ -76,12 +82,14 @@ export class Files implements OnInit {
     this.api.uploadFile(file).subscribe({
       next: () => {
         this.uploading = false;
+        this.toast.success(`File "${file.name}" uploaded successfully`);
         this.fetchFiles();
       },
       error: (err) => {
         console.error('Error uploading file:', err);
         this.uploading = false;
-        alert('Error uploading file');
+        const errorMsg = err.error?.error || 'Error uploading file';
+        this.toast.error(errorMsg);
       },
     });
   }
@@ -93,10 +101,13 @@ export class Files implements OnInit {
   deleteFile(filename: string): void {
     if (confirm(`Are you sure you want to delete "${filename}"?`)) {
       this.api.deleteFile(filename).subscribe({
-        next: () => this.fetchFiles(),
+        next: () => {
+          this.toast.success(`File "${filename}" deleted`);
+          this.fetchFiles();
+        },
         error: (err) => {
           console.error('Error deleting file:', err);
-          alert('Error deleting file');
+          this.toast.error('Error deleting file');
         },
       });
     }
